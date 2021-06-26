@@ -97,7 +97,7 @@ void CSettingDlg::OnBnClickedOk()
 void CSettingDlg::OnTcnSelchangingTab(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	// TODO: ここにコントロール通知ハンドラー コードを追加します。
-	int index = TabCtrl_GetCurSel(GetDlgItem(IDC_TAB));
+	int index = TabCtrl_GetCurSel(pNMHDR->hwndFrom);
 	switch(index){
 		case 0:
 			ShowWindow(basicDlg.GetSafeHwnd(), SW_HIDE);
@@ -127,7 +127,7 @@ void CSettingDlg::OnTcnSelchangingTab(NMHDR *pNMHDR, LRESULT *pResult)
 void CSettingDlg::OnTcnSelchangeTab(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	// TODO: ここにコントロール通知ハンドラー コードを追加します。
-	int index = TabCtrl_GetCurSel(GetDlgItem(IDC_TAB));
+	int index = TabCtrl_GetCurSel(pNMHDR->hwndFrom);
 	switch(index){
 		case 0:
 			ShowWindow(basicDlg.GetSafeHwnd(), SW_SHOW);
