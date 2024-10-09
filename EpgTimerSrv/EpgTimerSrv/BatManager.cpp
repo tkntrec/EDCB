@@ -6,6 +6,7 @@
 #include "../../Common/TimeUtil.h"
 #include "../../Common/PathUtil.h"
 #ifndef _WIN32
+#include <signal.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #endif
@@ -258,13 +259,18 @@ void CBatManager::BatWorkThread(CBatManager* sys)
 					WtoUTF8(work.batFilePath, execPath);
 					string execDir;
 					WtoUTF8(fs_path(work.batFilePath).parent_path().native(), execDir);
+					vector<string> macroValList(work.macroList.size());
+					for( size_t i = 0; i < macroValList.size(); i++ ){
+						WtoUTF8(work.macroList[i].second, macroValList[i]);
+					}
 					pid_t pid = fork();
 					if( pid == 0 ){
-						if( chdir(execDir.c_str()) == 0 ){
-							for( size_t i = 0; i < work.macroList.size(); i++ ){
-								string strVal;
-								WtoUTF8(work.macroList[i].second, strVal);
-								setenv(work.macroList[i].first.c_str(), strVal.c_str(), 0);
+						//シグナルマスクを初期化
+						sigset_t sset;
+						sigemptyset(&sset);
+						if( sigprocmask(SIG_SETMASK, &sset, NULL) == 0 && chdir(execDir.c_str()) == 0 ){
+							for( size_t i = 0; i < macroValList.size(); i++ ){
+								setenv(work.macroList[i].first.c_str(), macroValList[i].c_str(), 0);
 							}
 							execl(execPath.c_str(), execPath.c_str(), NULL);
 						}
@@ -293,7 +299,7 @@ void CBatManager::BatWorkThread(CBatManager* sys)
 bool CBatManager::CreateBatFile(BAT_WORK_INFO& info, DWORD& exBatMargin, DWORD& exNotifyInterval, WORD& exSW, bool& exDirect, vector<char>& buff) const
 {
 	//バッチの作成
-	std::unique_ptr<FILE, decltype(&fclose)> fp(UtilOpenFile(info.batFilePath, UTIL_SECURE_READ), fclose);
+	std::unique_ptr<FILE, fclose_deleter> fp(UtilOpenFile(info.batFilePath, UTIL_SECURE_READ));
 	if( !fp ){
 		return false;
 	}
@@ -365,12 +371,16 @@ bool CBatManager::CreateBatFile(BAT_WORK_INFO& info, DWORD& exBatMargin, DWORD& 
 			continue;
 		}
 		for( size_t j = 0; j < info.macroList[i].second.size(); j++ ){
-			//制御文字とダブルクォートは置き換える
+			//制御文字は置き換える
 			if( (L'\x1' <= info.macroList[i].second[j] && info.macroList[i].second[j] <= L'\x1f') || info.macroList[i].second[j] == L'\x7f' ){
 				info.macroList[i].second[j] = L'〓';
-			}else if( info.macroList[i].second[j] == L'"' ){
+			}
+#ifdef _WIN32
+			//ダブルクォートも置き換える
+			else if( info.macroList[i].second[j] == L'"' ){
 				info.macroList[i].second[j] = L'”';
 			}
+#endif
 		}
 		i++;
 	}

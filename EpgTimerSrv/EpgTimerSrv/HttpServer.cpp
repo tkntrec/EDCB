@@ -23,7 +23,6 @@ const char UPNP_URN_AVT_1[] = "urn:schemas-upnp-org:service:AVTransport:1";
 
 CHttpServer::CHttpServer()
 	: mgContext(NULL)
-	, luaDllHolder(NULL, UtilFreeLibrary)
 	, initedLibrary(false)
 {
 }
@@ -109,6 +108,17 @@ bool CHttpServer::StartServer(const SERVER_OPTIONS& op, const std::function<void
 	string extraMime;
 	WtoUTF8(extraMimeW, extraMime);
 
+	//"api"ディレクトリの特別扱いはドキュメントルートの直下にかぎる
+	string luaScriptPattern = "**.lua$|**.html$|";
+	for( size_t i = 0; i < rootPathU.size(); i++ ){
+		if( rootPathU[i] == '/' ){
+			luaScriptPattern += '/';
+		}else if( luaScriptPattern.back() != '*' ){
+			luaScriptPattern += '*';
+		}
+	}
+	luaScriptPattern += "/api/*$";
+
 	const char* options[64] = {
 		"ssi_pattern", "",
 		"enable_keep_alive", op.keepAlive ? "yes" : "no",
@@ -122,7 +132,7 @@ bool CHttpServer::StartServer(const SERVER_OPTIONS& op, const std::function<void
 		"ssl_default_verify_paths", "no",
 		"ssl_cipher_list", sslCipherList.c_str(),
 		"ssl_protocol_version", sslProtocolVersion,
-		"lua_script_pattern", "**.lua$|**.html$|*/api/*$",
+		"lua_script_pattern", luaScriptPattern.c_str(),
 		"access_control_allow_origin", "",
 	};
 	int opCount = 2 * 14;
@@ -153,13 +163,6 @@ bool CHttpServer::StartServer(const SERVER_OPTIONS& op, const std::function<void
 		options[opCount++] = globalAuthPath.c_str();
 	}
 
-	//LuaのDLLが無いとき分かりにくいタイミングでエラーになるので事前に読んでおく(必須ではない)
-	this->luaDllHolder.reset(UtilLoadLibrary(GetModulePath().replace_filename(LUA_DLL_NAME)));
-	if( this->luaDllHolder == NULL ){
-		AddDebugLog(L"CHttpServer::StartServer(): " LUA_DLL_NAME L" not found.");
-		return false;
-	}
-
 	unsigned int feat = MG_FEATURES_FILES + MG_FEATURES_IPV6 + MG_FEATURES_LUA + MG_FEATURES_CACHE +
 	                    (ports.find('s') != string::npos ? MG_FEATURES_TLS : 0);
 	this->initedLibrary = true;
@@ -181,7 +184,7 @@ bool CHttpServer::StartServer(const SERVER_OPTIONS& op, const std::function<void
 	if( op.enableSsdpServer ){
 		//"<UDN>uuid:{UUID}</UDN>"が必要
 		string notifyUuid;
-		std::unique_ptr<FILE, decltype(&fclose)> fp(UtilOpenFile(fs_path(op.rootPath).append(L"dlna").append(L"dms").append(L"ddd.xml"), UTIL_SECURE_READ), fclose);
+		std::unique_ptr<FILE, fclose_deleter> fp(UtilOpenFile(fs_path(op.rootPath).append(L"dlna").append(L"dms").append(L"ddd.xml"), UTIL_SECURE_READ));
 		if( fp ){
 			char olbuff[257];
 			for( size_t n = fread(olbuff, 1, 256, fp.get()); ; n = fread(olbuff + 64, 1, 192, fp.get()) + 64 ){
@@ -256,7 +259,6 @@ bool CHttpServer::StopServer(bool checkOnly)
 		mg_exit_library();
 		this->initedLibrary = false;
 	}
-	this->luaDllHolder.reset();
 	return true;
 }
 
@@ -303,7 +305,7 @@ string CHttpServer::CreateRandom(size_t len)
 		CryptReleaseContext(prov, 0);
 	}
 #else
-	std::unique_ptr<FILE, decltype(&fclose)> fp(UtilOpenFile(fs_path(L"/dev/urandom"), UTIL_SHARED_READ), fclose);
+	std::unique_ptr<FILE, fclose_deleter> fp(UtilOpenFile(fs_path(L"/dev/urandom"), UTIL_SHARED_READ));
 	if( fp ){
 		ULONGLONG r;
 		for( size_t i = 0; i < len && fread(&r, 1, 8, fp.get()) == 8; i += 8 ){
@@ -345,7 +347,7 @@ void reg_int_(lua_State* L, const char* name, size_t size, int val)
 	lua_rawset(L, -3);
 }
 
-void reg_int64_(lua_State* L, const char* name, size_t size, LONGLONG val)
+void reg_number_(lua_State* L, const char* name, size_t size, double val)
 {
 	lua_pushlstring(L, name, size - 1);
 	lua_pushnumber(L, (lua_Number)val);

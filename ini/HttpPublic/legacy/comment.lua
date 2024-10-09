@@ -8,6 +8,7 @@ onid,tsid,sid=GetVarServiceID(query,'id')
 if onid==0 and tsid==0 and sid==0 then
   onid=nil
 end
+refuge=GetVarInt(query,'refuge')==1
 comm=mg.get_var(query,'comm') or ''
 
 pid=nil
@@ -16,9 +17,9 @@ if onid then
     ok,pid=edcb.IsOpenNetworkTV(n)
   end
 elseif 0<=n and n<=65535 then
-  ff=edcb.FindFile('\\\\.\\pipe\\SendTSTCP_'..n..'_*',1)
+  ff=edcb.FindFile(SendTSTCPPipePath(n..'_*',0),1)
   if ff then
-    pid=ff[1].name:match('^[A-Za-z]+_%d+_(%d+)$')
+    pid=ff[1].name:match('^[^_]+_%d+_(%d+)')
   end
 end
 
@@ -30,7 +31,10 @@ if pid then
     comm='[]'..comm
   end
   -- 空コメントを除外
-  if comm:match('^%[.-%](.)') then
+  mail,comm=comm:match('^(%[.-)(%].+)')
+  if mail then
+    -- 投稿先を明記
+    comm=mail..(refuge and ' refuge' or ' nico')..comm
     code=405
     f=edcb.io.open('\\\\.\\pipe\\post_d7b64ac2_'..pid,'w')
     if f then
