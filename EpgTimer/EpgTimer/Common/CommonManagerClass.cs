@@ -670,11 +670,25 @@ namespace EpgTimer
         {
             Save_ProgramText(ConvertProgramText(info, EventInfoTextMode.AllForProgramText), string.IsNullOrEmpty(filename) ? info.DataTitle : filename);
         }
+        private static string saveProgramTextDirectory;
         public static void Save_ProgramText(string text, string filename = "")
         {
             var dlg = new Microsoft.Win32.SaveFileDialog();
+
+            var filebase = Path.GetFileName(filename);
+            if (string.IsNullOrWhiteSpace(filebase)) filebase = "a";
+            filename = filebase + ".program.txt";
+
+            if (saveProgramTextDirectory != null)
+            {
+                dlg.InitialDirectory = saveProgramTextDirectory;
+                for (int i = 1; File.Exists(Path.Combine(saveProgramTextDirectory, filename)); i++)
+                {
+                    filename = filebase + "(" + i + ").program.txt";
+                }
+            }
             dlg.DefaultExt = ".txt";
-            dlg.FileName = string.IsNullOrEmpty(filename) ? "a" : Path.GetFileName(filename) + ".program.txt";
+            dlg.FileName = filename;
             dlg.Filter = "txt Files|*.txt|all Files|*.*";
             if (dlg.ShowDialog() == true)
             {
@@ -684,6 +698,7 @@ namespace EpgTimer
                     {
                         file.Write(text);
                     }
+                    saveProgramTextDirectory = Path.GetDirectoryName(dlg.FileName);
                 }
                 catch (Exception ex) { MessageBox.Show(ex.ToString()); }
             }
