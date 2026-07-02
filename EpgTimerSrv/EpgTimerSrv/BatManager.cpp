@@ -268,7 +268,7 @@ void CBatManager::BatWorkThread(CBatManager* sys)
 						//シグナルマスクを初期化
 						sigset_t sset;
 						sigemptyset(&sset);
-						if( sigprocmask(SIG_SETMASK, &sset, NULL) == 0 && chdir(execDir.c_str()) == 0 ){
+						if( pthread_sigmask(SIG_SETMASK, &sset, NULL) == 0 && chdir(execDir.c_str()) == 0 ){
 							for( size_t i = 0; i < macroValList.size(); i++ ){
 								setenv(work.macroList[i].first.c_str(), macroValList[i].c_str(), 0);
 							}

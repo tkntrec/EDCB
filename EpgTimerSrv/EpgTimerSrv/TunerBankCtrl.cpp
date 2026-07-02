@@ -1229,7 +1229,7 @@ bool CTunerBankCtrl::OpenTuner(bool minWake, bool noView, bool nwUdp, bool nwTcp
 		//シグナルマスクを初期化
 		sigset_t sset;
 		sigemptyset(&sset);
-		if( sigprocmask(SIG_SETMASK, &sset, NULL) == 0 ){
+		if( pthread_sigmask(SIG_SETMASK, &sset, NULL) == 0 ){
 			execv(execU.c_str(), argv.data());
 		}
 		exit(EXIT_FAILURE);

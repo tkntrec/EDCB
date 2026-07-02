@@ -183,7 +183,7 @@ bool CMessageManager::MessageLoop(bool handleSignal)
 		sigaddset(&sset, SIGINT);
 		sigaddset(&sset, SIGTERM);
 		sigaddset(&sset, SIGUSR2);
-		if( sigprocmask(SIG_BLOCK, &sset, NULL) != 0 ){
+		if( pthread_sigmask(SIG_BLOCK, &sset, NULL) != 0 ){
 			return false;
 		}
 	}
@@ -258,7 +258,7 @@ bool CMessageManager::MessageLoop(bool handleSignal)
 	}
 
 	if( handleSignal ){
-		sigprocmask(SIG_UNBLOCK, &sset, NULL);
+		pthread_sigmask(SIG_UNBLOCK, &sset, NULL);
 	}
 	m_initialized = false;
 	m_sentEvent.Set();
