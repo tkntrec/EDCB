@@ -364,6 +364,7 @@
                             <Button Content="↓" Height="23" HorizontalAlignment="Left" Margin="213,165,0,0" Name="buttontab_down" VerticalAlignment="Top" Width="46" Click="buttontab_down_Click" />
                         </Grid>
                     </GroupBox>
+                    <CheckBox Content="標準モードのすべてのタブを同期スクロールする" HorizontalAlignment="Left" IsChecked="{Binding SynchronizeEpgScroll}" Margin="6,300,0,0" VerticalAlignment="Top" />
                 </Grid>
             </TabItem>
         </TabControl>

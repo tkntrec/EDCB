@@ -1247,12 +1247,12 @@ namespace EpgTimer
             // スクロール
             if (target is ReserveData)
             {
-                foreach (ReserveViewItem reserveViewItem1 in this.reserveList)
+                foreach (ReserveViewItem item in reserveList)
                 {
-                    if (reserveViewItem1.ReserveInfo.ReserveID == ((ReserveData)target).ReserveID)
+                    if (item.ReserveInfo.ReserveID == ((ReserveData)target).ReserveID)
                     {
-                        this.epgProgramView.scrollViewer.ScrollToHorizontalOffset(reserveViewItem1.LeftPos - 100);
-                        this.epgProgramView.scrollViewer.ScrollToVerticalOffset(reserveViewItem1.TopPos - 100);
+                        epgProgramView.scrollViewer.ScrollToHorizontalOffset(item.LeftPos - 100);
+                        epgProgramView.scrollViewer.ScrollToVerticalOffset(item.TopPos - 100);
                         break;
                     }
                 }
@@ -1260,9 +1260,9 @@ namespace EpgTimer
             else if (target is EpgEventInfo)
             {
                 var info = (EpgEventInfo)target;
-                for (int i = 0; i < this.timeList.Count; i++)
+                for (int i = 0; i < timeList.Count; i++)
                 {
-                    foreach (ProgramViewItem item in this.timeList.Values[i])
+                    foreach (ProgramViewItem item in timeList.Values[i])
                     {
                         if (item.EventInfo.original_network_id == info.original_network_id &&
                             item.EventInfo.transport_stream_id == info.transport_stream_id &&
@@ -1270,9 +1270,9 @@ namespace EpgTimer
                             (item.Past ? item.EventInfo.StartTimeFlag != 0 && info.StartTimeFlag != 0 && item.EventInfo.start_time == info.start_time :
                                          item.EventInfo.event_id == info.event_id))
                         {
-                            this.epgProgramView.scrollViewer.ScrollToHorizontalOffset(item.LeftPos - 100);
-                            this.epgProgramView.scrollViewer.ScrollToVerticalOffset(item.TopPos - 100);
-                            i = this.timeList.Count - 1;
+                            epgProgramView.scrollViewer.ScrollToHorizontalOffset(item.LeftPos - 100);
+                            epgProgramView.scrollViewer.ScrollToVerticalOffset(item.TopPos - 100);
+                            i = timeList.Count - 1;
                             break;
                         }
                     }

@@ -573,19 +573,27 @@ namespace EpgTimer
         }
 
         /// <summary>
+        /// スクロール位置の日時
+        /// </summary>
+        public DateTime ScrollTime()
+        {
+            if (timeList.Count == 0)
+            {
+                return ActualBaseTime();
+            }
+            double hours = epgProgramView.scrollViewer.VerticalOffset / (60 * setViewInfo.EpgSetting.MinHeight);
+            int index = Math.Min(Math.Max((int)hours, 0), timeList.Count - 1);
+            return timeList.Keys[index] + TimeSpan.FromHours(Math.Min(Math.Max(hours - index, 0), 1));
+        }
+
+        /// <summary>
         /// 表示する週を移動する
         /// </summary>
         private bool MoveTime(DateTime time)
         {
+            double offsetHours = (ScrollTime() - ActualBaseTime()).TotalHours;
             DateTime lastTime = baseTime;
             baseTime = time < CommonManager.Instance.DB.EventBaseTime ? time : DateTime.MaxValue;
-            TimeSpan lastOffsetTime = TimeSpan.Zero;
-            if (timeList.Count > 0)
-            {
-                int index = Math.Max((int)(epgProgramView.scrollViewer.VerticalOffset / (60 * setViewInfo.EpgSetting.MinHeight)), 0);
-                index = Math.Min(index, timeList.Count - 1);
-                lastOffsetTime = TimeSpan.FromDays((int)timeList.Keys[index].DayOfWeek) + timeList.Keys[index].TimeOfDay;
-            }
             if (ReloadEpgData())
             {
                 updateEpgData = false;
@@ -596,9 +604,9 @@ namespace EpgTimer
                 {
                     for (int i = 0; i <= timeList.Count; i++)
                     {
-                        if (i == timeList.Count || TimeSpan.FromDays((int)timeList.Keys[i].DayOfWeek) + timeList.Keys[i].TimeOfDay >= lastOffsetTime)
+                        if (i == timeList.Count || timeList.Keys[i] - ActualBaseTime() >= TimeSpan.FromHours(Math.Floor(offsetHours)))
                         {
-                            epgProgramView.scrollViewer.ScrollToVerticalOffset(Math.Max(i * 60 * setViewInfo.EpgSetting.MinHeight, 0));
+                            epgProgramView.scrollViewer.ScrollToVerticalOffset(Math.Ceiling((i + offsetHours % 1) * 60 * setViewInfo.EpgSetting.MinHeight));
                             break;
                         }
                     }
@@ -1349,15 +1357,35 @@ namespace EpgTimer
                 Dispatcher.BeginInvoke(DispatcherPriority.Render, new Action(() => scrollToTarget = null));
                 return;
             }
+            if (target is DateTime)
+            {
+                //指定日時に移動
+                DateTime time = ActualBaseTime();
+                time += TimeSpan.FromDays(((DateTime)target - time - ((DateTime)target < time ? TimeSpan.FromDays(7) - TimeSpan.FromTicks(1) : TimeSpan.Zero)).Days / 7 * 7);
+                time = time < CommonManager.Instance.DB.EventBaseTime ? time : CommonManager.Instance.DB.EventBaseTime;
+                if (ActualBaseTime() == time || MoveTime(time))
+                {
+                    double offsetHours = ((DateTime)target - time).TotalHours;
+                    for (int i = 0; i <= timeList.Count; i++)
+                    {
+                        if (i == timeList.Count || timeList.Keys[i] - ActualBaseTime() >= TimeSpan.FromHours(Math.Floor(offsetHours)))
+                        {
+                            epgProgramView.scrollViewer.ScrollToVerticalOffset(Math.Ceiling((i + offsetHours % 1) * 60 * setViewInfo.EpgSetting.MinHeight));
+                            break;
+                        }
+                    }
+                }
+                return;
+            }
             MoveNowTime(moveBaseTime);
             if (target is ReserveData)
             {
-                foreach (ReserveViewItem reserveViewItem1 in this.reserveList)
+                foreach (ReserveViewItem item in reserveList)
                 {
-                    if (reserveViewItem1.ReserveInfo.ReserveID == ((ReserveData)target).ReserveID)
+                    if (item.ReserveInfo.ReserveID == ((ReserveData)target).ReserveID)
                     {
-                        this.epgProgramView.scrollViewer.ScrollToHorizontalOffset(reserveViewItem1.LeftPos - 100);
-                        this.epgProgramView.scrollViewer.ScrollToVerticalOffset(reserveViewItem1.TopPos - 100);
+                        epgProgramView.scrollViewer.ScrollToHorizontalOffset(item.LeftPos - 100);
+                        epgProgramView.scrollViewer.ScrollToVerticalOffset(item.TopPos - 100);
                         break;
                     }
                 }
@@ -1365,9 +1393,9 @@ namespace EpgTimer
             else if (target is EpgEventInfo)
             {
                 var info = (EpgEventInfo)target;
-                for (int i = 0; i < this.timeList.Count; i++)
+                for (int i = 0; i < timeList.Count; i++)
                 {
-                    foreach (ProgramViewItem item in this.timeList.Values[i])
+                    foreach (ProgramViewItem item in timeList.Values[i])
                     {
                         if (item.EventInfo.original_network_id == info.original_network_id &&
                             item.EventInfo.transport_stream_id == info.transport_stream_id &&
@@ -1375,9 +1403,9 @@ namespace EpgTimer
                             (item.Past ? item.EventInfo.StartTimeFlag != 0 && info.StartTimeFlag != 0 && item.EventInfo.start_time == info.start_time :
                                          item.EventInfo.event_id == info.event_id))
                         {
-                            this.epgProgramView.scrollViewer.ScrollToHorizontalOffset(item.LeftPos - 100);
-                            this.epgProgramView.scrollViewer.ScrollToVerticalOffset(item.TopPos - 100);
-                            i = this.timeList.Count - 1;
+                            epgProgramView.scrollViewer.ScrollToHorizontalOffset(item.LeftPos - 100);
+                            epgProgramView.scrollViewer.ScrollToVerticalOffset(item.TopPos - 100);
+                            i = timeList.Count - 1;
                             break;
                         }
                     }
