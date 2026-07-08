@@ -126,14 +126,10 @@ namespace EpgTimer
         /// <param name="e"></param>
         void epgProgramView_ScrollChanged(object sender, ScrollChangedEventArgs e)
         {
-            {
-                {
-                    //時間軸の表示もスクロール
-                    timeView.scrollViewer.ScrollToVerticalOffset(epgProgramView.scrollViewer.VerticalOffset);
-                    //サービス名表示もスクロール
-                    weekDayView.scrollViewer.ScrollToHorizontalOffset(epgProgramView.scrollViewer.HorizontalOffset);
-                }
-            }
+            //時間軸の表示もスクロール
+            timeView.scrollViewer.ScrollToVerticalOffset(epgProgramView.scrollViewer.VerticalOffset);
+            //日付の表示もスクロール
+            weekDayView.scrollViewer.ScrollToHorizontalOffset(epgProgramView.scrollViewer.HorizontalOffset);
         }
 
         /// <summary>
@@ -226,16 +222,9 @@ namespace EpgTimer
                     return;
                 }
             }
-            DateTime now = DateTime.UtcNow.AddHours(9);
-            now = new DateTime(2001, 1, now.Hour < setViewInfo.StartTimeWeek ? 2 : 1, now.Hour, now.Minute, now.Second);
-            for (int i = 0; i < timeList.Count; i++)
+            if (epgProgramView.nowLine.Visibility == Visibility.Visible)
             {
-                if (now <= timeList.Keys[i])
-                {
-                    double pos = Math.Max((i - 1) * 60 * setViewInfo.EpgSetting.MinHeight - 100, 0);
-                    epgProgramView.scrollViewer.ScrollToVerticalOffset(Math.Ceiling(pos));
-                    break;
-                }
+                epgProgramView.scrollViewer.ScrollToVerticalOffset(epgProgramView.nowLine.Y1 - 100);
             }
         }
 

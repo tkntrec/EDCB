@@ -46,11 +46,21 @@ namespace EpgTimer.EpgView
             button_prev.Visibility = enablePrev || enableNext ? Visibility.Visible : Visibility.Collapsed;
             if (startTime != default(DateTime))
             {
-                DateTime itemTime = new DateTime(startTime.Year, startTime.Month, startTime.Day, 0, 0, 0);
-                while (itemTime < endTime)
+                for (DateTime itemTime = startTime.Date; itemTime < endTime; itemTime = itemTime.AddDays(1))
                 {
                     Button day = new Button();
-                    day.Content = itemTime.ToString("M\\/d(ddd)");
+                    day.Content = new Border()
+                    {
+                        BorderBrush = Brushes.Red,
+                        BorderThickness = new Thickness(),
+                        Child = new TextBlock()
+                        {
+                            Padding = new Thickness(2, 0, 2, 0),
+                            Text = itemTime.ToString("M\\/d(ddd)"),
+                            VerticalAlignment = VerticalAlignment.Center
+                        }
+                    };
+                    day.FontWeight = FontWeights.Normal;
                     if (itemTime.DayOfWeek == DayOfWeek.Saturday)
                     {
                         day.Foreground = Brushes.Blue;
@@ -71,11 +81,49 @@ namespace EpgTimer.EpgView
                         hour.Click += button_time_Click;
                         uniformGrid_time.Children.Add(hour);
                     }
-
-                    itemTime = itemTime.AddDays(1);
                 }
                 columnDefinition.MinWidth = uniformGrid_time.Children.Count * 15;
                 columnDefinition.MaxWidth = uniformGrid_time.Children.Count * 40;
+            }
+        }
+
+        public void SetTodayMark()
+        {
+            DateTime today = DateTime.UtcNow.AddHours(9).Date;
+            Button todayButton = uniformGrid_day.Children.OfType<Button>().FirstOrDefault(btn => (DateTime)btn.Tag == today);
+            Button markedButton = uniformGrid_day.Children.OfType<Button>().FirstOrDefault(btn => ((Border)btn.Content).BorderThickness.Left != 0);
+            if (todayButton != markedButton)
+            {
+                if (markedButton != null)
+                {
+                    ((Border)markedButton.Content).BorderThickness = new Thickness();
+                }
+                if (todayButton != null)
+                {
+                    ((Border)todayButton.Content).BorderThickness = new Thickness(1);
+                }
+            }
+        }
+
+        public void SetScrollTime(DateTime time)
+        {
+            time = time.Date.AddHours(time.Hour / 6 * 6);
+            for (int i = 0; i < 2; i++)
+            {
+                Button timeButton = (i == 0 ? uniformGrid_time : uniformGrid_day).Children.OfType<Button>().FirstOrDefault(btn => (DateTime)btn.Tag == time);
+                Button markedButton = (i == 0 ? uniformGrid_time : uniformGrid_day).Children.OfType<Button>().FirstOrDefault(btn => btn.FontWeight == FontWeights.Bold);
+                if (timeButton != markedButton)
+                {
+                    if (markedButton != null)
+                    {
+                        markedButton.FontWeight = FontWeights.Normal;
+                    }
+                    if (timeButton != null)
+                    {
+                        timeButton.FontWeight = FontWeights.Bold;
+                    }
+                }
+                time = time.Date;
             }
         }
 

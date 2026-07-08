@@ -80,6 +80,7 @@ namespace EpgTimer
         private void ReDrawNowLine()
         {
             nowViewTimer.Stop();
+            dateView.SetTodayMark();
             if (timeList.Count == 0 || baseTime < CommonManager.Instance.DB.EventBaseTime)
             {
                 epgProgramView.nowLine.Visibility = Visibility.Hidden;
@@ -121,14 +122,11 @@ namespace EpgTimer
         /// <param name="e"></param>
         void epgProgramView_ScrollChanged(object sender, ScrollChangedEventArgs e)
         {
-            {
-                {
-                    //時間軸の表示もスクロール
-                    timeView.scrollViewer.ScrollToVerticalOffset(epgProgramView.scrollViewer.VerticalOffset);
-                    //サービス名表示もスクロール
-                    serviceView.scrollViewer.ScrollToHorizontalOffset(epgProgramView.scrollViewer.HorizontalOffset);
-                }
-            }
+            dateView.SetScrollTime(ScrollTime().AddMinutes(Math.Min(Math.Max(100 / setViewInfo.EpgSetting.MinHeight, 0), 120)));
+            //時間軸の表示もスクロール
+            timeView.scrollViewer.ScrollToVerticalOffset(epgProgramView.scrollViewer.VerticalOffset);
+            //サービス名表示もスクロール
+            serviceView.scrollViewer.ScrollToHorizontalOffset(epgProgramView.scrollViewer.HorizontalOffset);
         }
 
         /// <summary>
@@ -611,6 +609,7 @@ namespace EpgTimer
                         }
                     }
                 }
+                dateView.SetScrollTime(ScrollTime().AddMinutes(Math.Min(Math.Max(100 / setViewInfo.EpgSetting.MinHeight, 0), 120)));
                 return true;
             }
             baseTime = lastTime;
@@ -741,15 +740,9 @@ namespace EpgTimer
                     return;
                 }
             }
-            DateTime now = DateTime.UtcNow.AddHours(9);
-            for (int i = 0; i < timeList.Count; i++)
+            if (epgProgramView.nowLine.Visibility == Visibility.Visible)
             {
-                if (now <= timeList.Keys[i])
-                {
-                    double pos = Math.Max((i - 1) * 60 * setViewInfo.EpgSetting.MinHeight - 100, 0);
-                    epgProgramView.scrollViewer.ScrollToVerticalOffset(Math.Ceiling(pos));
-                    break;
-                }
+                epgProgramView.scrollViewer.ScrollToVerticalOffset(epgProgramView.nowLine.Y1 - 100);
             }
         }
 

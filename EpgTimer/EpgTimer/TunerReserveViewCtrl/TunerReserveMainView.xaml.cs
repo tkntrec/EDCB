@@ -53,14 +53,10 @@ namespace EpgTimer
         /// <param name="e"></param>
         void tunerReserveView_ScrollChanged(object sender, ScrollChangedEventArgs e)
         {
-            {
-                {
-                    //時間軸の表示もスクロール
-                    tunerReserveTimeView.scrollViewer.ScrollToVerticalOffset(tunerReserveView.scrollViewer.VerticalOffset);
-                    //サービス名表示もスクロール
-                    tunerReserveNameView.scrollViewer.ScrollToHorizontalOffset(tunerReserveView.scrollViewer.HorizontalOffset);
-                }
-            }
+            //時間軸の表示もスクロール
+            tunerReserveTimeView.scrollViewer.ScrollToVerticalOffset(tunerReserveView.scrollViewer.VerticalOffset);
+            //チューナー名表示もスクロール
+            tunerReserveNameView.scrollViewer.ScrollToHorizontalOffset(tunerReserveView.scrollViewer.HorizontalOffset);
         }
 
         /// <summary>
