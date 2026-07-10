@@ -84,6 +84,7 @@ namespace EpgTimer
         private void ReDrawNowLine()
         {
             nowViewTimer.Stop();
+            weekDayView.SetTodayMark(setViewInfo.StartTimeWeek);
             if (timeList.Count == 0 || baseTime < CommonManager.Instance.DB.EventBaseTime)
             {
                 epgProgramView.nowLine.Visibility = Visibility.Hidden;
