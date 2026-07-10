@@ -20,7 +20,7 @@
         <my:DateView Grid.ColumnSpan="2" x:Name="dateView" TimeButtonClick="epgDateView_TimeButtonClick" TimeButtonContextMenuOpening="epgDateView_TimeButtonContextMenuOpening" />
         <Button Click="button_now_Click" Content="現在" Grid.Row="1" />
         <my:TimeView Grid.Row="2" Margin="0,0,0,18" x:Name="timeView" />
-        <my:ServiceView Grid.Column="1" Grid.Row="1" Margin="0,0,18,0" x:Name="serviceView" LeftDoubleClick="serviceView_LeftDoubleClick" RightClick="serviceView_RightClick" />
+        <my:ServiceView Grid.Column="1" Grid.Row="1" Margin="0,0,18,0" x:Name="serviceView" LeftDoubleClick="serviceView_LeftDoubleClick" Click="serviceView_Click" />
         <Grid ContextMenuOpening="grid_content_ContextMenuOpening" Grid.Column="1" Grid.Row="2" Name="grid_content">
             <my:ProgramView x:Name="epgProgramView" LeftDoubleClick="epgProgramView_LeftDoubleClick" ScrollChanged="epgProgramView_ScrollChanged" />
             <Grid.ContextMenu>

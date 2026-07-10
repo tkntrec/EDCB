@@ -683,9 +683,9 @@ namespace EpgTimer
         }
 
         /// <summary>
-        /// サービス右ボタンクリック
+        /// サービス左or右クリック
         /// </summary>
-        void serviceView_RightClick(EpgServiceInfo info)
+        void serviceView_Click(EpgServiceInfo info)
         {
             if (ViewModeChangeRequested != null)
             {
@@ -1308,7 +1308,8 @@ namespace EpgTimer
                 SolidColorBrush serviceBrush = ColorDef.CustColorBrush(setViewInfo.EpgSetting.ServiceColor, setViewInfo.EpgSetting.ServiceCustColor);
                 serviceView.SetService(primeServiceList, setViewInfo.EpgSetting.ServiceWidth,
                                        setViewInfo.EpgSetting.EpgGradationHeader ? (Brush)ColorDef.GradientBrush(serviceBrush.Color) : serviceBrush,
-                                       ColorDef.GetLuminance(serviceBrush.Color) > 0.55 ? Brushes.Black : Brushes.White);
+                                       ColorDef.GetLuminance(serviceBrush.Color) > 0.55 ? Brushes.Black : Brushes.White,
+                                       Settings.Instance.ToggleEpgModeOnHeaderLeftClick);
 
                 ReDrawNowLine();
             }

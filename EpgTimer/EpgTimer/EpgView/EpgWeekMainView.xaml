@@ -31,7 +31,7 @@
         <Button Content="標準モード" Grid.Column="1" Height="23" HorizontalAlignment="Left" Margin="233,8,0,0" VerticalAlignment="Top" Width="66" Click="button1_Click" />
         <Button Click="button_now_Click" Content="現在" Grid.Row="1" />
         <my:TimeView Grid.Row="2" Margin="0,0,0,18" x:Name="timeView" />
-        <my:WeekDayView Grid.Column="1" Grid.Row="1" Margin="0,0,18,0" x:Name="weekDayView" />
+        <my:WeekDayView Grid.Column="1" Grid.Row="1" Margin="0,0,18,0" x:Name="weekDayView" Click="weekDayView_Click" />
         <Grid ContextMenuOpening="grid_content_ContextMenuOpening" Grid.Column="1" Grid.Row="2" Name="grid_content">
             <my:ProgramView x:Name="epgProgramView" LeftDoubleClick="epgProgramView_LeftDoubleClick" ScrollChanged="epgProgramView_ScrollChanged" />
             <Grid.ContextMenu>

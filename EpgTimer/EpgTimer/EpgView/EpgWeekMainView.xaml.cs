@@ -198,6 +198,33 @@ namespace EpgTimer
         }
 
         /// <summary>
+        /// 日付左or右クリック
+        /// </summary>
+        private void weekDayView_Click(DateTime date)
+        {
+            if (ViewModeChangeRequested != null)
+            {
+                CustomEpgTabInfo setInfo = setViewInfo.DeepClone();
+                setInfo.ViewMode = 0;
+                //表示位置前後の番組をターゲットにする
+                int pivot = (int)(epgProgramView.scrollViewer.VerticalOffset / (60 * setViewInfo.EpgSetting.MinHeight));
+                for (int d = 0; d < timeList.Count * 2; d = d > 0 ? -d : -d + 1)
+                {
+                    int index = (pivot + d + timeList.Count * 2) % timeList.Count;
+                    DateTime time = date.AddDays((pivot + d + timeList.Count * 2) / timeList.Count - 2) + (timeList.Keys[index] - new DateTime(2001, 1, 1));
+                    foreach (ProgramViewItem pgInfo in timeList.Values[index])
+                    {
+                        if (time <= pgInfo.EventInfo.start_time && pgInfo.EventInfo.start_time < time.AddHours(1))
+                        {
+                            ViewModeChangeRequested(this, setInfo, baseTime, pgInfo.EventInfo);
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
         /// 現在ボタンクリックイベント呼び出し
         /// </summary>
         /// <param name="sender"></param>
@@ -1162,7 +1189,7 @@ namespace EpgTimer
                     timeBrushList.Add(setViewInfo.EpgSetting.EpgGradationHeader ? (Brush)ColorDef.GradientBrush(brush.Color) : brush);
                 }
                 timeView.SetTime(timeList.Keys, 60 * setViewInfo.EpgSetting.MinHeight, setViewInfo.NeedTimeOnlyWeek, timeBrushList, true);
-                weekDayView.SetDay(dayList, setViewInfo.EpgSetting.ServiceWidth, setViewInfo.EpgSetting.EpgGradationHeader);
+                weekDayView.SetDay(dayList, setViewInfo.EpgSetting.ServiceWidth, setViewInfo.EpgSetting.EpgGradationHeader, Settings.Instance.ToggleEpgModeOnHeaderLeftClick);
             }
 
             ReDrawNowLine();

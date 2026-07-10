@@ -187,6 +187,7 @@ namespace EpgTimer
         public List<CustomEpgTabInfo> CustomEpgTabList { get; set; }
         public List<EpgSetting> EpgSettingList { get; set; }
         public bool SynchronizeEpgScroll { get; set; }
+        public bool ToggleEpgModeOnHeaderLeftClick { get; set; }
         public bool NoToolTip { get; set; }
         public bool NoBallonTips { get; set; }
         public bool BalloonTipRealtime { get; set; }
@@ -399,6 +400,7 @@ namespace EpgTimer
                 }
             }
             r.SynchronizeEpgScroll      = ConvertXElem(x, w, "SynchronizeEpgScroll", SynchronizeEpgScroll, false);
+            r.ToggleEpgModeOnHeaderLeftClick = ConvertXElem(x, w, "ToggleEpgModeOnHeaderLeftClick", ToggleEpgModeOnHeaderLeftClick, false);
             r.NoToolTip                 = ConvertXElem(x, w, "NoToolTip", NoToolTip, false);
             r.NoBallonTips              = ConvertXElem(x, w, "NoBallonTips", NoBallonTips, false);
             r.BalloonTipRealtime        = ConvertXElem(x, w, "BalloonTipRealtime", BalloonTipRealtime, false);

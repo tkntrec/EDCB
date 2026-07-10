@@ -11,6 +11,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 
 namespace EpgTimer.EpgView
 {
@@ -20,7 +21,7 @@ namespace EpgTimer.EpgView
     public partial class ServiceView : UserControl
     {
         public event Action<EpgServiceInfo> LeftDoubleClick;
-        public event Action<EpgServiceInfo> RightClick;
+        public event Action<EpgServiceInfo> Click;
 
         public ServiceView()
         {
@@ -32,9 +33,11 @@ namespace EpgTimer.EpgView
             stackPanel_service.Children.Clear();
         }
 
-        public void SetService(List<EpgServiceInfo> serviceList, double serviceWidth, Brush serviceBrush, Brush textBrush)
+        public void SetService(List<EpgServiceInfo> serviceList, double serviceWidth, Brush serviceBrush, Brush textBrush, bool isClickLeft)
         {
             stackPanel_service.Children.Clear();
+            uint tickCountToPreventAccidentalClick = (uint)Environment.TickCount;
+
             foreach (EpgServiceInfo info in serviceList)
             {
                 TextBlock item = new TextBlock();
@@ -62,20 +65,46 @@ namespace EpgTimer.EpgView
                 stack.Orientation = Orientation.Horizontal;
                 stack.Margin = new Thickness(1, 1, 1, 1);
                 stack.Background = serviceBrush;
+                DispatcherTimer clickTimer = null;
                 stack.MouseLeftButtonDown += (sender, e) =>
                 {
+                    if (e.ClickCount == 1 && clickTimer == null && isClickLeft && Click != null && (uint)e.Timestamp - tickCountToPreventAccidentalClick > 500)
+                    {
+                        // ダブルクリックと区別するため
+                        clickTimer = new DispatcherTimer();
+                        clickTimer.Interval = CommonUtil.GetDoubleClickTime() + TimeSpan.FromMilliseconds(100);
+                        var tag = (EpgServiceInfo)((FrameworkElement)sender).Tag;
+                        clickTimer.Tick += (sender2, e2) =>
+                        {
+                            clickTimer.Stop();
+                            clickTimer = null;
+                            if (Click != null)
+                            {
+                                Click(tag);
+                            }
+                        };
+                        clickTimer.Start();
+                    }
+                    else if (clickTimer != null)
+                    {
+                        clickTimer.Stop();
+                        clickTimer = null;
+                    }
                     if (e.ClickCount == 2 && LeftDoubleClick != null)
                     {
                         LeftDoubleClick((EpgServiceInfo)((FrameworkElement)sender).Tag);
                     }
                 };
-                stack.MouseRightButtonUp += (sender, e) =>
+                if (!isClickLeft)
                 {
-                    if (RightClick != null)
+                    stack.MouseRightButtonUp += (sender, e) =>
                     {
-                        RightClick((EpgServiceInfo)((FrameworkElement)sender).Tag);
-                    }
-                };
+                        if (Click != null && (uint)e.Timestamp - tickCountToPreventAccidentalClick > 500)
+                        {
+                            Click((EpgServiceInfo)((FrameworkElement)sender).Tag);
+                        }
+                    };
+                }
                 stack.Tag = info;
                 stack.Children.Add(item);
                 stackPanel_service.Children.Add(stack);
