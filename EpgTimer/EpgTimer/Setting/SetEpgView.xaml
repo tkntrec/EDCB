@@ -348,6 +348,7 @@
                                     <CheckBox Margin="12,0,0,0" Content="表示モード切り替えタブ" IsChecked="{Binding EpgViewModeTabEnabled}" />
                                 </StackPanel>
                                 <CheckBox Margin="0,4,0,0" Content="表示項目タブの右クリックメニューで、「表示」に切り替えたタブへ移動する" IsChecked="{Binding EpgTabMoveCheckEnabled}"/>
+                                <CheckBox Margin="0,4,0,0" Content="標準モードのすべてのタブを同期スクロールする" IsChecked="{Binding SynchronizeEpgScroll}"/>
                             </StackPanel>
                             <GroupBox Margin="0,18,0,0">
                                 <GroupBox.Header>

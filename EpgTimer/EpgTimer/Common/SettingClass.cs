@@ -458,6 +458,7 @@ namespace EpgTimer
         public bool UseCustomEpgView { get; set; }
         public List<CustomEpgTabInfo> CustomEpgTabList { get; set; }
         public IndexSafeList<EpgSetting> EpgSettingList { get; set; }
+        public bool SynchronizeEpgScroll { get; set; }
         public bool NoToolTip { get; set; }
         public double ToolTipWidth { get; set; }
         public bool NoBallonTips { get; set; }
@@ -815,6 +816,7 @@ namespace EpgTimer
             UseCustomEpgView = false;
             CustomEpgTabList = new List<CustomEpgTabInfo>();
             EpgSettingList = new IndexSafeList<EpgSetting>();
+            SynchronizeEpgScroll = false;
             NoToolTip = false;
             ToolTipWidth = 400;
             NoBallonTips = false;

@@ -271,6 +271,21 @@ namespace EpgTimer.EpgView
             return (ViewUtil.MoveNextReserve(ref recIdx, programView, recinfoList, ref clickPos, id, direction, move, style) as ReserveDataEnd).GetRecinfoFromPgUID();
         }
 
+        public void SyncScroll(EpgMainViewBase refView)
+        {
+            if (this == refView || refView == null) return;
+
+            var time = refView.GetScrollTime();
+            if (ViewPeriod.Contains(time))
+            {
+                MoveTime(time);
+            }
+            else
+            {
+                restoreState = new StateMainBase { scrollTime = time, isJumpDate = true };
+                JumpDate(refView.ViewPeriod);
+            }
+        }
         /// <summary>表示位置を現在の時刻にスクロールする</summary>
         protected override void MoveNowTime()
         {

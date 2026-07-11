@@ -21,6 +21,7 @@ namespace EpgTimer
         List<CustomEpgTabInfo> tabInfo = new List<CustomEpgTabInfo>();//Settingデータの参照を保持
         CustomEpgTabInfo get_tabInfo(string Uid) { return tabInfo.Find(ti => ti.Uid == Uid); }
         ContextMenu ctxm = new ContextMenuEx();//使用時に生成するとClearTabHeader()のタイミングが前後するので準備しておく。
+        private EpgMainView selectedTab = null;
 
         public EpgDataView()
         {
@@ -119,6 +120,7 @@ namespace EpgTimer
                         var info = get_tabInfo(oldID);
                         if (info != null) oldDefViewMode = info.ViewMode;
                         oldState = item.view.GetViewState();
+                        selectedTab = null;
                     }
                 }
 
@@ -271,7 +273,21 @@ namespace EpgTimer
             //データの変更はEpgTabItem.OnSelected()が行うのでタブの見かけだけ変更する。
             if (tabControl.SelectedItem != null)
             {
-                tab_viewMode_ChangeTabOnly((tabControl.SelectedItem as EpgTabItem).Info.ViewMode);
+                var newTab = tabControl.SelectedItem as EpgTabItem;
+                tab_viewMode_ChangeTabOnly(newTab.Info.ViewMode);
+
+                if (!Settings.Instance.SynchronizeEpgScroll) return;
+
+                //初回表示の場合にUpdateInfo()が走るまでviewが生成されないので待つ
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    var newView = newTab.view as EpgMainView;
+                    if (newView != null)
+                    {
+                        newView.SyncScroll(selectedTab);
+                        selectedTab = newView;
+                    }
+                }), DispatcherPriority.Normal);
             }
         }
         private void tab_viewMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
