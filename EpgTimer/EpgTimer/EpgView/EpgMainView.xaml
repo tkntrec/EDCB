@@ -23,7 +23,7 @@
         <Button Grid.Row="2" Content="初期&#10;表示" Padding="1" IsHitTestVisible="False" Visibility="Hidden"/>
         <Button Grid.Row="2" Name="button_now" Content="現在" Padding="1" VerticalAlignment="Stretch" MouseRightButtonUp="button_erea_MouseRightButtonUp" />
         <local:TimeView Grid.Row="3" x:Name="timeView" Margin="0,0,0,17" MouseRightButtonUp="button_erea_MouseRightButtonUp" />
-        <local:ServiceView Grid.Column="1" Grid.Row="2" x:Name="serviceView" Margin="0,0,17,0" MouseRightButtonUp="button_erea_MouseRightButtonUp" />
+        <local:ServiceView Grid.Column="1" Grid.Row="2" x:Name="serviceView" Margin="0,0,17,0" MouseRightButtonUp="button_erea_MouseRightButtonUp" LeftClick="button_erea_MouseLeftClick"/>
         <local:ProgramView Grid.Column="1" Grid.Row="3" x:Name="epgProgramView" />
     </Grid>
 </local:EpgMainViewBase>

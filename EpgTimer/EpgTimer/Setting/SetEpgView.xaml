@@ -347,8 +347,9 @@
                                     <CheckBox Margin="12,0,0,0" Content="表示項目タブ" IsChecked="{Binding EpgNameTabEnabled}" ToolTip="非表示の時は「番組表」タブの右クリックメニューから表示項目を変更します"/>
                                     <CheckBox Margin="12,0,0,0" Content="表示モード切り替えタブ" IsChecked="{Binding EpgViewModeTabEnabled}" />
                                 </StackPanel>
-                                <CheckBox Margin="0,4,0,0" Content="表示項目タブの右クリックメニューで、「表示」に切り替えたタブへ移動する" IsChecked="{Binding EpgTabMoveCheckEnabled}"/>
+                                <CheckBox Margin="0,4,0,0" Content="右クリックメニューから非表示のタブを表示したら、そのタブへ移動する" IsChecked="{Binding EpgTabMoveCheckEnabled}"/>
                                 <CheckBox Margin="0,4,0,0" Content="標準モードのすべてのタブを同期スクロールする" IsChecked="{Binding SynchronizeEpgScroll}"/>
+                                <CheckBox Margin="0,4,0,0" Content="サービス・日付を左クリックで表示モードを切り替える" IsChecked="{Binding ToggleEpgModeOnHeaderLeftClick}"/>
                             </StackPanel>
                             <GroupBox Margin="0,18,0,0">
                                 <GroupBox.Header>

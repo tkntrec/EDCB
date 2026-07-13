@@ -202,6 +202,14 @@ namespace EpgTimer.EpgView
             clickPos = Mouse.GetPosition(programView);//範囲外にしておく
             mc.SupportContextMenuLoading(cmdMenuView, null);
         }
+        /// <summary>サービス表示などでの左クリック</summary>
+        protected void button_erea_MouseLeftClick()
+        {
+            if (!Settings.Instance.ToggleEpgModeOnHeaderLeftClick) return;
+
+            clickPos = Mouse.GetPosition(programView);
+            mc_ViewChgMode(1 - viewMode);
+        }
         protected override object GetJumpTabItemNear()
         {
             double voffset = programView.scrollViewer.VerticalOffset;

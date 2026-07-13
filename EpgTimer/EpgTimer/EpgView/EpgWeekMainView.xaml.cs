@@ -36,6 +36,7 @@ namespace EpgTimer
 
             //時間関係の設定の続き
             nowViewTimer.Tick += (sender, e) => weekDayView.SetTodayMark();
+            weekDayView.PreviewMouseLeftButtonDown += (sender, e) => button_erea_MouseLeftClick();
 
             //コマンド集の初期化の続き、ボタンの設定
             mBinds.SetCommandToButton(button_go_Main, EpgCmds.ViewChgMode, 0);

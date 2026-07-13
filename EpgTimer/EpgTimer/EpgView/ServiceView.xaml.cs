@@ -1,7 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 
 namespace EpgTimer.EpgView
 {
@@ -10,6 +12,8 @@ namespace EpgTimer.EpgView
     /// </summary>
     public partial class ServiceView : UserControl, IEpgSettingAccess, IEpgViewDataSet
     {
+        public event Action LeftClick;
+
         public ServiceView()
         {
             InitializeComponent();
@@ -30,17 +34,39 @@ namespace EpgTimer.EpgView
         public void SetService(List<EpgServiceInfo> serviceList)
         {
             stackPanel_service.Children.Clear();
+            uint tickCountToPreventAccidentalClick = (uint)Environment.TickCount;
+
             foreach (EpgServiceInfo info in serviceList)
             {
                 var service1 = new StackPanel();
                 service1.Width = this.EpgStyle().ServiceWidth - 1;
                 service1.VerticalAlignment = VerticalAlignment.Center;
+                DispatcherTimer clickTimer = null;
                 service1.MouseLeftButtonDown += (sender, e) =>
                 {
-                    if (e.ClickCount != 2) return;
-                    //
-                    var serviceInfo = ((FrameworkElement)sender).DataContext as EpgServiceInfo;
-                    CommonManager.Instance.TVTestCtrl.SetLiveCh(serviceInfo.ONID, serviceInfo.TSID, serviceInfo.SID);
+                    if (e.ClickCount == 1 && clickTimer == null && LeftClick != null && (uint)e.Timestamp - tickCountToPreventAccidentalClick > 500)
+                    {
+                        // ダブルクリックと区別するため
+                        clickTimer = new DispatcherTimer();
+                        clickTimer.Interval = CommonUtil.GetDoubleClickTime() + TimeSpan.FromMilliseconds(100);
+                        clickTimer.Tick += (sender2, e2) =>
+                        {
+                            clickTimer.Stop();
+                            clickTimer = null;
+                            if (LeftClick != null) LeftClick();
+                        };
+                        clickTimer.Start();
+                    }
+                    else if (clickTimer != null)
+                    {
+                        clickTimer.Stop();
+                        clickTimer = null;
+                    }
+                    if (e.ClickCount == 2)
+                    {
+                        var serviceInfo = ((FrameworkElement)sender).DataContext as EpgServiceInfo;
+                        CommonManager.Instance.TVTestCtrl.SetLiveCh(serviceInfo.ONID, serviceInfo.TSID, serviceInfo.SID);
+                    }
                 };
                 //service1.DataContext = info;
 

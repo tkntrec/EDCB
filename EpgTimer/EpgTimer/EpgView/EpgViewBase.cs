@@ -234,16 +234,19 @@ namespace EpgTimer.EpgView
         //表示設定関係
         protected void mc_ViewChgMode(object sender, ExecutedRoutedEventArgs e)
         {
+            var param = e.Parameter as EpgCmdParam;
+            if (param == null || param.ID == viewMode) return;
+            mc_ViewChgMode(param.ID);
+        }
+        protected void mc_ViewChgMode(int mode)
+        {
             try
             {
-                var param = e.Parameter as EpgCmdParam;
-                if (param == null || param.ID == viewMode) return;
-
                 //BlackWindowに状態を登録。
                 //mc.GetJumpTabItem()はコマンド集の機能による各ビューの共用メソッド。
-                BlackoutWindow.SelectedData = mc.GetJumpTabItem() ?? GetJumpTabItemNear() ?? (param.ID <= 1 ? GetJumpTabService() : null);
+                BlackoutWindow.SelectedData = mc.GetJumpTabItem() ?? GetJumpTabItemNear() ?? (mode <= 1 ? GetJumpTabService() : null);
 
-                viewFunc.ViewSetting(param.ID);
+                viewFunc.ViewSetting(mode);
             }
             catch (Exception ex) { MessageBox.Show(ex.ToString()); }
         }
