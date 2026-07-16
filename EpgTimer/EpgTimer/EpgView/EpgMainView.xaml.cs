@@ -36,6 +36,7 @@ namespace EpgTimer
 
         private bool updateEpgData = true;
         private bool updateReserveData = true;
+        private readonly Tuple<double, double, double> initialGridPGDefinitionValues;
 
         public EpgMainView(CustomEpgTabInfo setInfo, DateTime _baseTime)
         {
@@ -46,6 +47,10 @@ namespace EpgTimer
             setViewInfo = setInfo;
             epgProgramView.EpgSetting = setInfo.EpgSetting;
             baseTime = _baseTime;
+            initialGridPGDefinitionValues = new Tuple<double, double, double>(
+                grid_PG.ColumnDefinitions[0].Width.Value,
+                grid_PG.RowDefinitions[0].Height.Value,
+                grid_PG.RowDefinitions[1].Height.Value);
         }
 
         /// <summary>
@@ -594,6 +599,7 @@ namespace EpgTimer
             baseTime = time < CommonManager.Instance.DB.EventBaseTime ? time : DateTime.MaxValue;
             if (ReloadEpgData())
             {
+                MoveNowTime(false);
                 updateEpgData = false;
                 ReloadReserveViewItem();
                 updateReserveData = false;
@@ -746,18 +752,25 @@ namespace EpgTimer
             }
         }
 
-        private void UserControl_Loaded(object sender, RoutedEventArgs e)
+        private void AlignProgramViewPositionToDevicePixels()
         {
             var ps = PresentationSource.FromVisual(this);
             if (ps != null)
             {
                 //高DPI環境でProgramViewの位置を物理ピクセルに合わせるためにヘッダの幅を微調整する
                 //RootにUseLayoutRoundingを適用できれば不要だがボタン等が低品質になるので自力でやる
-                Point p = grid_PG.TransformToVisual(ps.RootVisual).Transform(new Point(40, 80));
+                Point p = grid_PG.TransformToVisual(ps.RootVisual).Transform(new Point(
+                    initialGridPGDefinitionValues.Item1,
+                    initialGridPGDefinitionValues.Item2 + initialGridPGDefinitionValues.Item3));
                 Matrix m = ps.CompositionTarget.TransformToDevice;
-                grid_PG.ColumnDefinitions[0].Width = new GridLength(40 + Math.Floor(p.X * m.M11) / m.M11 - p.X);
-                grid_PG.RowDefinitions[1].Height = new GridLength(40 + Math.Floor(p.Y * m.M22) / m.M22 - p.Y);
+                grid_PG.ColumnDefinitions[0].Width = new GridLength(initialGridPGDefinitionValues.Item1 + Math.Floor(p.X * m.M11) / m.M11 - p.X);
+                grid_PG.RowDefinitions[1].Height = new GridLength(initialGridPGDefinitionValues.Item3 + Math.Floor(p.Y * m.M22) / m.M22 - p.Y);
             }
+        }
+
+        private void UserControl_Loaded(object sender, RoutedEventArgs e)
+        {
+            AlignProgramViewPositionToDevicePixels();
         }
 
         private bool ReloadEpgData()
@@ -779,7 +792,6 @@ namespace EpgTimer
                 if (err == ErrCode.CMD_SUCCESS)
                 {
                     ReloadProgramViewItem(list, ActualBaseTime() > CommonManager.Instance.DB.EventMinTime, baseTime < CommonManager.Instance.DB.EventBaseTime);
-                    MoveNowTime(false);
                     return true;
                 }
                 if (IsVisible && err != ErrCode.CMD_ERR_BUSY)
@@ -799,8 +811,9 @@ namespace EpgTimer
             updateEpgData = true;
             if (IsVisible || (Settings.Instance.NgAutoEpgLoadNW == false && Settings.Instance.PrebuildEpg))
             {
-                if (ReloadEpgData() == true)
+                if (ReloadEpgData())
                 {
+                    MoveNowTime(false);
                     updateEpgData = false;
                     ReloadReserveViewItem();
                     updateReserveData = false;
@@ -829,7 +842,7 @@ namespace EpgTimer
         public void RefreshReserve()
         {
             updateReserveData = true;
-            if (this.IsVisible == true)
+            if (IsVisible)
             {
                 ReloadReserveViewItem();
                 updateReserveData = false;
@@ -1319,12 +1332,32 @@ namespace EpgTimer
             }
         }
 
+#if PER_MONITOR_DPI
+        protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
+        {
+            base.OnDpiChanged(oldDpi, newDpi);
+
+            //この段階では周辺オブジェクトの再配置が終わっていないため物理位置が変わるかもしれない
+            Dispatcher.BeginInvoke(DispatcherPriority.Render, new Action(() =>
+            {
+                AlignProgramViewPositionToDevicePixels();
+                if (IsVisible && ReloadEpgData())
+                {
+                    updateEpgData = false;
+                    ReloadReserveViewItem();
+                    updateReserveData = false;
+                }
+            }));
+        }
+#endif
+
         private void UserControl_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
-            if (this.IsVisible == false) { return; }
+            if (IsVisible == false) { return; }
 
             if (updateEpgData && ReloadEpgData())
             {
+                MoveNowTime(false);
                 updateEpgData = false;
                 ReloadReserveViewItem();
                 updateReserveData = false;

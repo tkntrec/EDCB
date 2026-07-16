@@ -24,11 +24,14 @@ namespace EpgTimer
     {
         private List<ReserveViewItem> reserveList = new List<ReserveViewItem>();
         private bool updateReserveData = true;
-
+        private readonly Tuple<double, double> initialGridContainerDefinitionValues;
 
         public TunerReserveMainView()
         {
             InitializeComponent();
+            initialGridContainerDefinitionValues = new Tuple<double, double>(
+                grid_container.ColumnDefinitions[0].Width.Value,
+                grid_container.RowDefinitions[0].Height.Value);
         }
 
         /// <summary>
@@ -301,18 +304,25 @@ namespace EpgTimer
             win.Show();
         }
 
-        private void UserControl_Loaded(object sender, RoutedEventArgs e)
+        private void AlignTunerReserveViewPositionToDevicePixels()
         {
             var ps = PresentationSource.FromVisual(this);
             if (ps != null)
             {
                 //高DPI環境でTunerReserveViewの位置を物理ピクセルに合わせるためにヘッダの幅を微調整する
                 //RootにUseLayoutRoundingを適用できれば不要だがボタン等が低品質になるので自力でやる
-                Point p = grid_container.TransformToVisual(ps.RootVisual).Transform(new Point(40, 40));
+                Point p = grid_container.TransformToVisual(ps.RootVisual).Transform(new Point(
+                    initialGridContainerDefinitionValues.Item1,
+                    initialGridContainerDefinitionValues.Item2));
                 Matrix m = ps.CompositionTarget.TransformToDevice;
-                grid_container.ColumnDefinitions[0].Width = new GridLength(40 + Math.Floor(p.X * m.M11) / m.M11 - p.X);
-                grid_container.RowDefinitions[0].Height = new GridLength(40 + Math.Floor(p.Y * m.M22) / m.M22 - p.Y);
+                grid_container.ColumnDefinitions[0].Width = new GridLength(initialGridContainerDefinitionValues.Item1 + Math.Floor(p.X * m.M11) / m.M11 - p.X);
+                grid_container.RowDefinitions[0].Height = new GridLength(initialGridContainerDefinitionValues.Item2 + Math.Floor(p.Y * m.M22) / m.M22 - p.Y);
             }
+        }
+
+        private void UserControl_Loaded(object sender, RoutedEventArgs e)
+        {
+            AlignTunerReserveViewPositionToDevicePixels();
         }
 
         /// <summary>
@@ -321,7 +331,7 @@ namespace EpgTimer
         public void Refresh()
         {
             updateReserveData = true;
-            if (this.IsVisible == true)
+            if (IsVisible)
             {
                 ReloadReserveViewItem();
                 updateReserveData = false;
@@ -466,6 +476,24 @@ namespace EpgTimer
                 MessageBox.Show(ex.ToString());
             }
         }
+
+#if PER_MONITOR_DPI
+        protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
+        {
+            base.OnDpiChanged(oldDpi, newDpi);
+
+            //この段階では周辺オブジェクトの再配置が終わっていないため物理位置が変わるかもしれない
+            Dispatcher.BeginInvoke(DispatcherPriority.Render, new Action(() =>
+            {
+                AlignTunerReserveViewPositionToDevicePixels();
+                if (IsVisible)
+                {
+                    ReloadReserveViewItem();
+                    updateReserveData = false;
+                }
+            }));
+        }
+#endif
 
         private void UserControl_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
