@@ -1061,6 +1061,21 @@ namespace EpgTimer
             NotifyLogWindow.UpdatesInfo();
         }
 
+#if PER_MONITOR_DPI
+        protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
+        {
+            base.OnDpiChanged(oldDpi, newDpi);
+
+            //この段階では周辺オブジェクトの再配置が終わっていないため物理位置が変わるかもしれない
+            Dispatcher.BeginInvoke(DispatcherPriority.Render, new Action(() =>
+            {
+                StatusManager.StatusNotifySet("表示DPI変更に伴う画面再構築を実行");
+                epgView.UpdateSetting();
+                tunerReserveView.UpdateInfo();
+            }));
+        }
+#endif
+
         public void RefreshMenu()
         {
             CommonManager.Instance.MM.ReloadWorkData();
