@@ -7,10 +7,10 @@
              d:DesignHeight="300" d:DesignWidth="300" xmlns:local="clr-namespace:EpgTimer.TunerReserveViewCtrl" PreviewMouseWheel="UserControl_PreviewMouseWheel">
     <ScrollViewer HorizontalScrollBarVisibility="Visible" IsTabStop="True" Name="scrollViewer" MouseEnter="scrollViewer_MouseEnter" MouseLeave="scrollViewer_MouseLeave" ScrollChanged="scrollViewer_ScrollChanged">
         <Canvas Name="canvas" HorizontalAlignment="Left" VerticalAlignment="Top">
-            <local:TunerReservePanel x:Name="reserveViewPanel" Background="DarkGray" MouseMove="reserveViewPanel_MouseMove" MouseLeftButtonDown="reserveViewPanel_MouseLeftButtonDown" MouseLeftButtonUp="reserveViewPanel_MouseLeftButtonUp" HorizontalAlignment="Left" VerticalAlignment="Top" MouseRightButtonUp="reserveViewPanel_MouseRightButtonUp" />
+            <local:TunerReservePanel Background="{StaticResource AppTunerReserveBackgroundBrush}" HorizontalAlignment="Left" VerticalAlignment="Top" x:Name="reserveViewPanel" MouseLeftButtonDown="reserveViewPanel_MouseLeftButtonDown" MouseLeftButtonUp="reserveViewPanel_MouseLeftButtonUp" MouseMove="reserveViewPanel_MouseMove" MouseRightButtonUp="reserveViewPanel_MouseRightButtonUp" />
             <Popup AllowsTransparency="True" MouseLeftButtonDown="toolTip_MouseLeftButtonDown" MouseRightButtonDown="toolTip_MouseRightButtonDown" Name="toolTip" Placement="MousePoint" PopupAnimation="Fade">
-                <Border Background="DarkGray">
-                    <TextBlock Margin="2" MaxWidth="400" Name="toolTipTextBlock" TextWrapping="Wrap" />
+                <Border Style="{StaticResource AppEpgToolTipBorderStyle}">
+                    <TextBlock Name="toolTipTextBlock" Style="{StaticResource AppEpgToolTipTextBlockStyle}" />
                 </Border>
             </Popup>
         </Canvas>

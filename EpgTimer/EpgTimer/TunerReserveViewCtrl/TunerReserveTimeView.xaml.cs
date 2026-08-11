@@ -29,49 +29,56 @@ namespace EpgTimer.TunerReserveViewCtrl
             stackPanel_time.Children.Clear();
         }
 
-        public void SetTime(List<DateTime> timeList, bool NeedTimeOnly)
+        public void SetTime(List<DateTime> timeList, double heightPerHour)
         {
             stackPanel_time.Children.Clear();
-            double height = Settings.Instance.EpgSettingList[0].MinHeight;
-            if (60 * height > 4)
+            if (heightPerHour > 2)
             {
                 foreach (DateTime time in timeList)
                 {
-                    TextBlock item = new TextBlock();
-                    item.Height = (60 * height) - 4;
-
-                    string text = "";
-                    if (time.Hour % 3 == 0 || NeedTimeOnly == true)
+                    // 高さ合わせのため上下に同じものを置く
+                    var items = new TextBlock[2];
+                    for (int i = 0; i < 2; i++)
                     {
-                        text += time.ToString("M\\/d\r\n");
-                        if (height >= 1)
+                        items[i] = new TextBlock() { Style = (Style)FindResource("AppTunerReserveHeaderDateTextBlockStyle") };
+                        items[i].Inlines.Add(new Run(time.ToString("M\\/d")));
+                        if (heightPerHour >= 60)
                         {
-                            text += time.ToString("(ddd)\r\n");
-                            if (height >= 1.5)
+                            var weekday = new Run(time.ToString("ddd"))
                             {
-                                text += "\r\n";
-                            }
+                                Style = (Style)FindResource(
+                                    time.DayOfWeek == DayOfWeek.Saturday ? "AppTunerReserveHeaderSaturdayRunStyle" :
+                                    time.DayOfWeek == DayOfWeek.Sunday ? "AppTunerReserveHeaderSundayRunStyle" : "AppTunerReserveHeaderDayRunStyle")
+                            };
+                            items[i].Inlines.Add(new LineBreak());
+                            items[i].Inlines.Add(new Run("("));
+                            items[i].Inlines.Add(weekday);
+                            items[i].Inlines.Add(new Run(")"));
                         }
                     }
-                    else
+                    var grid = new Grid()
                     {
-                        if (height >= 1)
-                        {
-                            text += "\r\n";
-                            if (height >= 1.5)
-                            {
-                                text += "\r\n\r\n";
-                            }
-                        }
-                    }
-                    item.Text = text + time.Hour;
-                    item.Foreground = time.DayOfWeek == DayOfWeek.Saturday ? Brushes.Blue :
-                                      time.DayOfWeek == DayOfWeek.Sunday ? Brushes.Red : Brushes.Black;
-                    item.Margin = new Thickness(2, 2, 2, 2);
-                    item.Background = Brushes.AliceBlue;
-                    item.TextAlignment = TextAlignment.Center;
-                    item.FontSize = 12;
-                    stackPanel_time.Children.Add(item);
+                        Background = (Brush)FindResource("AppTunerReserveHeaderTextBackgroundBrush"),
+                        Height = heightPerHour - 2,
+                        Margin = new Thickness(2, 1, 2, 1)
+                    };
+                    grid.RowDefinitions.Add(new RowDefinition() { Height = GridLength.Auto });
+                    grid.RowDefinitions.Add(new RowDefinition());
+                    grid.RowDefinitions.Add(new RowDefinition() { Height = GridLength.Auto });
+                    grid.RowDefinitions.Add(new RowDefinition());
+                    grid.RowDefinitions.Add(new RowDefinition() { Height = GridLength.Auto });
+                    grid.Children.Add(items[0]);
+                    items[1].Visibility = Visibility.Hidden;
+                    Grid.SetRow(items[1], 4);
+                    grid.Children.Add(items[1]);
+                    var hour = new TextBlock()
+                    {
+                        Style = (Style)FindResource("AppTunerReserveHeaderHourTextBlockStyle"),
+                        Text = time.Hour.ToString()
+                    };
+                    Grid.SetRow(hour, 2);
+                    grid.Children.Add(hour);
+                    stackPanel_time.Children.Add(grid);
                 }
             }
         }

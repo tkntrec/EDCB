@@ -469,7 +469,7 @@ namespace EpgTimer
                     }
                 }
 
-                tunerReserveTimeView.SetTime(timeList, true);
+                tunerReserveTimeView.SetTime(timeList, 60 * Settings.Instance.EpgSettingList[0].MinHeight);
                 tunerReserveNameView.SetTunerInfo(tunerList);
                 tunerReserveView.SetReserveList(reserveList,
                     leftPos,

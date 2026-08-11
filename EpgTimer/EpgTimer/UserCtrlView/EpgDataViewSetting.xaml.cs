@@ -51,10 +51,27 @@ namespace EpgTimer
                     }
                 }
             }
+
+            // listBox_jyanruとlistBox_jyanruViewを最適な幅にするため
+            string refStr = "";
+            string refView = "";
             foreach (ushort id in CommonManager.Instance.ContentKindList)
             {
-                listBox_jyanru.Items.Add(new ContentKindInfo() { Nibble1 = (byte)(id >> 8), Nibble2 = (byte)id });
+                var info = new ContentKindInfo() { Nibble1 = (byte)(id >> 8), Nibble2 = (byte)id };
+                listBox_jyanru.Items.Add(info);
+                string toStr = info.ToString();
+                if (toStr.Length > refStr.Length)
+                {
+                    refStr = toStr;
+                }
+                string view = info.ListBoxView;
+                if (view.Length > refView.Length)
+                {
+                    refView = view;
+                }
             }
+            listBox_jyanru_ref.Items.Add(refStr + "Aあ");
+            listBox_jyanruView_ref.Items.Add(refView);
         }
 
         /// <summary>
@@ -200,7 +217,7 @@ namespace EpgTimer
         }
 
         /// <summary>
-        /// 映像のみ全追加
+        /// 映像のみ追加
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -397,10 +414,10 @@ namespace EpgTimer
                     ushort onid = (ushort)(info.Item2 >> 32);
                     ushort tsid = (ushort)(info.Item2 >> 16);
                     ushort sid = (ushort)info.Item2;
-                    text = (ChSet5.Instance.ChList.ContainsKey(info.Item2) ? ChSet5.Instance.ChList[info.Item2].NetworkName : "???") + "\r\n";
-                    text += "OriginalNetworkID : " + onid + " (0x" + onid.ToString("X4") + ")\r\n";
-                    text += "TransportStreamID : " + tsid + " (0x" + tsid.ToString("X4") + ")\r\n";
-                    text += "ServiceID : " + sid + " (0x" + sid.ToString("X4") + ")" + (ChSet5.IsCS3(onid) ? " " + (sid & 0x3FF) + "ch" : "");
+                    text = (ChSet5.Instance.ChList.ContainsKey(info.Item2) ? ChSet5.Instance.ChList[info.Item2].NetworkName : "???") + "\r\n" +
+                           "OriginalNetworkID: " + onid + "(0x" + onid.ToString("X4") + ")\r\n" +
+                           "TransportStreamID: " + tsid + "(0x" + tsid.ToString("X4") + ")\r\n" +
+                           "ServiceID: " + sid + "(0x" + sid.ToString("X4") + ")" + (ChSet5.IsCS3(onid) ? " " + (sid & 0x3FF) + "ch" : "");
                 }
             }
             (sender == listBox_serviceView ? textBox_serviceView1 : textBox_serviceView2).Text = text;

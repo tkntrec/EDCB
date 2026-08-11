@@ -20,6 +20,7 @@ namespace EpgTimer
     public partial class AddReserveEpgWindow : Window
     {
         private EpgEventInfo eventInfo = null;
+        private int pendingMode = 0;
 
         public AddReserveEpgWindow()
         {
@@ -28,19 +29,26 @@ namespace EpgTimer
 
         public void SetOpenMode(int mode)
         {
-            tabControl.SelectedIndex = mode == 0 && tabItem_reserve.IsEnabled ? 0 : 1;
+            if (pendingMode >= 0)
+            {
+                pendingMode = mode == 0 && tabItem_reserve.IsEnabled ? 0 : 1;
+            }
+            else
+            {
+                tabControl.SelectedIndex = mode == 0 && tabItem_reserve.IsEnabled ? 0 : 1;
+            }
         }
 
         public int GetOpenMode()
         {
-            return tabControl.SelectedIndex == 0 ? 0 : 1;
+            return pendingMode >= 0 ? pendingMode : tabControl.SelectedIndex == 0 ? 0 : 1;
         }
 
         public void SetReservable(bool reservable)
         {
             tabItem_reserve.IsEnabled = reservable;
             button_add_reserve.IsEnabled = reservable;
-            SetOpenMode(tabControl.SelectedIndex);
+            SetOpenMode(GetOpenMode());
         }
 
         public void SetEventInfo(EpgEventInfo eventData)
@@ -55,6 +63,18 @@ namespace EpgTimer
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
+            // 初期ウィンドウ高さをモード0タブの高さに適応させるため
+            if (SizeToContent != SizeToContent.Manual)
+            {
+                Height = ActualHeight;
+                SizeToContent = SizeToContent.Manual;
+            }
+            if (pendingMode >= 0)
+            {
+                int mode = pendingMode;
+                pendingMode = -1;
+                SetOpenMode(mode);
+            }
             if (tabControl.SelectedItem != null)
             {
                 ((TabItem)tabControl.SelectedItem).Focus();

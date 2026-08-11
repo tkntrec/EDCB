@@ -21,6 +21,7 @@ namespace EpgTimer
     {
         private ReserveData reserveInfo = null;
         private EpgEventInfo eventInfo = null;
+        private int pendingMode = 0;
 
         public ChgReserveWindow()
         {
@@ -51,12 +52,19 @@ namespace EpgTimer
 
         public void SetOpenMode(int mode)
         {
-            tabControl.SelectedIndex = mode == 0 ? 0 : 1;
+            if (pendingMode >= 0)
+            {
+                pendingMode = mode == 0 ? 0 : 1;
+            }
+            else
+            {
+                tabControl.SelectedIndex = mode == 0 ? 0 : 1;
+            }
         }
 
         public int GetOpenMode()
         {
-            return tabControl.SelectedIndex == 0 ? 0 : 1;
+            return pendingMode >= 0 ? pendingMode : tabControl.SelectedIndex == 0 ? 0 : 1;
         }
 
         /// <summary>
@@ -128,6 +136,18 @@ namespace EpgTimer
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
+            // 初期ウィンドウ高さをモード0タブの高さに適応させるため
+            if (SizeToContent != SizeToContent.Manual)
+            {
+                Height = ActualHeight;
+                SizeToContent = SizeToContent.Manual;
+            }
+            if (pendingMode >= 0)
+            {
+                int mode = pendingMode;
+                pendingMode = -1;
+                SetOpenMode(mode);
+            }
             if (tabControl.SelectedItem != null)
             {
                 ((TabItem)tabControl.SelectedItem).Focus();

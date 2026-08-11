@@ -33,15 +33,18 @@ namespace EpgTimer.EpgView
             stackPanel_service.Children.Clear();
         }
 
-        public void SetService(List<EpgServiceInfo> serviceList, double serviceWidth, Brush serviceBrush, Brush textBrush, bool isClickLeft)
+        public void SetService(List<EpgServiceInfo> serviceList, double serviceWidth, Brush serviceBrush, bool isLight, bool isClickLeft)
         {
             stackPanel_service.Children.Clear();
             uint tickCountToPreventAccidentalClick = (uint)Environment.TickCount;
 
             foreach (EpgServiceInfo info in serviceList)
             {
-                TextBlock item = new TextBlock();
-                item.Text = info.service_name;
+                var item = new TextBlock()
+                {
+                    Style = (Style)FindResource(isLight ? "AppEpgServiceHeaderLightBackgroundTextBlockStyle" : "AppEpgServiceHeaderTextBlockStyle"),
+                    Text = info.service_name
+                };
                 if (info.remote_control_key_id != 0)
                 {
                     item.Text += "\r\n" + info.remote_control_key_id.ToString();
@@ -54,19 +57,21 @@ namespace EpgTimer.EpgView
                 {
                     item.Text += "\r\n" + info.network_name + " " + info.SID.ToString();
                 }
-                item.Width = serviceWidth - 2;
-                item.TextAlignment = TextAlignment.Center;
-                item.FontSize = 12;
-                item.Foreground = textBrush;
-                // 単にCenterだとやや重い感じになるので上げる
-                item.Padding = new Thickness(0, 0, 0, 4);
-                item.VerticalAlignment = VerticalAlignment.Center;
-                var stack = new StackPanel();
-                stack.Orientation = Orientation.Horizontal;
-                stack.Margin = new Thickness(1, 1, 1, 1);
-                stack.Background = serviceBrush;
+                Grid.SetColumn(item, 1);
+                Grid.SetRowSpan(item, 2);
+                var grid = new Grid()
+                {
+                    Background = serviceBrush,
+                    Margin = new Thickness(1, 1, 1, 1),
+                    Width = serviceWidth - 2
+                };
+                grid.ColumnDefinitions.Add(new ColumnDefinition() { Width = GridLength.Auto });
+                grid.ColumnDefinitions.Add(new ColumnDefinition());
+                grid.RowDefinitions.Add(new RowDefinition());
+                grid.RowDefinitions.Add(new RowDefinition());
+
                 DispatcherTimer clickTimer = null;
-                stack.MouseLeftButtonDown += (sender, e) =>
+                grid.MouseLeftButtonDown += (sender, e) =>
                 {
                     if (e.ClickCount == 1 && clickTimer == null && isClickLeft && Click != null && (uint)e.Timestamp - tickCountToPreventAccidentalClick > 500)
                     {
@@ -97,7 +102,7 @@ namespace EpgTimer.EpgView
                 };
                 if (!isClickLeft)
                 {
-                    stack.MouseRightButtonUp += (sender, e) =>
+                    grid.MouseRightButtonUp += (sender, e) =>
                     {
                         if (Click != null && (uint)e.Timestamp - tickCountToPreventAccidentalClick > 500)
                         {
@@ -105,9 +110,9 @@ namespace EpgTimer.EpgView
                         }
                     };
                 }
-                stack.Tag = info;
-                stack.Children.Add(item);
-                stackPanel_service.Children.Add(stack);
+                grid.Tag = info;
+                grid.Children.Add(item);
+                stackPanel_service.Children.Add(grid);
             }
 
             RefreshLogo();
@@ -115,32 +120,23 @@ namespace EpgTimer.EpgView
 
         public void RefreshLogo()
         {
-            foreach (StackPanel stack in stackPanel_service.Children)
+            foreach (Grid grid in stackPanel_service.Children)
             {
-                Image logoItem = stack.Children.OfType<Image>().FirstOrDefault();
-                TextBlock item = stack.Children.OfType<TextBlock>().First();
-                double serviceWidth = item.Width + (logoItem != null ? logoItem.Width + logoItem.Margin.Left : 0) + 2;
+                Image logoItem = grid.Children.OfType<Image>().FirstOrDefault();
                 if (logoItem != null)
                 {
-                    stack.Children.Remove(logoItem);
+                    grid.Children.Remove(logoItem);
                 }
-
-                var info = (EpgServiceInfo)stack.Tag;
+                var info = (EpgServiceInfo)grid.Tag;
                 ChSet5Item ch;
-                if (ChSet5.Instance.ChList.TryGetValue(CommonManager.Create64Key(info.ONID, info.TSID, info.SID), out ch) &&
-                    ch.Logo != null && serviceWidth >= 30 + 1 + 2)
+                if (ChSet5.Instance.ChList.TryGetValue(CommonManager.Create64Key(info.ONID, info.TSID, info.SID), out ch) && ch.Logo != null)
                 {
-                    logoItem = new Image();
-                    logoItem.Source = ch.Logo;
-                    logoItem.Width = 30;
-                    logoItem.VerticalAlignment = VerticalAlignment.Top;
-                    logoItem.Margin = new Thickness(1, 2, 0, 0);
-                    stack.Children.Insert(0, logoItem);
-                    item.Width = serviceWidth - logoItem.Width - logoItem.Margin.Left - 2;
-                }
-                else
-                {
-                    item.Width = serviceWidth - 2;
+                    grid.Children.Insert(0, new Image()
+                    {
+                        Margin = new Thickness(1, 2, 0, 0),
+                        Source = ch.Logo,
+                        VerticalAlignment = VerticalAlignment.Top
+                    });
                 }
             }
         }

@@ -43,37 +43,20 @@ namespace EpgTimer.EpgView
                 {
                     var item = new TextBlock()
                     {
-                        FontSize = 12,
-                        FontWeight = FontWeights.Bold,
-                        // やや重い感じになるのでbottomをつける
-                        Padding = new Thickness(2, 0, 2, 2),
+                        Style = (Style)FindResource(
+                            time.DayOfWeek == DayOfWeek.Saturday ? "AppEpgWeekDayHeaderSaturdayTextBlockStyle" :
+                            time.DayOfWeek == DayOfWeek.Sunday ? "AppEpgWeekDayHeaderSundayTextBlockStyle" : "AppEpgWeekDayHeaderTextBlockStyle"),
                         Text = time.ToString("M\\/d\r\n(ddd)"),
-                        TextAlignment = TextAlignment.Center
                     };
                     var border = new Border()
                     {
-                        BorderBrush = Brushes.DarkRed,
                         BorderThickness = new Thickness(),
                         Child = item,
-                        HorizontalAlignment = HorizontalAlignment.Center,
-                        VerticalAlignment = VerticalAlignment.Center
+                        Style = (Style)FindResource("AppEpgWeekDayHeaderTextBorderStyle"),
                     };
-                    Color backgroundColor;
-                    if (time.DayOfWeek == DayOfWeek.Saturday)
-                    {
-                        item.Foreground = Brushes.DarkBlue;
-                        backgroundColor = Colors.Lavender;
-                    }
-                    else if (time.DayOfWeek == DayOfWeek.Sunday)
-                    {
-                        item.Foreground = Brushes.DarkRed;
-                        backgroundColor = Colors.MistyRose;
-                    }
-                    else
-                    {
-                        item.Foreground = Brushes.Black;
-                        backgroundColor = Colors.White;
-                    }
+                    var backgroundColor = (Color)FindResource(
+                        time.DayOfWeek == DayOfWeek.Saturday ? "AppEpgWeekDayHeaderSaturdayTextBackgroundColor" :
+                        time.DayOfWeek == DayOfWeek.Sunday ? "AppEpgWeekDayHeaderSundayTextBackgroundColor" : "AppEpgWeekDayHeaderTextBackgroundColor");
                     var gridItem = new UniformGrid();
                     if (gradationHeader == false)
                     {

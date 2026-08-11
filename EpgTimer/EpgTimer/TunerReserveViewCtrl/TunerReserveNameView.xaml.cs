@@ -34,19 +34,18 @@ namespace EpgTimer.TunerReserveViewCtrl
             stackPanel_tuner.Children.Clear();
             foreach (TunerNameViewItem info in tunerInfo)
             {
-                TextBlock item = new TextBlock();
-                item.Text = info.TunerInfo.tunerName;
-                if (info.TunerInfo.tunerID != 0xFFFFFFFF)
+                var grid = new Grid()
                 {
-                    item.Text += "\r\nID: " + info.TunerInfo.tunerID.ToString("X8");
-                }
-                item.Width = info.Width - 4;
-                item.Margin = new Thickness(2, 2, 2, 2);
-                item.Background = Brushes.AliceBlue;
-                item.Foreground = Brushes.Black;
-                item.TextAlignment = TextAlignment.Center;
-                item.FontSize = 12;
-                stackPanel_tuner.Children.Add(item);
+                    Background = (Brush)FindResource("AppTunerReserveHeaderTextBackgroundBrush"),
+                    Margin = new Thickness(1, 2, 1, 2),
+                    Width = info.Width - 2
+                };
+                grid.Children.Add(new TextBlock()
+                {
+                    Style = (Style)FindResource("AppTunerReserveHeaderTextBlockStyle"),
+                    Text = info.TunerInfo.tunerName + (info.TunerInfo.tunerID != 0xFFFFFFFF ? "\r\nID: " + info.TunerInfo.tunerID.ToString("X8") : "")
+                });
+                stackPanel_tuner.Children.Add(grid);
             }
         }
     }

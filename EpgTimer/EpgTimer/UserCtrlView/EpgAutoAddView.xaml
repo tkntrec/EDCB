@@ -1,10 +1,7 @@
 ﻿<UserControl x:Class="EpgTimer.EpgAutoAddView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             mc:Ignorable="d" 
-             d:DesignHeight="400" d:DesignWidth="300" IsVisibleChanged="UserControl_IsVisibleChanged" PreviewKeyDown="UserControl_PreviewKeyDown">
+             IsVisibleChanged="UserControl_IsVisibleChanged" PreviewKeyDown="UserControl_PreviewKeyDown">
     <UserControl.Resources>
         <ContextMenu x:Key="itemHeader">
             <MenuItem Header="Andキーワード" Name="AndKey" IsCheckable="True" Click="headerSelect_Click" />
@@ -49,14 +46,14 @@
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="auto" />
         </Grid.ColumnDefinitions>
-        <ListView Name="listView_key" Margin="10" SelectionMode="Extended" ContextMenu="{DynamicResource itemHeader}" ContextMenuOpening="ContextMenu_Header_ContextMenuOpening" GridViewColumnHeader.Click="GridViewColumnHeader_Click" MouseEnter="listView_key_MouseEnter" MouseLeave="listView_key_MouseLeave">
-            <ListView.Resources>
+        <ListView ContextMenu="{DynamicResource itemHeader}" Margin="{StaticResource AppEdgeMargin}" Name="listView_key" SelectionMode="Extended" ContextMenuOpening="ContextMenu_Header_ContextMenuOpening" GridViewColumnHeader.Click="GridViewColumnHeader_Click" MouseEnter="listView_key_MouseEnter" MouseLeave="listView_key_MouseLeave">
+            <ListView.ItemContainerStyle>
                 <Style TargetType="ListViewItem">
                     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                     <Setter Property="ToolTipService.ShowDuration" Value="20000" />
                     <Setter Property="ToolTip" Value="{Binding ToolTipView}"/>
                     <Setter Property="ContextMenu" Value="{DynamicResource itemMenu}" />
-                    <Setter Property="BorderThickness" Value="5,0,0,1" />
+                    <Setter Property="BorderThickness" Value="{StaticResource AppListViewItemBorderThickness}" />
                     <Setter Property="BorderBrush" Value="{Binding BorderBrush}" />
                     <EventSetter Event="ContextMenuOpening" Handler="listView_key_ContextMenuOpening" />
                     <EventSetter Event="MouseDoubleClick" Handler="listView_key_MouseDoubleClick"/>
@@ -73,7 +70,7 @@
                         </MultiTrigger>
                     </Style.Triggers>
                 </Style>
-            </ListView.Resources>
+            </ListView.ItemContainerStyle>
             <ListView.View>
                 <GridView x:Name="gridView_key">
                     <GridViewColumn>
@@ -194,15 +191,18 @@
                 </GridView>
             </ListView.View>
         </ListView>
-        <StackPanel Grid.Column="1" Name="stackPanel_button" Width="110">
-            <Button Content="追加" Height="23" Margin="0,10,0,5" Click="button_add_Click" />
-            <Button Content="削除" Height="23" Margin="0,5,0,5" ToolTip="Delete" Click="button_del_Click" />
-            <Button Content="予約ごと削除" Height="23" Margin="0,5,0,5" Click="button_del2_Click" />
-            <Button Content="↑" Height="23" Margin="0,20,0,5" ToolTip="Ctrl + ↑" Click="button_up_Click" />
-            <Button Content="↓" Height="23" Margin="0,5,0,10" ToolTip="Ctrl + ↓" Click="button_down_Click" />
-            <Button Content="並びを保存" Height="23" Name="button_saveItemOrder" ToolTip="Ctrl + S" Click="button_saveItemOrder_Click" IsEnabled="False" />
-            <TextBlock Height="55" Name="textBox_ItemOrderStatus" Text="並びが変更されましたが保存されていません。" TextWrapping="Wrap" />
-            <Button Content="並びを元に戻す" Height="23" Name="button_reloadItem" ToolTip="Ctrl + Z" Click="button_reloadItem_Click" IsEnabled="False" />
+        <!-- ManualAutoAddViewとの幅合わせに注意 -->
+        <Button Content="並びを元に戻す" Grid.ColumnSpan="2" HorizontalAlignment="Left" Name="button_side_ref" Style="{StaticResource AppSideMenuButtonStyle}" VerticalAlignment="Top" Visibility="Hidden" />
+        <StackPanel Grid.Column="1" Margin="{StaticResource AppEdgeMarginT}" Name="stackPanel_button">
+            <Button Content="追加" Style="{StaticResource AppSideMenuButtonStyle}" Click="button_add_Click" />
+            <Button Content="削除" Style="{StaticResource AppSideMenuButtonStyle}" ToolTip="Delete" Click="button_del_Click" />
+            <Button Content="予約ごと削除" Style="{StaticResource AppSideMenuButtonStyle}" Click="button_del2_Click" />
+            <FrameworkElement Height="{StaticResource AppSideMenuButtonSeparatorHeight}" />
+            <Button Content="↑" Style="{StaticResource AppSideMenuButtonStyle}" ToolTip="Ctrl + ↑" Click="button_up_Click" />
+            <Button Content="↓" Style="{StaticResource AppSideMenuButtonStyle}" ToolTip="Ctrl + ↓" Click="button_down_Click" />
+            <Button Content="並びを保存" IsEnabled="False" Name="button_saveItemOrder" Style="{StaticResource AppSideMenuButtonStyle}" ToolTip="Ctrl + S" Click="button_saveItemOrder_Click" />
+            <Button Content="並びを元に戻す" IsEnabled="False" Name="button_reloadItem" Style="{StaticResource AppSideMenuButtonStyle}" ToolTip="Ctrl + Z" Click="button_reloadItem_Click" />
+            <TextBlock MaxWidth="{Binding ActualWidth, ElementName=button_side_ref}" Name="textBox_ItemOrderStatus" Text="並びが変更されましたが保存されていません。" TextWrapping="Wrap" />
         </StackPanel>
     </Grid>
 </UserControl>

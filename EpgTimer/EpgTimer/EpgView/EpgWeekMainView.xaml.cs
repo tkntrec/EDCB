@@ -959,6 +959,9 @@ namespace EpgTimer
                         }
                     }
                 }
+
+                //comboBox_serviceを最適な幅にするため
+                string refStr = "";
                 for (int i = 0; i < viewIDList.Count;)
                 {
                     //TSIDが同じでSIDが逆順のときは正順にする
@@ -983,11 +986,17 @@ namespace EpgTimer
                                 selectIndex = comboBox_service.Items.Count - 1;
                                 selectID = id;
                             }
+                            if (((string)item.Content).Length > refStr.Length)
+                            {
+                                refStr = (string)item.Content;
+                            }
                         }
                     }
                     i = skip;
                 }
                 comboBox_service.SelectedIndex = Math.Min(selectIndex, comboBox_service.Items.Count - 1);
+                comboBox_service_ref.Items.Add(refStr + string.Concat(Enumerable.Repeat("Aあ", refStr.Length / 3 + 1)));
+                comboBox_service_ref.SelectedIndex = 0;
 
                 //UpdateProgramView();
                 button_prev.IsEnabled = enablePrev;

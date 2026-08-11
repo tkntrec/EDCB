@@ -56,24 +56,20 @@ namespace EpgTimer.EpgView
                     Button day = new Button();
                     day.Content = new Border()
                     {
-                        BorderBrush = Brushes.Red,
                         BorderThickness = new Thickness(),
                         Child = new TextBlock()
                         {
                             Padding = new Thickness(2, 0, 2, 0),
                             Text = itemTime.ToString("M\\/d(ddd)"),
                             VerticalAlignment = VerticalAlignment.Center
-                        }
+                        },
+                        Style = (Style)FindResource("AppEpgDateButtonTextBorderStyle")
                     };
                     day.FontWeight = FontWeights.Normal;
-                    if (itemTime.DayOfWeek == DayOfWeek.Saturday)
-                    {
-                        day.Foreground = Brushes.Blue;
-                    }
-                    else if (itemTime.DayOfWeek == DayOfWeek.Sunday)
-                    {
-                        day.Foreground = Brushes.Red;
-                    }
+                    day.Foreground = (Brush)FindResource(
+                        itemTime.DayOfWeek == DayOfWeek.Saturday ? "AppEpgDateSaturdayButtonForegroundBrush" :
+                        itemTime.DayOfWeek == DayOfWeek.Sunday ? "AppEpgDateSundayButtonForegroundBrush" : "AppEpgDateButtonForegroundBrush");
+                    day.Style = (Style)FindResource("AppEpgButtonStyle");
                     day.Tag = itemTime;
                     day.Click += button_time_Click;
                     uniformGrid_day.Children.Add(day);
@@ -82,13 +78,14 @@ namespace EpgTimer.EpgView
                     {
                         Button hour = new Button();
                         hour.Content = i.ToString();
+                        hour.Style = (Style)FindResource("AppEpgButtonStyle");
                         hour.Tag = itemTime.AddHours(i);
                         hour.Click += button_time_Click;
                         uniformGrid_time.Children.Add(hour);
                     }
                 }
-                columnDefinition.MinWidth = uniformGrid_time.Children.Count * 15;
-                columnDefinition.MaxWidth = uniformGrid_time.Children.Count * 40;
+                columnDefinition.MinWidth = uniformGrid_time.Children.Count * columnDefinition_prev_next.Width.Value * 3 / 8;
+                columnDefinition.MaxWidth = uniformGrid_time.Children.Count * columnDefinition_prev_next.Width.Value;
             }
         }
 

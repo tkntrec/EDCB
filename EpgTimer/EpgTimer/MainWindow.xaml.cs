@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows;
@@ -10,7 +11,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Windows.Threading;
 using System.Threading; //紅
 
@@ -32,7 +32,7 @@ namespace EpgTimer
 
         public MainWindow()
         {
-            string appName = System.IO.Path.GetFileNameWithoutExtension(SettingPath.ModuleName);
+            string appName = Path.GetFileNameWithoutExtension(SettingPath.ModuleName);
             CommonManager.Instance.NWMode = appName.StartsWith("EpgTimerNW", StringComparison.OrdinalIgnoreCase);
 
             Settings.LoadFromXmlFile(CommonManager.Instance.NWMode);
@@ -50,9 +50,31 @@ namespace EpgTimer
                 Environment.Exit(0);
             }
 
-            if (Settings.AppResourceDictionary != null)
+            if (Settings.Instance.NoStyle == 0)
             {
-                Application.Current.Resources.MergedDictionaries.Add(Settings.AppResourceDictionary);
+                //アプリのResourceDictionaryをクリア
+                Application.Current.Resources.MergedDictionaries.Clear();
+                try
+                {
+                    string path = Path.Combine(SettingPath.ModulePath, SettingPath.ModuleName + ".rd.xaml");
+                    if (File.Exists(path))
+                    {
+                        //ResourceDictionaryを定義したファイルがあるので本体にマージする
+                        Application.Current.Resources.MergedDictionaries.Add((ResourceDictionary)System.Windows.Markup.XamlReader.Load(System.Xml.XmlReader.Create(path)));
+                    }
+                    else
+                    {
+                        //既定のテーマ(Aero)をマージする
+                        Application.Current.Resources.MergedDictionaries.Add((ResourceDictionary)Application.LoadComponent(
+                            new Uri("/PresentationFramework.Aero, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35;component/themes/aero.normalcolor.xaml", UriKind.Relative)));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.ToString());
+                }
+                //アプリのResourceDictionaryをここでマージ
+                Application.Current.Resources.MergedDictionaries.Add((ResourceDictionary)Application.LoadComponent(new Uri("/App.rd.xaml", UriKind.Relative)));
             }
 
             //オリジナルのmutex名をもつEpgTimerか
@@ -65,8 +87,8 @@ namespace EpgTimer
                 catch (WaitHandleCannotBeOpenedException)
                 {
                     //二重起動抑止Mutexが存在しないのでEpgTimerSrvがあれば起動する
-                    string exePath = System.IO.Path.Combine(SettingPath.ModulePath, "EpgTimerSrv.exe");
-                    if (System.IO.File.Exists(exePath))
+                    string exePath = Path.Combine(SettingPath.ModulePath, "EpgTimerSrv.exe");
+                    if (File.Exists(exePath))
                     {
                         try
                         {
@@ -230,7 +252,7 @@ namespace EpgTimer
                         byte[] binData;
                         if (cmd.SendFileCopy("ChSet5.txt", out binData) == ErrCode.CMD_SUCCESS)
                         {
-                            connected = ChSet5.LoadWithStreamReader(new System.IO.MemoryStream(binData));
+                            connected = ChSet5.LoadWithStreamReader(new MemoryStream(binData));
                             break;
                         }
                     }
@@ -246,7 +268,7 @@ namespace EpgTimer
             {
                 byte[] binData;
                 if (cmd.SendFileCopy("ChSet5.txt", out binData) != ErrCode.CMD_SUCCESS ||
-                    ChSet5.LoadWithStreamReader(new System.IO.MemoryStream(binData)) == false)
+                    ChSet5.LoadWithStreamReader(new MemoryStream(binData)) == false)
                 {
                     MessageBox.Show("EpgTimerSrvとの接続に失敗しました。");
                     return true;
@@ -258,9 +280,16 @@ namespace EpgTimer
 
         private void ResetButtonView()
         {
-            foreach (Button button in stackPanel_button.Children)
+            for (int i = 0; i < stackPanel_button.Children.Count; i++)
             {
-                button.Visibility = Visibility.Collapsed;
+                if (stackPanel_button.Children[i] is Button)
+                {
+                    stackPanel_button.Children[i].Visibility = Visibility.Collapsed;
+                }
+                else
+                {
+                    stackPanel_button.Children.RemoveAt(i--);
+                }
             }
             for (int i = 0; i < tabControl_main.Items.Count; i++)
             {
@@ -271,16 +300,19 @@ namespace EpgTimer
                     i--;
                 }
             }
-            int space = 0;
             foreach (string info in Settings.Instance.ViewButtonList)
             {
                 if (info == "（空白）")
                 {
-                    space += 15;
+                    if (Settings.Instance.ViewButtonShowAsTab == false)
+                    {
+                        var separator = new FrameworkElement() { Width = (double)FindResource("AppMainWindowButtonSeparatorWidth") };
+                        stackPanel_button.Children.Add(separator);
+                    }
                 }
                 else
                 {
-                    var button = stackPanel_button.Children.Cast<Button>().FirstOrDefault(a => (string)(a.Tag ?? a.Content) == info);
+                    var button = stackPanel_button.Children.OfType<Button>().FirstOrDefault(a => (string)(a.Tag ?? a.Content) == info);
                     if (button != null)
                     {
                         if (info == "カスタム１")
@@ -316,18 +348,10 @@ namespace EpgTimer
                             //必要なボタンだけ可視化
                             stackPanel_button.Children.Remove(button);
                             stackPanel_button.Children.Add(button);
-                            button.Margin = new Thickness(space, button.Margin.Top, button.Margin.Right, button.Margin.Bottom);
                             button.Visibility = Visibility.Visible;
                         }
-                        space = 0;
                     }
                 }
-            }
-            if (Settings.Instance.ViewButtonList.Contains("検索") == false)
-            {
-                //検索ボタンは右端で動的に可視化することがある
-                var button = stackPanel_button.Children.Cast<Button>().First(a => (string)(a.Tag ?? a.Content) == "検索");
-                button.Margin = new Thickness(space, button.Margin.Top, button.Margin.Right, button.Margin.Bottom);
             }
         }
 
@@ -652,7 +676,7 @@ namespace EpgTimer
                     case Key.F:
                         if (e.IsRepeat == false)
                         {
-                            var button = stackPanel_button.Children.Cast<Button>().First(a => (string)(a.Tag ?? a.Content) == "検索");
+                            var button = stackPanel_button.Children.OfType<Button>().First(a => (string)(a.Tag ?? a.Content) == "検索");
                             button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                         }
                         e.Handled = true;
@@ -942,7 +966,7 @@ namespace EpgTimer
                         //原作では成否にかかわらずCMD_SUCCESSだったが、サーバ側の仕様と若干矛盾するので変更した
                         res = new Tuple<ErrCode, byte[], uint>(ErrCode.CMD_ERR, null, 0);
                         string exeCmd = "";
-                        (new CtrlCmdReader(new System.IO.MemoryStream(cmdData, false))).Read(ref exeCmd);
+                        (new CtrlCmdReader(new MemoryStream(cmdData, false))).Read(ref exeCmd);
                         if (exeCmd.Length > 0 && exeCmd[0] == '"')
                         {
                             //形式は("FileName")か("FileName" Arguments..)のどちらか。ほかは拒否してよい
@@ -985,7 +1009,7 @@ namespace EpgTimer
                                                 sec.Persist(process.Handle);
                                             }
                                             catch { }
-                                            var w = new CtrlCmdWriter(new System.IO.MemoryStream());
+                                            var w = new CtrlCmdWriter(new MemoryStream());
                                             w.Write(process.Id);
                                             w.Stream.Close();
                                             res = new Tuple<ErrCode, byte[], uint>(ErrCode.CMD_SUCCESS, w.Stream.ToArray(), 0);
@@ -1003,7 +1027,7 @@ namespace EpgTimer
                         res = new Tuple<ErrCode, byte[], uint>(ErrCode.CMD_SUCCESS, null, 0);
 
                         ushort param = 0;
-                        (new CtrlCmdReader(new System.IO.MemoryStream(cmdData, false))).Read(ref param);
+                        (new CtrlCmdReader(new MemoryStream(cmdData, false))).Read(ref param);
 
                         Dispatcher.BeginInvoke(new Action(() => ShowSleepDialog(param)));
                     }
@@ -1014,7 +1038,7 @@ namespace EpgTimer
                         res = new Tuple<ErrCode, byte[], uint>(ErrCode.CMD_SUCCESS, null, 0);
 
                         ushort param = 0;
-                        (new CtrlCmdReader(new System.IO.MemoryStream(cmdData, false))).Read(ref param);
+                        (new CtrlCmdReader(new MemoryStream(cmdData, false))).Read(ref param);
 
                         byte reboot = (byte)((param & 0xFF00) >> 8);
                         byte suspendMode = (byte)(param & 0x00FF);
@@ -1033,7 +1057,7 @@ namespace EpgTimer
                 case CtrlCmd.CMD_TIMER_GUI_SRV_STATUS_NOTIFY2:
                     {
                         NotifySrvInfo status = new NotifySrvInfo();
-                        var r = new CtrlCmdReader(new System.IO.MemoryStream(cmdData, false));
+                        var r = new CtrlCmdReader(new MemoryStream(cmdData, false));
                         ushort version = 0;
                         r.Read(ref version);
                         r.Version = version;

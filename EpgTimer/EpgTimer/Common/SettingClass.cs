@@ -611,42 +611,6 @@ namespace EpgTimer
             }
         }
 
-        private static bool appResourceDictionaryInitialized;
-        private static ResourceDictionary _appResourceDictionary;
-        public static ResourceDictionary AppResourceDictionary
-        {
-            get
-            {
-                if (appResourceDictionaryInitialized == false)
-                {
-                    appResourceDictionaryInitialized = true;
-                    if (Instance.NoStyle == 0)
-                    {
-                        try
-                        {
-                            string path = Path.Combine(SettingPath.ModulePath, SettingPath.ModuleName + ".rd.xaml");
-                            if (File.Exists(path))
-                            {
-                                //ResourceDictionaryを定義したファイルがあるので本体にマージする
-                                _appResourceDictionary = (ResourceDictionary)System.Windows.Markup.XamlReader.Load(System.Xml.XmlReader.Create(path));
-                            }
-                            else
-                            {
-                                //既定のテーマ(Aero)をマージする
-                                _appResourceDictionary = (ResourceDictionary)Application.LoadComponent(
-                                    new Uri("/PresentationFramework.Aero, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35;component/themes/aero.normalcolor.xaml", UriKind.Relative));
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            MessageBox.Show(ex.ToString());
-                        }
-                    }
-                }
-                return _appResourceDictionary;
-            }
-        }
-
         private static bool contextMenuResourceDictionaryInitialized;
         private static ResourceDictionary _contextMenuResourceDictionary;
         public static ResourceDictionary ContextMenuResourceDictionary

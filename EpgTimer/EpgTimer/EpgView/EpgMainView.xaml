@@ -8,18 +8,18 @@
              d:DesignHeight="300" d:DesignWidth="300" Loaded="UserControl_Loaded" IsVisibleChanged="UserControl_IsVisibleChanged">
     <Grid Name="grid_PG">
         <Grid.RowDefinitions>
-            <RowDefinition Height="40" />
-            <RowDefinition Height="40" />
+            <RowDefinition Height="{StaticResource AppEpgHeaderGridLength}" />
+            <RowDefinition Height="{StaticResource AppEpgHeaderGridLength}" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="40" />
+            <ColumnDefinition Width="{StaticResource AppEpgHeaderGridLength}" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
         <my:DateView Grid.ColumnSpan="2" x:Name="dateView" TimeButtonClick="epgDateView_TimeButtonClick" TimeButtonContextMenuOpening="epgDateView_TimeButtonContextMenuOpening" />
-        <Button Click="button_now_Click" Content="現在" Grid.Row="1" />
-        <my:TimeView Grid.Row="2" Margin="0,0,0,18" x:Name="timeView" />
-        <my:ServiceView Grid.Column="1" Grid.Row="1" Margin="0,0,18,0" x:Name="serviceView" LeftDoubleClick="serviceView_LeftDoubleClick" Click="serviceView_Click" />
+        <Button Content="現在" Grid.Row="1" Style="{StaticResource AppEpgButtonStyle}" Click="button_now_Click" />
+        <my:TimeView Grid.Row="2" x:Name="timeView" />
+        <my:ServiceView Grid.Column="1" Grid.Row="1" x:Name="serviceView" LeftDoubleClick="serviceView_LeftDoubleClick" Click="serviceView_Click" />
         <Grid ContextMenuOpening="grid_content_ContextMenuOpening" Grid.Column="1" Grid.Row="2" Name="grid_content">
             <my:ProgramView x:Name="epgProgramView" LeftDoubleClick="epgProgramView_LeftDoubleClick" ScrollChanged="epgProgramView_ScrollChanged" />
             <Grid.ContextMenu>
