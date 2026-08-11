@@ -340,7 +340,11 @@ namespace EpgTimer
 
         public void TaskTrayRightClick()
         {
-            var menu = new ContextMenuEx();
+            var menu = new ContextMenu();
+            if (Settings.ContextMenuResourceDictionary != null)
+            {
+                menu.Resources.MergedDictionaries.Add(Settings.ContextMenuResourceDictionary);
+            }
             foreach (string info in Settings.Instance.TaskMenuList)
             {
                 if (info == "（セパレータ）")
@@ -1283,20 +1287,6 @@ namespace EpgTimer
                         Activate();
                     }
                 };
-            }
-        }
-    }
-
-    /// <summary>
-    /// アプリケーション全体に適用する拡張コンテキストメニュー
-    /// </summary>
-    public class ContextMenuEx : ContextMenu
-    {
-        public ContextMenuEx()
-        {
-            if (Settings.ContextMenuResourceDictionary != null)
-            {
-                Resources.MergedDictionaries.Add(Settings.ContextMenuResourceDictionary);
             }
         }
     }

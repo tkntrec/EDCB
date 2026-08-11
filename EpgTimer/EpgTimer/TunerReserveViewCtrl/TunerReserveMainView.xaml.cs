@@ -32,6 +32,10 @@ namespace EpgTimer
             initialGridContainerDefinitionValues = new Tuple<double, double>(
                 grid_container.ColumnDefinitions[0].Width.Value,
                 grid_container.RowDefinitions[0].Height.Value);
+            if (Settings.ContextMenuResourceDictionary != null)
+            {
+                grid_content.ContextMenu.Resources.MergedDictionaries.Add(Settings.ContextMenuResourceDictionary);
+            }
         }
 
         /// <summary>

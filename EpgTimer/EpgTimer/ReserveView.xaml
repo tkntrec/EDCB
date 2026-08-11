@@ -4,10 +4,9 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
-             xmlns:local="clr-namespace:EpgTimer"
              d:DesignHeight="300" d:DesignWidth="300" IsVisibleChanged="UserControl_IsVisibleChanged">
     <UserControl.Resources>
-        <local:ContextMenuEx x:Key="itemHeader" x:Name="HeaderSelect" x:Shared="True">
+        <ContextMenu x:Key="itemHeader">
             <MenuItem Header="日時" Name="StartTime" IsCheckable="True" Click="headerSelect_Click" />
             <MenuItem Header="開始日時" Name="StartTimeNoDuration" IsCheckable="True" Click="headerSelect_Click" />
             <MenuItem Header="長さ" Name="Duration" IsCheckable="True" Click="headerSelect_Click" />
@@ -32,8 +31,8 @@
             <MenuItem Header="ボタン列を隠す" Name="HideButton" IsCheckable="True" Click="hideButton_Click" />
             <Separator />
             <MenuItem Header="プログラム予約追加" Click="button_add_manual_Click" />
-        </local:ContextMenuEx>
-        <local:ContextMenuEx x:Key="itemMenu">
+        </ContextMenu>
+        <ContextMenu x:Key="itemMenu">
             <MenuItem Header="変更 (_C)" Name="cm_chg">
                 <MenuItem Header="ダイアログ表示 (_X)" Click="button_change_Click" InputGestureText="Enter" />
                 <MenuItem Header="無効にする (_R)" Name="cm_no" Click="button_no_Click" InputGestureText="Ctrl + R" />
@@ -60,7 +59,7 @@
             <MenuItem Header="追っかけ再生" Click="timeShiftPlay_Click" InputGestureText="Ctrl + P" />
             <Separator />
             <MenuItem Header="プログラム予約追加" Click="button_add_manual_Click" />
-        </local:ContextMenuEx>
+        </ContextMenu>
     </UserControl.Resources>
     <Grid>
         <Grid.ColumnDefinitions>

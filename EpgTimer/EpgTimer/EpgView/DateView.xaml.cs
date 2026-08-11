@@ -27,6 +27,11 @@ namespace EpgTimer.EpgView
             InitializeComponent();
             button_prev.Tag = DateTime.MinValue;
             button_next.Tag = DateTime.MaxValue;
+            if (Settings.ContextMenuResourceDictionary != null)
+            {
+                button_prev.ContextMenu.Resources.MergedDictionaries.Add(Settings.ContextMenuResourceDictionary);
+                button_next.ContextMenu.Resources.MergedDictionaries.Add(Settings.ContextMenuResourceDictionary);
+            }
         }
 
         public void ClearInfo()

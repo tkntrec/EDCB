@@ -52,6 +52,12 @@ namespace EpgTimer
                 grid_PG.ColumnDefinitions[0].Width.Value,
                 grid_PG.RowDefinitions[0].Height.Value,
                 grid_PG.RowDefinitions[1].Height.Value);
+            if (Settings.ContextMenuResourceDictionary != null)
+            {
+                button_prev.ContextMenu.Resources.MergedDictionaries.Add(Settings.ContextMenuResourceDictionary);
+                button_next.ContextMenu.Resources.MergedDictionaries.Add(Settings.ContextMenuResourceDictionary);
+                grid_content.ContextMenu.Resources.MergedDictionaries.Add(Settings.ContextMenuResourceDictionary);
+            }
         }
 
         /// <summary>

@@ -4,10 +4,9 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
-             xmlns:local="clr-namespace:EpgTimer"
              d:DesignHeight="400" d:DesignWidth="300" IsVisibleChanged="UserControl_IsVisibleChanged" PreviewKeyDown="UserControl_PreviewKeyDown">
     <UserControl.Resources>
-        <local:ContextMenuEx x:Key="itemHeader" x:Name="HeaderSelect" x:Shared="True">
+        <ContextMenu x:Key="itemHeader">
             <MenuItem Header="Andキーワード" Name="AndKey" IsCheckable="True" Click="headerSelect_Click" />
             <MenuItem Header="Notキーワード" Name="NotKey" IsCheckable="True" Click="headerSelect_Click" />
             <MenuItem Header="メモ" Name="Note" IsCheckable="True" Click="headerSelect_Click" />
@@ -32,8 +31,8 @@
             <MenuItem Header="ID" Name="ID" IsCheckable="True" Click="headerSelect_Click" />
             <Separator />
             <MenuItem Header="ボタン列を隠す" Name="HideButton" IsCheckable="True" Click="hideButton_Click" />
-        </local:ContextMenuEx>
-        <local:ContextMenuEx x:Key="itemMenu">
+        </ContextMenu>
+        <ContextMenu x:Key="itemMenu">
             <MenuItem Header="変更" Click="button_change_Click" InputGestureText="Enter" />
             <MenuItem Header="削除" Click="button_del_Click" InputGestureText="Delete" />
             <MenuItem Header="予約ごと削除" Click="button_del2_Click" />
@@ -43,7 +42,7 @@
             <Separator />
             <MenuItem Header="並びを保存" Name="saveItemOrder" Click="button_saveItemOrder_Click" InputGestureText="Ctrl + S" />
             <MenuItem Header="並びを元に戻す" Name="reloadItem" Click="button_reloadItem_Click" InputGestureText="Ctrl + Z" />
-        </local:ContextMenuEx>
+        </ContextMenu>
     </UserControl.Resources>
     <Grid>
         <Grid.ColumnDefinitions>

@@ -45,6 +45,12 @@ namespace EpgTimer
             setViewInfo = setInfo;
             baseTime = _baseTime;
             listView_event.AlternationCount = Settings.Instance.ResAlternationCount;
+            if (Settings.ContextMenuResourceDictionary != null)
+            {
+                button_prev.ContextMenu.Resources.MergedDictionaries.Add(Settings.ContextMenuResourceDictionary);
+                button_next.ContextMenu.Resources.MergedDictionaries.Add(Settings.ContextMenuResourceDictionary);
+                listView_event.ContextMenu.Resources.MergedDictionaries.Add(Settings.ContextMenuResourceDictionary);
+            }
         }
 
         /// <summary>

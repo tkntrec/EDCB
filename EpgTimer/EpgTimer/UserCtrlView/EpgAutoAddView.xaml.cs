@@ -46,6 +46,11 @@ namespace EpgTimer
                 stackPanel_button.Visibility = Visibility.Collapsed;
             }
             listView_key.AlternationCount = Settings.Instance.ResAlternationCount;
+            if (Settings.ContextMenuResourceDictionary != null)
+            {
+                listView_key.ContextMenu.Resources.MergedDictionaries.Add(Settings.ContextMenuResourceDictionary);
+                ((ContextMenu)FindResource("itemMenu")).Resources.MergedDictionaries.Add(Settings.ContextMenuResourceDictionary);
+            }
         }
 
         public void SaveSize()
