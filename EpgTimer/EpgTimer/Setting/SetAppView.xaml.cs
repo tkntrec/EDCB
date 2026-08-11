@@ -26,6 +26,20 @@ namespace EpgTimer.Setting
         {
             InitializeComponent();
 
+            foreach (FontFamily family in Fonts.SystemFontFamilies)
+            {
+                string s;
+                if (family.FamilyNames.TryGetValue(System.Windows.Markup.XmlLanguage.GetLanguage("ja-JP"), out s))
+                {
+                    comboBox_appFont.Items.Add(s);
+                }
+                else
+                {
+                    //ローカル名がなくても一応候補に加える
+                    comboBox_appFont.Items.Add(family.Source);
+                }
+            }
+
             checkBox_wakeReconnect.IsEnabled = CommonManager.Instance.NWMode;
             checkBox_suspendClose.IsEnabled = CommonManager.Instance.NWMode;
             button_srvSetting.IsEnabled = CommonManager.Instance.NWMode == false;

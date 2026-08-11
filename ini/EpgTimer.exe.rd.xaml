@@ -1,5 +1,7 @@
 <?xml version="1.0"?>
 <!-- このファイルをEpgTimer.exeと同じ場所に配置してデザインをカスタマイズできます -->
+<!-- EpgTimer設定の「テーマを適用する」を有効にしてください -->
+<!-- 「右クリックメニューにテーマを適用する」をカスタマイズするときはファイル名をEpgTimer.exe.rdcm.xamlにしてください -->
 <!-- テーマを適用する例 -->
 <ResourceDictionary
   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"

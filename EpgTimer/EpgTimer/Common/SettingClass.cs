@@ -295,6 +295,9 @@ namespace EpgTimer
         public byte RecEndWarColorR { get; set; }
         public byte RecEndWarColorG { get; set; }
         public byte RecEndWarColorB { get; set; }
+        public bool SetAppFont { get; set; }
+        public string AppFontName { get; set; }
+        public double AppFontSize { get; set; }
         public uint ExecBat { get; set; }
         public uint SuspendChk { get; set; }
         public List<ListColumnInfo> ReserveListColumn { get; set; }
@@ -307,6 +310,7 @@ namespace EpgTimer
         public bool ShowTray { get; set; }
         public bool MinHide { get; set; }
         public int NoStyle { get; set; }
+        public bool ApplyPostStyle { get; set; }
         public bool ApplyContextMenuStyle { get; set; }
         public int NoSendClose { get; set; }
         public string StartTab { get; set; }
@@ -514,6 +518,9 @@ namespace EpgTimer
             r.RecEndWarColorR           = (byte)ConvertXElem(x, w, "RecEndWarColorR", RecEndWarColorR, 0xFF);
             r.RecEndWarColorG           = (byte)ConvertXElem(x, w, "RecEndWarColorG", RecEndWarColorG, 0xFF);
             r.RecEndWarColorB           = (byte)ConvertXElem(x, w, "RecEndWarColorB", RecEndWarColorB, 0);
+            r.SetAppFont                = ConvertXElem(x, w, "SetAppFont", SetAppFont, false);
+            r.AppFontName               = ConvertXElem(x, w, "AppFontName", AppFontName, "メイリオ");
+            r.AppFontSize               = ConvertXElem(x, w, "AppFontSize", AppFontSize, 12);
             r.ExecBat                   = (uint)ConvertXElem(x, w, "ExecBat", ExecBat, 0);
             r.SuspendChk                = (uint)ConvertXElem(x, w, "SuspendChk", SuspendChk, 0);
             r.ReserveListColumn         = ConvertXElements(x, w, "ReserveListColumn", ReserveListColumn).ToList();
@@ -526,6 +533,7 @@ namespace EpgTimer
             r.ShowTray                  = ConvertXElem(x, w, "ShowTray", ShowTray, false);
             r.MinHide                   = ConvertXElem(x, w, "MinHide", MinHide, true);
             r.NoStyle                   = (int)ConvertXElem(x, w, "NoStyle", NoStyle, 1);
+            r.ApplyPostStyle            = ConvertXElem(x, w, "ApplyPostStyle", ApplyPostStyle, false);
             r.ApplyContextMenuStyle     = ConvertXElem(x, w, "ApplyContextMenuStyle", ApplyContextMenuStyle, false);
             r.NoSendClose               = (int)ConvertXElem(x, w, "NoSendClose", NoSendClose, 0);
             r.StartTab                  = ConvertXElem(x, w, "StartTab", StartTab, "ReserveView");

@@ -29,8 +29,8 @@
                         <Button Content="録画設定のプリセットを設定" Style="{StaticResource AppButtonStyle}" Click="button_recDef_Click" />
                         <Button Content="検索条件のデフォルト値を設定" Margin="{StaticResource AppIndentMargin}" Style="{StaticResource AppButtonStyle}" Click="button_searchDef_Click" />
                     </StackPanel>
-                    <StackPanel Margin="{StaticResource AppWideMarginT}" Orientation="Horizontal">
-                        <StackPanel>
+                    <DockPanel Margin="{StaticResource AppWideMarginT}">
+                        <StackPanel DockPanel.Dock="Left">
                             <CheckBox Content="ツールチップの表示を抑制する" HorizontalAlignment="Left" IsChecked="{Binding NoToolTip}" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppCheckBoxStyle}" />
                             <CheckBox Content="バルーンチップ／トーストでの動作通知を抑制する" HorizontalAlignment="Left" IsChecked="{Binding NoBallonTips}" Margin="{StaticResource AppMarginT}" Name="checkBox_noBallonTips" Style="{StaticResource AppCheckBoxStyle}" />
                             <StackPanel Margin="{StaticResource AppIndentMargin}" Orientation="Horizontal">
@@ -47,6 +47,7 @@
                             <CheckBox Content="リストボックスなどのサービス一覧をIDでソートする" HorizontalAlignment="Left" IsChecked="{Binding SortServiceList}" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppCheckBoxStyle}" />
                             <CheckBox Content="引数つきで起動したとき(iEPG予約追加など)はすぐに終了する" HorizontalAlignment="Left" IsChecked="{Binding ExitAfterProcessingArgs}" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppCheckBoxStyle}" />
                             <CheckBox Content="テーマを適用する(要再起動)" HorizontalAlignment="Left" IsChecked="{Binding NoStyle, Converter={StaticResource convert}, ConverterParameter=not}" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppCheckBoxStyle}" />
+                            <CheckBox Content="上書き用テーマを適用する(要再起動)" HorizontalAlignment="Left" IsChecked="{Binding ApplyPostStyle}" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppCheckBoxStyle}" />
                             <CheckBox Content="右クリックメニューにテーマを適用する(要再起動)" HorizontalAlignment="Left" IsChecked="{Binding ApplyContextMenuStyle}" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppCheckBoxStyle}" />
                         </StackPanel>
                         <StackPanel Margin="{StaticResource AppIndentMargin}">
@@ -94,13 +95,26 @@
                                     <ComboBoxItem Content="番組名" />
                                 </ComboBox>
                             </Grid>
+                            <CheckBox Content="全体のフォントを設定する(要再起動)" HorizontalAlignment="Left" IsChecked="{Binding SetAppFont}" Margin="{StaticResource AppWideMarginT}" Name="checkBox_setAppFont" Style="{StaticResource AppCheckBoxStyle}" />
+                            <Grid IsEnabled="{Binding IsChecked, ElementName=checkBox_setAppFont, UpdateSourceTrigger=PropertyChanged}" Margin="{StaticResource AppMarginT}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Label Content="フォント" Margin="{StaticResource AppIndentMargin}" Style="{StaticResource AppTermLabelStyle}" />
+                                <ComboBox Grid.Column="1" IsEditable="True" Name="comboBox_appFont" Style="{StaticResource AppComboBoxStyle}" Text="{Binding AppFontName}" />
+                                <Label Content="サイズ" Grid.Column="2" Margin="{StaticResource AppMarginL}" Style="{StaticResource AppTermLabelStyle}" />
+                                <TextBox Grid.Column="3" InputMethod.IsInputMethodEnabled="False" Margin="{StaticResource AppEdgeMarginR}" Style="{StaticResource AppNarrowTextBoxStyle}" Text="{Binding AppFontSize}" />
+                            </Grid>
                             <TextBlock Margin="{StaticResource AppMarginT}" />
-                            <Grid>
+                            <Grid HorizontalAlignment="Left">
                                 <Button Content="スタートアップにEpgTimer.exeのショートカットを作成する" Name="button_shortCutAdd" Style="{StaticResource AppButtonStyle}" Click="button_shortCutAdd_Click" />
                                 <Button Content="スタートアップからEpgTimer.exeのショートカットを削除する" Name="button_shortCutDel" Style="{StaticResource AppButtonStyle}" Click="button_shortCutDel_Click" />
                             </Grid>
                         </StackPanel>
-                    </StackPanel>
+                    </DockPanel>
                     <TextBlock Margin="{StaticResource AppMarginT}" />
                     <Button Content="EpgTimerSrv設定" HorizontalAlignment="Left" Name="button_srvSetting" Style="{StaticResource AppButtonStyle}" Click="button_srvSetting_Click" />
                 </StackPanel>

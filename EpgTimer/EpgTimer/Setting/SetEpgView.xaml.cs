@@ -26,24 +26,19 @@ namespace EpgTimer.Setting
         {
             InitializeComponent();
 
+            foreach (FontFamily family in Fonts.SystemFontFamilies)
             {
-                foreach (FontFamily family in Fonts.SystemFontFamilies)
+                string s;
+                if (family.FamilyNames.TryGetValue(XmlLanguage.GetLanguage("ja-JP"), out s))
                 {
-                    string s;
-                    if (family.FamilyNames.TryGetValue(XmlLanguage.GetLanguage("ja-JP"), out s))
-                    {
-                        comboBox_font.Items.Add(s);
-                        comboBox_fontTitle.Items.Add(s);
-                    }
+                    comboBox_font.Items.Add(s);
+                    comboBox_fontTitle.Items.Add(s);
                 }
-                //ローカル名がなくても一応候補に加える
-                foreach (FontFamily family in Fonts.SystemFontFamilies)
+                else
                 {
-                    if (family.FamilyNames.ContainsKey(XmlLanguage.GetLanguage("ja-JP")) == false)
-                    {
-                        comboBox_font.Items.Add(family.Source);
-                        comboBox_fontTitle.Items.Add(family.Source);
-                    }
+                    //ローカル名がなくても一応候補に加える
+                    comboBox_font.Items.Add(family.Source);
+                    comboBox_fontTitle.Items.Add(family.Source);
                 }
             }
         }

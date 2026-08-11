@@ -77,6 +77,35 @@ namespace EpgTimer
                 Application.Current.Resources.MergedDictionaries.Add((ResourceDictionary)Application.LoadComponent(new Uri("/App.rd.xaml", UriKind.Relative)));
             }
 
+            if (Settings.Instance.ApplyPostStyle)
+            {
+                try
+                {
+                    string path = Path.Combine(SettingPath.ModulePath, SettingPath.ModuleName + ".rdpost.xaml");
+                    if (File.Exists(path))
+                    {
+                        //上書き用のResourceDictionaryをマージ
+                        Application.Current.Resources.MergedDictionaries.Add((ResourceDictionary)System.Windows.Markup.XamlReader.Load(System.Xml.XmlReader.Create(path)));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.ToString());
+                }
+            }
+
+            if (Settings.Instance.SetAppFont)
+            {
+                //フォントを上書き
+                var rd = new ResourceDictionary();
+                rd.Add("AppFontSize", Settings.Instance.AppFontSize);
+                rd.Add("AppLargeFontSize", Settings.Instance.AppFontSize + 1);
+                var style = new Style(typeof(Window), (Style)FindResource("AppWindowStyle"));
+                style.Setters.Add(new Setter(FontFamilyProperty, new FontFamily(Settings.Instance.AppFontName)));
+                rd.Add("AppWindowStyle", style);
+                Application.Current.Resources.MergedDictionaries.Add(rd);
+            }
+
             //オリジナルのmutex名をもつEpgTimerか
             if (mutexName == "2")
             {
