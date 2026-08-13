@@ -17,7 +17,7 @@
     <sys:Double x:Key="AppRecInfoDescWindowWidth">660</sys:Double>
     <sys:Double x:Key="AppRecSettingWindowWidth">740</sys:Double>
     <sys:Double x:Key="AppSearchWindowHeight">600</sys:Double>
-    <sys:Double x:Key="AppSearchWindowWidth">770</sys:Double>
+    <sys:Double x:Key="AppSearchWindowWidth">820</sys:Double>
     <sys:Double x:Key="AppSetDefSearchSettingWindowHeight">500</sys:Double>
     <sys:Double x:Key="AppSettingWindowHeight">640</sys:Double>
     <sys:Double x:Key="AppSettingWindowWidth">800</sys:Double>
@@ -81,7 +81,6 @@
 
     <Thickness x:Key="AppListViewItemBorderThickness">5,0,0,1</Thickness>
 
-    <Brush x:Key="AppEpgDateButtonForegroundBrush">Black</Brush>
     <Brush x:Key="AppEpgDateSaturdayButtonForegroundBrush">Blue</Brush>
     <Brush x:Key="AppEpgDateSundayButtonForegroundBrush">Red</Brush>
     <Brush x:Key="AppEpgServiceHeaderBackgroundBrush">Silver</Brush>
@@ -312,7 +311,5 @@
         <Setter Property="VerticalAlignment" Value="Stretch" />
     </Style>
 
-    <Style x:Key="AppWindowStyle" BasedOn="{StaticResource {x:Type Window}}" TargetType="Window">
-        <Setter Property="FontSize" Value="{DynamicResource AppFontSize}" />
-    </Style>
+    <Style x:Key="AppWindowStyle" BasedOn="{StaticResource {x:Type Window}}" TargetType="Window" />
 </ResourceDictionary>

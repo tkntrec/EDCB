@@ -94,17 +94,22 @@ namespace EpgTimer
                 }
             }
 
+            var rd = new ResourceDictionary();
+            var style = new Style(typeof(Window), (Style)FindResource("AppWindowStyle"));
+            double fontSize = (double)FindResource("AppFontSize");
+            double largeFontSize = (double)FindResource("AppLargeFontSize");
             if (Settings.Instance.SetAppFont)
             {
                 //フォントを上書き
-                var rd = new ResourceDictionary();
-                rd.Add("AppFontSize", Settings.Instance.AppFontSize);
-                rd.Add("AppLargeFontSize", Settings.Instance.AppFontSize + 1);
-                var style = new Style(typeof(Window), (Style)FindResource("AppWindowStyle"));
                 style.Setters.Add(new Setter(FontFamilyProperty, new FontFamily(Settings.Instance.AppFontName)));
-                rd.Add("AppWindowStyle", style);
-                Application.Current.Resources.MergedDictionaries.Add(rd);
+                largeFontSize += Settings.Instance.AppFontSize - fontSize;
+                fontSize = Settings.Instance.AppFontSize;
+                rd.Add("AppFontSize", fontSize);
+                rd.Add("AppLargeFontSize", largeFontSize);
             }
+            style.Setters.Add(new Setter(FontSizeProperty, fontSize));
+            rd.Add("AppWindowStyle", style);
+            Application.Current.Resources.MergedDictionaries.Add(rd);
 
             //オリジナルのmutex名をもつEpgTimerか
             if (mutexName == "2")

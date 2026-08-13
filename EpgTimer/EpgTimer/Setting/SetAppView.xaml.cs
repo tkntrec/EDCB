@@ -222,14 +222,25 @@ namespace EpgTimer.Setting
 
         private void button_recDef_Click(object sender, RoutedEventArgs e)
         {
-            SetDefRecSettingWindow dlg = new SetDefRecSettingWindow();
+            var dlg = new SetDefRecSettingWindow();
+            dlg.Owner = (Window)PresentationSource.FromVisual(this).RootVisual;
+            dlg.ShowDialog();
+        }
+
+        private void button_testAppFont_Click(object sender, RoutedEventArgs e)
+        {
+            var style = new Style(typeof(Window), (Style)FindResource("AppWindowStyle"));
+            style.Setters.Add(new Setter(FontFamilyProperty, new FontFamily(((Settings)DataContext).AppFontName)));
+            style.Setters.Add(new Setter(FontSizeProperty, ((Settings)DataContext).AppFontSize));
+            var dlg = new SetDefRecSettingWindow();
+            dlg.Style = style;
             dlg.Owner = (Window)PresentationSource.FromVisual(this).RootVisual;
             dlg.ShowDialog();
         }
 
         private void button_searchDef_Click(object sender, RoutedEventArgs e)
         {
-            SetDefSearchSettingWindow dlg = new SetDefSearchSettingWindow();
+            var dlg = new SetDefSearchSettingWindow();
             dlg.Owner = (Window)PresentationSource.FromVisual(this).RootVisual;
             dlg.SetDefSetting(((Settings)DataContext).CreateDefSearchSetting());
 

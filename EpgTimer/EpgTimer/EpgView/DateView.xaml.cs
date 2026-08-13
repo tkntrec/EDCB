@@ -66,9 +66,14 @@ namespace EpgTimer.EpgView
                         Style = (Style)FindResource("AppEpgDateButtonTextBorderStyle")
                     };
                     day.FontWeight = FontWeights.Normal;
-                    day.Foreground = (Brush)FindResource(
-                        itemTime.DayOfWeek == DayOfWeek.Saturday ? "AppEpgDateSaturdayButtonForegroundBrush" :
-                        itemTime.DayOfWeek == DayOfWeek.Sunday ? "AppEpgDateSundayButtonForegroundBrush" : "AppEpgDateButtonForegroundBrush");
+                    if (itemTime.DayOfWeek == DayOfWeek.Saturday)
+                    {
+                        day.Foreground = (Brush)FindResource("AppEpgDateSaturdayButtonForegroundBrush");
+                    }
+                    else if (itemTime.DayOfWeek == DayOfWeek.Sunday)
+                    {
+                        day.Foreground = (Brush)FindResource("AppEpgDateSundayButtonForegroundBrush");
+                    }
                     day.Style = (Style)FindResource("AppEpgButtonStyle");
                     day.Tag = itemTime;
                     day.Click += button_time_Click;

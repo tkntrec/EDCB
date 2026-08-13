@@ -101,12 +101,14 @@
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <Label Content="フォント" Margin="{StaticResource AppIndentMargin}" Style="{StaticResource AppTermLabelStyle}" />
                                 <ComboBox Grid.Column="1" IsEditable="True" Name="comboBox_appFont" Style="{StaticResource AppComboBoxStyle}" Text="{Binding AppFontName}" />
-                                <Label Content="サイズ" Grid.Column="2" Margin="{StaticResource AppMarginL}" Style="{StaticResource AppTermLabelStyle}" />
-                                <TextBox Grid.Column="3" InputMethod.IsInputMethodEnabled="False" Margin="{StaticResource AppEdgeMarginR}" Style="{StaticResource AppNarrowTextBoxStyle}" Text="{Binding AppFontSize}" />
+                                <StackPanel Grid.Column="2" Margin="{StaticResource AppEdgeMarginR}" Orientation="Horizontal">
+                                    <Label Content="サイズ" Margin="{StaticResource AppMarginL}" Style="{StaticResource AppTermLabelStyle}" />
+                                    <TextBox InputMethod.IsInputMethodEnabled="False" Style="{StaticResource AppNarrowTextBoxStyle}" Text="{Binding AppFontSize}" />
+                                    <Button Content="テスト" Margin="{StaticResource AppMarginL}" Style="{StaticResource AppButtonStyle}" Click="button_testAppFont_Click" />
+                                </StackPanel>
                             </Grid>
                             <TextBlock Margin="{StaticResource AppMarginT}" />
                             <Grid HorizontalAlignment="Left">
@@ -265,7 +267,7 @@
                     <Label Content="サービス一覧" Margin="{StaticResource AppMarginB}" Style="{StaticResource AppLabelStyle}" />
                     <ListBox Grid.Row="1" Grid.RowSpan="4" Name="listBox_service" SelectionChanged="listBox_service_SelectionChanged">
                         <ListBox.ItemContainerStyle>
-                            <Style TargetType="{x:Type ListBoxItem}">
+                            <Style BasedOn="{StaticResource {x:Type ListBoxItem}}" TargetType="ListBoxItem">
                                 <Setter Property="ToolTipService.ShowDuration" Value="20000" />
                                 <Setter Property="ToolTip" Value="{Binding Path=ToolTipView}" />
                             </Style>
