@@ -54,6 +54,18 @@ namespace EpgTimer
                 Environment.Exit(0);
             }
 
+#if NETCOREAPP
+#pragma warning disable WPF0001
+            if (Application.Current.ThemeMode != ThemeMode.None)
+            {
+                //アプリのResourceDictionaryをFluent用のものに置き換える
+                Application.Current.Resources.MergedDictionaries.Remove(
+                    Application.Current.Resources.MergedDictionaries.First(a => a.Source != null && a.Source.OriginalString == "/App.rd.xaml"));
+                Application.Current.Resources.MergedDictionaries.Add((ResourceDictionary)Application.LoadComponent(new Uri("/AppFluent.rd.xaml", UriKind.Relative)));
+            }
+            else
+#pragma warning restore WPF0001
+#endif
             if (Settings.Instance.NoStyle == 0)
             {
                 //アプリのResourceDictionaryをクリア

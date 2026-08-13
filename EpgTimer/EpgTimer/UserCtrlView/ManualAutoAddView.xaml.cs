@@ -28,6 +28,11 @@ namespace EpgTimer
         public ManualAutoAddView()
         {
             InitializeComponent();
+
+            var style = (Style)listView_key.FindResource("itemStyle");
+            style.BasedOn = listView_key.ItemContainerStyle;
+            listView_key.ItemContainerStyle = style;
+
             columnList = gridView_key.Columns.ToDictionary(info => (string)((GridViewColumnHeader)info.Header).Tag);
             gridView_key.Columns.Clear();
             foreach (ListColumnInfo info in Settings.Instance.AutoAddManualColumn)

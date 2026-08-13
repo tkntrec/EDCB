@@ -27,8 +27,8 @@
             <FrameworkElement Grid.Row="1" Margin="{StaticResource AppMarginT}" />
             <GridSplitter Grid.Row="1" HorizontalAlignment="Stretch" Name="gridSplitter2" />
             <ListView Grid.Row="2" Name="listView_event" SelectionMode="Single" SelectionChanged="listView_event_SelectionChanged" ContextMenuOpening="listView_event_ContextMenuOpening" GridViewColumnHeader.Click="GridViewColumnHeader_Click" >
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="ListViewItem">
+                <ListView.Resources>
+                    <Style x:Key="itemStyle" TargetType="ListViewItem">
                         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                         <Setter Property="Opacity" Value="{Binding Opacity}" />
                         <EventSetter Event="MouseDoubleClick" Handler="listView_event_MouseDoubleClick"/>
@@ -46,7 +46,7 @@
                             </MultiTrigger>
                         </Style.Triggers>
                     </Style>
-                </ListView.ItemContainerStyle>
+                </ListView.Resources>
                 <ListView.View>
                     <GridView x:Name="gridView_event">
                         <GridViewColumn>

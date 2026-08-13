@@ -64,8 +64,8 @@
             <ColumnDefinition Width="auto" />
         </Grid.ColumnDefinitions>
         <ListView ContextMenu="{DynamicResource itemHeader}" Margin="{StaticResource AppEdgeMargin}" Name="listView_reserve" SelectionMode="Extended" ContextMenuOpening="ContextMenu_Header_ContextMenuOpening" GridViewColumnHeader.Click="GridViewColumnHeader_Click" MouseEnter="listView_reserve_MouseEnter" MouseLeave="listView_reserve_MouseLeave">
-            <ListView.ItemContainerStyle>
-                <Style TargetType="ListViewItem">
+            <ListView.Resources>
+                <Style x:Key="itemStyle" TargetType="ListViewItem">
                     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                     <Setter Property="ToolTipService.ShowDuration" Value="20000" />
                     <Setter Property="ToolTip" Value="{Binding ToolTipView}"/>
@@ -87,7 +87,7 @@
                         </MultiTrigger>
                     </Style.Triggers>
                 </Style>
-            </ListView.ItemContainerStyle>
+            </ListView.Resources>
             <ListView.View>
                 <GridView x:Name="gridView_reserve">
                     <GridViewColumn>

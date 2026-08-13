@@ -32,6 +32,10 @@ namespace EpgTimer
         {
             InitializeComponent();
 
+            var style = (Style)listView_reserve.FindResource("itemStyle");
+            style.BasedOn = listView_reserve.ItemContainerStyle;
+            listView_reserve.ItemContainerStyle = style;
+
             columnList = gridView_reserve.Columns.ToDictionary(info => (string)((GridViewColumnHeader)info.Header).Tag);
             gridView_reserve.Columns.Clear();
             foreach (ListColumnInfo info in Settings.Instance.ReserveListColumn)

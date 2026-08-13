@@ -33,8 +33,8 @@
             <ColumnDefinition Width="auto" />
         </Grid.ColumnDefinitions>
         <ListView ContextMenu="{DynamicResource itemHeader}" Margin="{StaticResource AppEdgeMargin}" Name="listView_key" SelectionMode="Extended" ContextMenuOpening="ContextMenu_Header_ContextMenuOpening" MouseEnter="listView_key_MouseEnter" MouseLeave="listView_key_MouseLeave">
-            <ListView.ItemContainerStyle>
-                <Style TargetType="ListViewItem">
+            <ListView.Resources>
+                <Style x:Key="itemStyle" TargetType="ListViewItem">
                     <Setter Property="ContextMenu" Value="{DynamicResource itemMenu}" />
                     <EventSetter Event="MouseDoubleClick" Handler="listView_key_MouseDoubleClick"/>
                     <EventSetter Event="KeyDown" Handler="listView_key_KeyDown" />
@@ -49,7 +49,7 @@
                         </MultiTrigger>
                     </Style.Triggers>
                 </Style>
-            </ListView.ItemContainerStyle>
+            </ListView.Resources>
             <ListView.View>
                 <GridView x:Name="gridView_key">
                     <GridViewColumn DisplayMemberBinding="{Binding DayOfWeek}">

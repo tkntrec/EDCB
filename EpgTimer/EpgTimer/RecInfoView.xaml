@@ -35,9 +35,7 @@
         <ListView ContextMenu="{DynamicResource itemHeader}" Margin="{StaticResource AppEdgeMargin}" Name="listView_recinfo" SelectionMode="Extended" ContextMenuOpening="ContextMenu_Header_ContextMenuOpening" GridViewColumnHeader.Click="GridViewColumnHeader_Click" MouseEnter="listView_recinfo_MouseEnter" MouseLeave="listView_recinfo_MouseLeave">
             <ListView.Resources>
                 <Style BasedOn="{StaticResource AppRecInfoListViewCheckBoxStyle}" TargetType="CheckBox" />
-            </ListView.Resources>
-            <ListView.ItemContainerStyle>
-                <Style TargetType="ListViewItem">
+                <Style x:Key="itemStyle" TargetType="ListViewItem">
                     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                     <Setter Property="ToolTipService.ShowDuration" Value="20000" />
                     <Setter Property="ToolTip" Value="{Binding ToolTipView}"/>
@@ -56,7 +54,7 @@
                         </MultiTrigger>
                     </Style.Triggers>
                 </Style>
-            </ListView.ItemContainerStyle>
+            </ListView.Resources>
             <ListView.View>
                 <GridView x:Name="gridView_recinfo">
                     <GridViewColumn>

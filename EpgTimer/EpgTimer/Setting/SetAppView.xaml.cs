@@ -44,6 +44,15 @@ namespace EpgTimer.Setting
             checkBox_suspendClose.IsEnabled = CommonManager.Instance.NWMode;
             button_srvSetting.IsEnabled = CommonManager.Instance.NWMode == false;
 
+#if NETCOREAPP
+#pragma warning disable WPF0001
+            if (Application.Current.ThemeMode != ThemeMode.None)
+            {
+                checkBox_noStyle.IsEnabled = false;
+            }
+#pragma warning restore WPF0001
+#endif
+
             button_shortCutAdd.Visibility = File.Exists(System.IO.Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.Startup), "EpgTime.lnk")) ? Visibility.Hidden : Visibility.Visible;
             button_shortCutDel.Visibility = button_shortCutAdd.Visibility == Visibility.Visible ? Visibility.Hidden : Visibility.Visible;

@@ -46,7 +46,7 @@
                             <CheckBox Content="EPG取得対象サービスのみ表示する" HorizontalAlignment="Left" IsChecked="{Binding ShowEpgCapServiceOnly}" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppCheckBoxStyle}" />
                             <CheckBox Content="リストボックスなどのサービス一覧をIDでソートする" HorizontalAlignment="Left" IsChecked="{Binding SortServiceList}" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppCheckBoxStyle}" />
                             <CheckBox Content="引数つきで起動したとき(iEPG予約追加など)はすぐに終了する" HorizontalAlignment="Left" IsChecked="{Binding ExitAfterProcessingArgs}" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppCheckBoxStyle}" />
-                            <CheckBox Content="テーマを適用する(要再起動)" HorizontalAlignment="Left" IsChecked="{Binding NoStyle, Converter={StaticResource convert}, ConverterParameter=not}" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppCheckBoxStyle}" />
+                            <CheckBox Content="テーマを適用する(要再起動)" HorizontalAlignment="Left" IsChecked="{Binding NoStyle, Converter={StaticResource convert}, ConverterParameter=not}" Margin="{StaticResource AppMarginT}" Name="checkBox_noStyle" Style="{StaticResource AppCheckBoxStyle}" />
                             <CheckBox Content="上書き用テーマを適用する(要再起動)" HorizontalAlignment="Left" IsChecked="{Binding ApplyPostStyle}" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppCheckBoxStyle}" />
                             <CheckBox Content="右クリックメニューにテーマを適用する(要再起動)" HorizontalAlignment="Left" IsChecked="{Binding ApplyContextMenuStyle}" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppCheckBoxStyle}" />
                         </StackPanel>

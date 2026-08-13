@@ -42,6 +42,10 @@ namespace EpgTimer
         {
             InitializeComponent();
 
+            var style = (Style)listView_event.FindResource("itemStyle");
+            style.BasedOn = listView_event.ItemContainerStyle;
+            listView_event.ItemContainerStyle = style;
+
             setViewInfo = setInfo;
             baseTime = _baseTime;
             listView_event.AlternationCount = Settings.Instance.ResAlternationCount;

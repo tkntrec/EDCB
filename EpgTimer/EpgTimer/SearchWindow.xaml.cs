@@ -30,6 +30,10 @@ namespace EpgTimer
         {
             InitializeComponent();
 
+            var style = (Style)listView_result.FindResource("itemStyle");
+            style.BasedOn = listView_result.ItemContainerStyle;
+            listView_result.ItemContainerStyle = style;
+
             try
             {
                 //ウインドウ位置の復元
