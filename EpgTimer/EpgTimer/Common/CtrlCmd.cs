@@ -500,8 +500,13 @@ namespace EpgTimer
         {
             try
             {
-                using (System.Threading.EventWaitHandle.OpenExisting(eventName,
-                           System.Security.AccessControl.EventWaitHandleRights.Synchronize))
+                using (System.Threading.EventWaitHandle.OpenExisting(eventName
+#if NETCOREAPP
+                    // TODO: 2026年時点で対応する機能はない。ここではほぼ問題ないが、過剰なアクセス権を要求する
+#else
+                    , System.Security.AccessControl.EventWaitHandleRights.Synchronize
+#endif
+                    ))
                 {
                     return true;
                 }
@@ -672,8 +677,13 @@ namespace EpgTimer
                 // 接続待ち
                 try
                 {
-                    using (var waitEvent = System.Threading.EventWaitHandle.OpenExisting(eventName,
-                               System.Security.AccessControl.EventWaitHandleRights.Synchronize))
+                    using (var waitEvent = System.Threading.EventWaitHandle.OpenExisting(eventName
+#if NETCOREAPP
+                        // TODO: 2026年時点で対応する機能はない。ここではほぼ問題ないが、過剰なアクセス権を要求する
+#else
+                        , System.Security.AccessControl.EventWaitHandleRights.Synchronize
+#endif
+                        ))
                     {
                         if (waitEvent.WaitOne(connectTimeOut) == false)
                         {

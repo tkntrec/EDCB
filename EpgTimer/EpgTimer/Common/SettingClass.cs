@@ -107,7 +107,15 @@ namespace EpgTimer
         {
             get
             {
+#if NETCOREAPP
+                //EntryAssemblyがexeファイルとは限らないため
+                using (var process = System.Diagnostics.Process.GetCurrentProcess())
+                {
+                    return process.MainModule.ModuleName;
+                }
+#else
                 return Path.GetFileName(Assembly.GetEntryAssembly().Location);
+#endif
             }
         }
     }
