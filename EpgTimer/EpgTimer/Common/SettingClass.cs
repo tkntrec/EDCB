@@ -99,7 +99,11 @@ namespace EpgTimer
         {
             get
             {
+#if NETCOREAPP
+                return Path.GetDirectoryName(Environment.ProcessPath);
+#else
                 return Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+#endif
             }
         }
 
@@ -108,11 +112,7 @@ namespace EpgTimer
             get
             {
 #if NETCOREAPP
-                //EntryAssemblyがexeファイルとは限らないため
-                using (var process = System.Diagnostics.Process.GetCurrentProcess())
-                {
-                    return process.MainModule.ModuleName;
-                }
+                return Path.GetFileName(Environment.ProcessPath);
 #else
                 return Path.GetFileName(Assembly.GetEntryAssembly().Location);
 #endif
