@@ -90,6 +90,16 @@ namespace EpgTimer
                             CommonManager.ConvertProgramText(eventInfo, EventInfoTextMode.BasicText),
                             CommonManager.ConvertProgramText(eventInfo, EventInfoTextMode.ExtendedText),
                             CommonManager.ConvertProgramText(eventInfo, EventInfoTextMode.PropertyInfo)));
+#if NETCOREAPP
+#pragma warning disable WPF0001
+                        // (おそらくバグにより)フォントが継承されないため
+                        if (Application.Current.ThemeMode != ThemeMode.None)
+                        {
+                            richTextBox_descInfo.Document.FontFamily = richTextBox_descInfo.FontFamily;
+                            richTextBox_descInfo.Document.FontSize = richTextBox_descInfo.FontSize;
+                        }
+#pragma warning restore WPF0001
+#endif
                     }
                 }
                 button_save_program.IsEnabled = eventInfo != null;

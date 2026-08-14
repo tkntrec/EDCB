@@ -54,7 +54,7 @@
                 </DockPanel>
             </TabItem>
             <TabItem Header="番組詳細">
-                <RichTextBox IsReadOnly="True" IsReadOnlyCaretVisible="True" Name="richTextBox_descInfo" VerticalScrollBarVisibility="Auto" />
+                <RichTextBox IsReadOnly="True" IsReadOnlyCaretVisible="True" Name="richTextBox_descInfo" Style="{StaticResource AppRichTextBoxStyle}" VerticalScrollBarVisibility="Auto" />
             </TabItem>
         </TabControl>
         <StackPanel Grid.Row="1" Margin="{StaticResource AppEdgeMargin}" Orientation="Horizontal">

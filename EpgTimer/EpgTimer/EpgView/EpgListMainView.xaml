@@ -23,7 +23,7 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
-            <RichTextBox IsReadOnly="True" Name="richTextBox_eventInfo" VerticalScrollBarVisibility="Auto" />
+            <RichTextBox IsReadOnly="True" Name="richTextBox_eventInfo" Style="{StaticResource AppRichTextBoxStyle}" VerticalScrollBarVisibility="Auto" />
             <FrameworkElement Grid.Row="1" Margin="{StaticResource AppMarginT}" />
             <GridSplitter Grid.Row="1" HorizontalAlignment="Stretch" Name="gridSplitter2" />
             <ListView Grid.Row="2" Name="listView_event" SelectionMode="Single" SelectionChanged="listView_event_SelectionChanged" ContextMenuOpening="listView_event_ContextMenuOpening" GridViewColumnHeader.Click="GridViewColumnHeader_Click" >

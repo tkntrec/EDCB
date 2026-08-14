@@ -214,6 +214,8 @@
         <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
 
+    <Style x:Key="AppRichTextBoxStyle" BasedOn="{StaticResource {x:Type RichTextBox}}" TargetType="RichTextBox" />
+
     <Style x:Key="AppEpgTimeHeaderDayRunStyle" TargetType="Run">
         <Setter Property="FontWeight" Value="Bold" />
         <Setter Property="Foreground" Value="White" />

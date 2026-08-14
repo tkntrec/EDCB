@@ -9,7 +9,7 @@
         </Grid.RowDefinitions>
         <TabControl Name="tabControl">
             <TabItem Header="番組情報">
-                <RichTextBox IsReadOnly="True" IsReadOnlyCaretVisible="True" Name="richTextBox_pgInfo" VerticalScrollBarVisibility="Auto" />
+                <RichTextBox IsReadOnly="True" IsReadOnlyCaretVisible="True" Name="richTextBox_pgInfo" Style="{StaticResource AppRichTextBoxStyle}" VerticalScrollBarVisibility="Auto" />
             </TabItem>
             <TabItem Header="エラーログ">
                 <TextBox IsReadOnly="True" IsReadOnlyCaretVisible="True" Name="textBox_errLog" Style="{StaticResource AppErrLogTextBoxStyle}" VerticalScrollBarVisibility="Auto" />

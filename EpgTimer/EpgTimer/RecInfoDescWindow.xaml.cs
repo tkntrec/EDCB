@@ -83,6 +83,16 @@ namespace EpgTimer
                 }
             }
             richTextBox_pgInfo.Document = new FlowDocument(CommonManager.ConvertDisplayText(basicInfo, extText, propertyInfo));
+#if NETCOREAPP
+#pragma warning disable WPF0001
+            // (おそらくバグにより)フォントが継承されないため
+            if (Application.Current.ThemeMode != ThemeMode.None)
+            {
+                richTextBox_pgInfo.Document.FontFamily = richTextBox_pgInfo.FontFamily;
+                richTextBox_pgInfo.Document.FontSize = richTextBox_pgInfo.FontSize;
+            }
+#pragma warning restore WPF0001
+#endif
             pgInfoForProgramText = basicInfo + extText + propertyInfo;
             button_save_program.IsEnabled = pgInfoForProgramText.Length > 0;
             textBox_errLog.Text = info.ErrInfo;
