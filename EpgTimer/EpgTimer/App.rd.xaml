@@ -20,7 +20,7 @@
     <sys:Double x:Key="AppSearchWindowWidth">820</sys:Double>
     <sys:Double x:Key="AppSetDefSearchSettingWindowHeight">500</sys:Double>
     <sys:Double x:Key="AppSettingWindowHeight">640</sys:Double>
-    <sys:Double x:Key="AppSettingWindowWidth">800</sys:Double>
+    <sys:Double x:Key="AppSettingWindowWidth">820</sys:Double>
 
     <sys:Double x:Key="AppEpgListServiceColumnWidth">150</sys:Double>
     <sys:Double x:Key="AppMainWindowButtonSeparatorWidth">15</sys:Double>

@@ -81,15 +81,15 @@
 
     <Thickness x:Key="AppListViewItemBorderThickness">5,0,0,0</Thickness>
 
-    <Brush x:Key="AppEpgDateSaturdayButtonForegroundBrush">Blue</Brush>
-    <Brush x:Key="AppEpgDateSundayButtonForegroundBrush">Red</Brush>
+    <Brush x:Key="AppEpgDateSaturdayButtonForegroundBrush">RoyalBlue</Brush>
+    <Brush x:Key="AppEpgDateSundayButtonForegroundBrush">OrangeRed</Brush>
     <Brush x:Key="AppEpgServiceHeaderBackgroundBrush">Silver</Brush>
     <Brush x:Key="AppEpgTimeHeaderBackgroundBrush">White</Brush>
     <Brush x:Key="AppEpgWeekDayHeaderBackgroundBrush">LightSlateGray</Brush>
 
-    <Color x:Key="AppEpgWeekDayHeaderTextBackgroundColor">White</Color>
-    <Color x:Key="AppEpgWeekDayHeaderSaturdayTextBackgroundColor">Lavender</Color>
-    <Color x:Key="AppEpgWeekDayHeaderSundayTextBackgroundColor">MistyRose</Color>
+    <Color x:Key="AppEpgWeekDayHeaderTextBackgroundColor">Silver</Color>
+    <Color x:Key="AppEpgWeekDayHeaderSaturdayTextBackgroundColor">CornflowerBlue</Color>
+    <Color x:Key="AppEpgWeekDayHeaderSundayTextBackgroundColor">LightSalmon</Color>
 
     <DataTemplate x:Key="AppColorNameItemTemplate">
         <StackPanel Orientation="Horizontal">
@@ -108,7 +108,7 @@
     <GridLength x:Key="AppSearchWindowTabGridHeight">405</GridLength>
 
     <Style x:Key="AppEpgDateButtonTextBorderStyle" TargetType="Border">
-        <Setter Property="BorderBrush" Value="Red" />
+        <Setter Property="BorderBrush" Value="OrangeRed" />
     </Style>
     <Style x:Key="AppEpgToolTipBorderStyle" TargetType="Border">
         <Setter Property="Background" Value="DarkGray" />
@@ -196,7 +196,7 @@
 
     <Style x:Key="AppNowLineStyle" TargetType="Line">
         <Setter Property="Opacity" Value="0.7" />
-        <Setter Property="Stroke" Value="Red" />
+        <Setter Property="Stroke" Value="OrangeRed" />
         <Setter Property="StrokeThickness" Value="3" />
     </Style>
 
