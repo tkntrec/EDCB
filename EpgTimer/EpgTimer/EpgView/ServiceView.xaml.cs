@@ -33,9 +33,9 @@ namespace EpgTimer.EpgView
             stackPanel_service.Children.Clear();
         }
 
-        public void SetService(List<EpgServiceInfo> serviceList, double serviceWidth, Brush serviceBrush, bool isLight, bool isClickLeft)
+        public void SetService(List<EpgServiceInfo> serviceList, double serviceWidth, Brush backgroundBrush, bool isLight, bool isClickLeft)
         {
-            stackPanel_service.Children.Clear();
+            ClearInfo();
             uint tickCountToPreventAccidentalClick = (uint)Environment.TickCount;
 
             foreach (EpgServiceInfo info in serviceList)
@@ -61,7 +61,7 @@ namespace EpgTimer.EpgView
                 Grid.SetRowSpan(item, 2);
                 var grid = new Grid()
                 {
-                    Background = serviceBrush,
+                    Background = backgroundBrush,
                     Margin = new Thickness(1, 1, 1, 1),
                     Width = serviceWidth - 2
                 };

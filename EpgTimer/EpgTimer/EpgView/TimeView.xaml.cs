@@ -58,10 +58,7 @@ namespace EpgTimer.EpgView
                     {
                         if (weekMode == false && (time.Hour % 3 == 0 || needTimeOnly))
                         {
-                            items[i] = new TextBlock()
-                            {
-                                Style = (Style)FindResource("AppEpgTimeHeaderDateTextBlockStyle")
-                            };
+                            items[i] = new TextBlock() { Style = (Style)FindResource("AppEpgTimeHeaderDateTextBlockStyle") };
                             items[i].Inlines.Add(new Run(time.ToString("M\\/d")));
                             if (heightPerHour >= 60)
                             {

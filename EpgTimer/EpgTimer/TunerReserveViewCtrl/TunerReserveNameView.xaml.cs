@@ -29,25 +29,25 @@ namespace EpgTimer.TunerReserveViewCtrl
             stackPanel_tuner.Children.Clear();
         }
 
-        public void SetTunerInfo(List<TunerNameViewItem> tunerInfo)
+        public void SetTunerInfo(List<TunerNameViewItem> tunerInfo, Brush backgroundBrush, bool isLight)
         {
-            stackPanel_tuner.Children.Clear();
+            ClearInfo();
             foreach (TunerNameViewItem info in tunerInfo)
             {
+                var item = new TextBlock()
+                {
+                    Style = (Style)FindResource(isLight ? "AppEpgServiceHeaderLightBackgroundTextBlockStyle" : "AppEpgServiceHeaderTextBlockStyle"),
+                    Text = info.TunerInfo.tunerName + (info.TunerInfo.tunerID != 0xFFFFFFFF ? "\r\nID: " + info.TunerInfo.tunerID.ToString("X8") : "")
+                };
                 var grid = new Grid()
                 {
-                    Background = (Brush)FindResource("AppTunerReserveHeaderTextBackgroundBrush"),
-                    Margin = new Thickness(1, 2, 1, 2),
+                    Background = backgroundBrush,
+                    Margin = new Thickness(1, 1, 1, 1),
                     Width = info.Width - 2
                 };
-                grid.Children.Add(new TextBlock()
-                {
-                    Style = (Style)FindResource("AppTunerReserveHeaderTextBlockStyle"),
-                    Text = info.TunerInfo.tunerName + (info.TunerInfo.tunerID != 0xFFFFFFFF ? "\r\nID: " + info.TunerInfo.tunerID.ToString("X8") : "")
-                });
+                grid.Children.Add(item);
                 stackPanel_tuner.Children.Add(grid);
             }
         }
     }
-
 }

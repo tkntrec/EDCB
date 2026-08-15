@@ -86,9 +86,6 @@
     <Brush x:Key="AppEpgServiceHeaderBackgroundBrush">Silver</Brush>
     <Brush x:Key="AppEpgTimeHeaderBackgroundBrush">White</Brush>
     <Brush x:Key="AppEpgWeekDayHeaderBackgroundBrush">LightSlateGray</Brush>
-    <Brush x:Key="AppTunerReserveBackgroundBrush">DarkGray</Brush>
-    <Brush x:Key="AppTunerReserveHeaderBackgroundBrush">LightSlateGray</Brush>
-    <Brush x:Key="AppTunerReserveHeaderTextBackgroundBrush">AliceBlue</Brush>
 
     <Color x:Key="AppEpgWeekDayHeaderTextBackgroundColor">White</Color>
     <Color x:Key="AppEpgWeekDayHeaderSaturdayTextBackgroundColor">Lavender</Color>
@@ -225,15 +222,6 @@
     <Style x:Key="AppEpgTimeHeaderSundayRunStyle" BasedOn="{StaticResource AppEpgTimeHeaderDayRunStyle}" TargetType="Run">
         <Setter Property="Foreground" Value="Red" />
     </Style>
-    <Style x:Key="AppTunerReserveHeaderDayRunStyle" TargetType="Run">
-        <Setter Property="Foreground" Value="Black" />
-    </Style>
-    <Style x:Key="AppTunerReserveHeaderSaturdayRunStyle" BasedOn="{StaticResource AppTunerReserveHeaderDayRunStyle}" TargetType="Run">
-        <Setter Property="Foreground" Value="Blue" />
-    </Style>
-    <Style x:Key="AppTunerReserveHeaderSundayRunStyle" BasedOn="{StaticResource AppTunerReserveHeaderDayRunStyle}" TargetType="Run">
-        <Setter Property="Foreground" Value="Red" />
-    </Style>
 
     <Style x:Key="AppSliderStyle" BasedOn="{StaticResource {x:Type Slider}}" TargetType="Slider">
         <Setter Property="VerticalAlignment" Value="Center" />
@@ -279,16 +267,6 @@
     <Style x:Key="AppSearchResultListViewReservedTextBlockStyle" BasedOn="{StaticResource {x:Type TextBlock}}" TargetType="TextBlock">
         <Setter Property="FontWeight" Value="Bold" />
         <Setter Property="Foreground" Value="Tomato" />
-    </Style>
-    <Style x:Key="AppTunerReserveHeaderTextBlockStyle" BasedOn="{StaticResource {x:Type TextBlock}}" TargetType="TextBlock">
-        <Setter Property="Foreground" Value="Black" />
-        <Setter Property="HorizontalAlignment" Value="Center" />
-        <Setter Property="TextAlignment" Value="Center" />
-        <Setter Property="VerticalAlignment" Value="Top" />
-    </Style>
-    <Style x:Key="AppTunerReserveHeaderDateTextBlockStyle" BasedOn="{StaticResource AppTunerReserveHeaderTextBlockStyle}" TargetType="TextBlock" />
-    <Style x:Key="AppTunerReserveHeaderHourTextBlockStyle" BasedOn="{StaticResource AppTunerReserveHeaderTextBlockStyle}" TargetType="TextBlock">
-        <Setter Property="FontSize" Value="{DynamicResource AppLargeFontSize}" />
     </Style>
 
     <Style x:Key="AppMultiLineTextBoxStyle" BasedOn="{StaticResource {x:Type TextBox}}" TargetType="TextBox">

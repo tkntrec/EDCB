@@ -14,7 +14,6 @@
             <RowDefinition Height="{StaticResource AppEpgHeaderGridLength}" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <Border BorderBrush="{StaticResource AppTunerReserveHeaderBackgroundBrush}" BorderThickness="0,0,1,1" />
         <my:TunerReserveTimeView Grid.Row="1" x:Name="tunerReserveTimeView" />
         <my:TunerReserveNameView Grid.Column="1" x:Name="tunerReserveNameView" />
         <Grid ContextMenuOpening="grid_content_ContextMenuOpening" Grid.Column="1" Grid.Row="1" Name="grid_content">

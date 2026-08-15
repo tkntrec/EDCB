@@ -785,6 +785,7 @@ namespace EpgTimer
                 if (setting.ShowDialog() == true)
                 {
                     epgView.UpdateSetting();
+                    tunerReserveView.Refresh();
                     loadLogoTimer.Start();
                     ResetButtonView();
                     taskTray.ForceHideBalloonTipSec = Settings.Instance.ForceHideBalloonTipSec;
