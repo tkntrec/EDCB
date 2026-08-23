@@ -197,7 +197,6 @@
                         <Grid Margin="{StaticResource AppMargin}">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
@@ -210,14 +209,14 @@
                                 <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
                             <Label Content="表示名" Style="{StaticResource AppTermLabelStyle}" />
-                            <TextBox Grid.Column="1" Grid.ColumnSpan="2" Style="{StaticResource AppTextBoxStyle}" Text="{Binding Cust1BtnName}" />
+                            <TextBox Grid.Column="1" Style="{StaticResource AppTextBoxStyle}" Text="{Binding Cust1BtnName}" />
                             <FrameworkElement Grid.Row="1" Margin="{StaticResource AppWideMarginT}" />
-                            <Label Content="実行exe" Grid.Row="2" Style="{StaticResource AppTermLabelStyle}" />
-                            <TextBox Grid.Column="1" Grid.ColumnSpan="3" Grid.Row="2" Name="textBox_exe1" Style="{StaticResource AppTextBoxStyle}" Text="{Binding Cust1BtnCmd}" />
+                            <Label Content="実行exe・URL等" Grid.Row="2" Style="{StaticResource AppTermLabelStyle}" />
+                            <TextBox Grid.Column="1" Grid.ColumnSpan="2" Grid.Row="2" Name="textBox_exe1" Style="{StaticResource AppTextBoxStyle}" Text="{Binding Cust1BtnCmd}" />
                             <Button Content="開く" Grid.Column="4" Grid.Row="2" Margin="{StaticResource AppMarginL}" Name="button_exe1" Style="{StaticResource AppButtonStyle}" Click="button_exe1_Click" />
                             <FrameworkElement Grid.Row="3" Margin="{StaticResource AppWideMarginT}" />
-                            <Label Content="コマンドラインオプション" Grid.ColumnSpan="2" Grid.Row="4" Style="{StaticResource AppTermLabelStyle}" />
-                            <TextBox Grid.Column="2" Grid.ColumnSpan="2" Grid.Row="4" Style="{StaticResource AppTextBoxStyle}" Text="{Binding Cust1BtnCmdOpt}" />
+                            <Label Content="コマンドライン引数" Grid.Row="4" Style="{StaticResource AppTermLabelStyle}" />
+                            <TextBox Grid.Column="1" Grid.ColumnSpan="2" Grid.Row="4" Style="{StaticResource AppTextBoxStyle}" Text="{Binding Cust1BtnCmdOpt}" />
                         </Grid>
                     </StackPanel>
                 </GroupBox>
@@ -226,7 +225,6 @@
                         <Grid Margin="{StaticResource AppMargin}">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
@@ -239,14 +237,14 @@
                                 <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
                             <Label Content="表示名" Style="{StaticResource AppTermLabelStyle}" />
-                            <TextBox Grid.Column="1" Grid.ColumnSpan="2" Style="{StaticResource AppTextBoxStyle}" Text="{Binding Cust2BtnName}" />
+                            <TextBox Grid.Column="1" Style="{StaticResource AppTextBoxStyle}" Text="{Binding Cust2BtnName}" />
                             <FrameworkElement Grid.Row="1" Margin="{StaticResource AppWideMarginT}" />
-                            <Label Content="実行exe" Grid.Row="2" Style="{StaticResource AppTermLabelStyle}" />
-                            <TextBox Grid.Column="1" Grid.ColumnSpan="3" Grid.Row="2" Name="textBox_exe2" Style="{StaticResource AppTextBoxStyle}" Text="{Binding Cust2BtnCmd}" />
+                            <Label Content="実行exe・URL等" Grid.Row="2" Style="{StaticResource AppTermLabelStyle}" />
+                            <TextBox Grid.Column="1" Grid.ColumnSpan="2" Grid.Row="2" Name="textBox_exe2" Style="{StaticResource AppTextBoxStyle}" Text="{Binding Cust2BtnCmd}" />
                             <Button Content="開く" Grid.Column="4" Grid.Row="2" Margin="{StaticResource AppMarginL}" Name="button_exe2" Style="{StaticResource AppButtonStyle}" Click="button_exe2_Click" />
                             <FrameworkElement Grid.Row="3" Margin="{StaticResource AppWideMarginT}" />
-                            <Label Content="コマンドラインオプション" Grid.ColumnSpan="2" Grid.Row="4" Style="{StaticResource AppTermLabelStyle}" />
-                            <TextBox Grid.Column="2" Grid.ColumnSpan="2" Grid.Row="4" Style="{StaticResource AppTextBoxStyle}" Text="{Binding Cust2BtnCmdOpt}" />
+                            <Label Content="コマンドライン引数" Grid.Row="4" Style="{StaticResource AppTermLabelStyle}" />
+                            <TextBox Grid.Column="1" Grid.ColumnSpan="2" Grid.Row="4" Style="{StaticResource AppTextBoxStyle}" Text="{Binding Cust2BtnCmdOpt}" />
                         </Grid>
                     </StackPanel>
                 </GroupBox>

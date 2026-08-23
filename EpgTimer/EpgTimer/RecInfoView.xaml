@@ -16,6 +16,7 @@
             <MenuItem Header="Scramble" Name="Scrambles" IsCheckable="True" Click="headerSelect_Click" />
             <MenuItem Header="結果" Name="Result" IsCheckable="True" Click="headerSelect_Click" />
             <MenuItem Header="録画ファイル" Name="RecFilePath" IsCheckable="True" Click="headerSelect_Click" />
+            <MenuItem Header="録画ファイル(置換後)" Name="ReplacedRecFilePath" IsCheckable="True" Click="headerSelect_Click" />
             <MenuItem Header="ID" Name="ID" IsCheckable="True" Click="headerSelect_Click" />
             <Separator />
             <MenuItem Header="ボタン列を隠す" Name="HideButton" IsCheckable="True" Click="hideButton_Click" />
@@ -137,6 +138,11 @@
                     <GridViewColumn DisplayMemberBinding="{Binding RecFilePath}">
                         <GridViewColumn.Header>
                             <GridViewColumnHeader Content="録画ファイル" Tag="RecFilePath" HorizontalContentAlignment="Left"/>
+                        </GridViewColumn.Header>
+                    </GridViewColumn>
+                    <GridViewColumn DisplayMemberBinding="{Binding ReplacedRecFilePath}">
+                        <GridViewColumn.Header>
+                            <GridViewColumnHeader Content="録画ファイル(置換後)" Tag="ReplacedRecFilePath" HorizontalContentAlignment="Left"/>
                         </GridViewColumn.Header>
                     </GridViewColumn>
                     <GridViewColumn DisplayMemberBinding="{Binding ID}">

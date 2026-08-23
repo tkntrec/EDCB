@@ -160,7 +160,8 @@ namespace EpgTimer
                 listView_recinfo.ItemsSource = null;
                 return false;
             }
-            listView_recinfo.ItemsSource = CommonManager.Instance.DB.RecFileInfo.Values.Select(info => new RecInfoItem(info)).ToList();
+            var dict = CommonManager.CreateReplaceDictionary(Settings.Instance.FilePathReplacePattern);
+            listView_recinfo.ItemsSource = CommonManager.Instance.DB.RecFileInfo.Values.Select(info => new RecInfoItem(info, dict)).ToList();
 
             if (columnList.ContainsKey(Settings.Instance.RecInfoColumnHead) == false)
             {

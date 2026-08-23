@@ -15,11 +15,17 @@ namespace EpgTimer
 {
     class RecInfoItem
     {
-        public RecInfoItem(RecFileInfo item)
+        public RecInfoItem(RecFileInfo info, Dictionary<char, List<KeyValuePair<string, string>>> replaceRecFilePathDictionary)
         {
-            this.RecInfo = item;
+            RecInfo = info;
+            ReplaceRecFilePathDictionary = replaceRecFilePathDictionary;
         }
         public RecFileInfo RecInfo
+        {
+            get;
+            private set;
+        }
+        public Dictionary<char, List<KeyValuePair<string, string>>> ReplaceRecFilePathDictionary
         {
             get;
             private set;
@@ -72,6 +78,10 @@ namespace EpgTimer
         public string RecFilePath
         {
             get { return RecInfo.RecFilePath; }
+        }
+        public string ReplacedRecFilePath
+        {
+            get { return CommonManager.ReplaceText(RecInfo.RecFilePath, ReplaceRecFilePathDictionary); }
         }
         public uint ID
         {
