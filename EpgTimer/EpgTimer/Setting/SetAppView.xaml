@@ -7,7 +7,8 @@
              mc:Ignorable="d" 
              d:DesignHeight="500" d:DesignWidth="780" d:DataContext="{d:DesignInstance local:Settings}" DataContextChanged="UserControl_DataContextChanged">
     <UserControl.Resources>
-        <local:BoolConverter x:Key="convert" />
+        <local:ToStringValueIsNotEqualConverter x:Key="notEqualConvert" />
+        <local:ToStringValueIsZeroOrOneConverter x:Key="invert" />
     </UserControl.Resources>
     <TabControl>
         <TabItem Header="全般">
@@ -34,7 +35,7 @@
                             <CheckBox Content="ツールチップの表示を抑制する" HorizontalAlignment="Left" IsChecked="{Binding NoToolTip}" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppCheckBoxStyle}" />
                             <CheckBox Content="バルーンチップ／トーストでの動作通知を抑制する" HorizontalAlignment="Left" IsChecked="{Binding NoBallonTips}" Margin="{StaticResource AppMarginT}" Name="checkBox_noBallonTips" Style="{StaticResource AppCheckBoxStyle}" />
                             <StackPanel Margin="{StaticResource AppIndentMargin}" Orientation="Horizontal">
-                                <CheckBox Content="リアルタイムで表示できなかった通知を捨てる" IsChecked="{Binding BalloonTipRealtime}" IsEnabled="{Binding IsChecked, Converter={StaticResource convert}, ConverterParameter=not, ElementName=checkBox_noBallonTips, UpdateSourceTrigger=PropertyChanged}" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppCheckBoxStyle}" />
+                                <CheckBox Content="リアルタイムで表示できなかった通知を捨てる" IsChecked="{Binding BalloonTipRealtime}" IsEnabled="{Binding IsChecked, Converter={StaticResource invert}, ElementName=checkBox_noBallonTips, UpdateSourceTrigger=PropertyChanged}" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppCheckBoxStyle}" />
                             </StackPanel>
                             <CheckBox Content="録画済み一覧のダブルクリックで再生を行う" HorizontalAlignment="Left" IsChecked="{Binding PlayDClick}" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppCheckBoxStyle}" />
                             <CheckBox Content="録画済み一覧の項目を削除するとき確認をとる" HorizontalAlignment="Left" IsChecked="{Binding ConfirmDelRecInfo}" Margin="{StaticResource AppMarginT}" Name="checkBox_confirmDelRecInfo" Style="{StaticResource AppCheckBoxStyle}" />
@@ -46,14 +47,14 @@
                             <CheckBox Content="EPG取得対象サービスのみ表示する" HorizontalAlignment="Left" IsChecked="{Binding ShowEpgCapServiceOnly}" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppCheckBoxStyle}" />
                             <CheckBox Content="リストボックスなどのサービス一覧をIDでソートする" HorizontalAlignment="Left" IsChecked="{Binding SortServiceList}" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppCheckBoxStyle}" />
                             <CheckBox Content="引数つきで起動したとき(iEPG予約追加など)はすぐに終了する" HorizontalAlignment="Left" IsChecked="{Binding ExitAfterProcessingArgs}" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppCheckBoxStyle}" />
-                            <CheckBox Content="テーマを適用する(要再起動)" HorizontalAlignment="Left" IsChecked="{Binding NoStyle, Converter={StaticResource convert}, ConverterParameter=not}" Margin="{StaticResource AppMarginT}" Name="checkBox_noStyle" Style="{StaticResource AppCheckBoxStyle}" />
+                            <CheckBox Content="テーマを適用する(要再起動)" HorizontalAlignment="Left" IsChecked="{Binding NoStyle, Converter={StaticResource invert}}" Margin="{StaticResource AppMarginT}" Name="checkBox_noStyle" Style="{StaticResource AppCheckBoxStyle}" />
                             <CheckBox Content="上書き用テーマを適用する(要再起動)" HorizontalAlignment="Left" IsChecked="{Binding ApplyPostStyle}" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppCheckBoxStyle}" />
                             <CheckBox Content="右クリックメニューにテーマを適用する(要再起動)" HorizontalAlignment="Left" IsChecked="{Binding ApplyContextMenuStyle}" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppCheckBoxStyle}" />
                         </StackPanel>
                         <StackPanel Margin="{StaticResource AppIndentMargin}">
                             <CheckBox Content="起動時に前回接続サーバーに接続する" HorizontalAlignment="Left" IsChecked="{Binding WakeReconnectNW}" Margin="{StaticResource AppMarginT}" Name="checkBox_wakeReconnect" Style="{StaticResource AppCheckBoxStyle}" />
                             <CheckBox Content="休止／スタンバイ移行時にEpgTimerNWを終了する" HorizontalAlignment="Left" IsChecked="{Binding SuspendCloseNW}" Margin="{StaticResource AppMarginT}" Name="checkBox_suspendClose" Style="{StaticResource AppCheckBoxStyle}" />
-                            <CheckBox Content="EPGデータを常に更新する" HorizontalAlignment="Left" IsChecked="{Binding NgAutoEpgLoadNW, Converter={StaticResource convert}, ConverterParameter=not}" Margin="{StaticResource AppMarginT}" Name="checkBox_ngAutoEpgLoad" Style="{StaticResource AppCheckBoxStyle}" />
+                            <CheckBox Content="EPGデータを常に更新する" HorizontalAlignment="Left" IsChecked="{Binding NgAutoEpgLoadNW, Converter={StaticResource invert}}" Margin="{StaticResource AppMarginT}" Name="checkBox_ngAutoEpgLoad" Style="{StaticResource AppCheckBoxStyle}" />
                             <StackPanel Margin="{StaticResource AppIndentMargin}" Orientation="Horizontal">
                                 <CheckBox Content="番組表を事前に構築しておく" IsChecked="{Binding PrebuildEpg}" IsEnabled="{Binding IsChecked, ElementName=checkBox_ngAutoEpgLoad, UpdateSourceTrigger=PropertyChanged}" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppCheckBoxStyle}" />
                             </StackPanel>
@@ -146,10 +147,10 @@
                         <Label Content="表示ボタン" Margin="{StaticResource AppMarginB}" Style="{StaticResource AppLabelStyle}" />
                         <ListBox Grid.Row="1" Name="listBox_viewBtn" />
                         <StackPanel Grid.Column="1" Grid.Row="1" Margin="{StaticResource AppWideMarginLR}">
-                            <Button Content="　↑　" Style="{StaticResource AppButtonStyle}" Tag="{Binding ElementName=listBox_viewBtn}" Click="button_up_Click" />
-                            <Button Content="→" Margin="{StaticResource AppWideMarginT}" Style="{StaticResource AppButtonStyle}" Click="button_btnDel_Click" />
-                            <Button Content="←" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppButtonStyle}" Click="button_btnAdd_Click" />
-                            <Button Content="↓" Margin="{StaticResource AppWideMarginT}" Style="{StaticResource AppButtonStyle}" Tag="{Binding ElementName=listBox_viewBtn}" Click="button_down_Click" />
+                            <Button Content="　↑　" IsEnabled="{Binding SelectedIndex, ElementName=listBox_viewBtn, Converter={StaticResource notEqualConvert}, ConverterParameter=-1}" Style="{StaticResource AppButtonStyle}" Tag="{Binding ElementName=listBox_viewBtn}" Click="button_up_Click" />
+                            <Button Content="→" IsEnabled="{Binding SelectedIndex, ElementName=listBox_viewBtn, Converter={StaticResource notEqualConvert}, ConverterParameter=-1}" Margin="{StaticResource AppWideMarginT}" Style="{StaticResource AppButtonStyle}" Click="button_btnDel_Click" />
+                            <Button Content="←" IsEnabled="{Binding SelectedIndex, ElementName=listBox_itemBtn, Converter={StaticResource notEqualConvert}, ConverterParameter=-1}" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppButtonStyle}" Click="button_btnAdd_Click" />
+                            <Button Content="↓" IsEnabled="{Binding SelectedIndex, ElementName=listBox_viewBtn, Converter={StaticResource notEqualConvert}, ConverterParameter=-1}" Margin="{StaticResource AppWideMarginT}" Style="{StaticResource AppButtonStyle}" Tag="{Binding ElementName=listBox_viewBtn}" Click="button_down_Click" />
                         </StackPanel>
                         <Label Content="項目" Grid.Column="2" Margin="{StaticResource AppMarginB}" Style="{StaticResource AppLabelStyle}" />
                         <ListBox Grid.Column="2" Grid.Row="1" Name="listBox_itemBtn" />
@@ -173,10 +174,10 @@
                         <Label Content="表示ボタン" Margin="{StaticResource AppMarginB}" Style="{StaticResource AppLabelStyle}" />
                         <ListBox Grid.Row="1" Name="listBox_viewTask" />
                         <StackPanel Grid.Column="1" Grid.Row="1" Margin="{StaticResource AppWideMarginLR}">
-                            <Button Content="　↑　" Style="{StaticResource AppButtonStyle}" Tag="{Binding ElementName=listBox_viewTask}" Click="button_up_Click" />
-                            <Button Content="→" Margin="{StaticResource AppWideMarginT}" Style="{StaticResource AppButtonStyle}" Click="button_taskDel_Click" />
-                            <Button Content="←" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppButtonStyle}" Click="button_taskAdd_Click" />
-                            <Button Content="↓" Margin="{StaticResource AppWideMarginT}" Style="{StaticResource AppButtonStyle}" Tag="{Binding ElementName=listBox_viewTask}" Click="button_down_Click" />
+                            <Button Content="　↑　" IsEnabled="{Binding SelectedIndex, ElementName=listBox_viewTask, Converter={StaticResource notEqualConvert}, ConverterParameter=-1}" Style="{StaticResource AppButtonStyle}" Tag="{Binding ElementName=listBox_viewTask}" Click="button_up_Click" />
+                            <Button Content="→" IsEnabled="{Binding SelectedIndex, ElementName=listBox_viewTask, Converter={StaticResource notEqualConvert}, ConverterParameter=-1}" Margin="{StaticResource AppWideMarginT}" Style="{StaticResource AppButtonStyle}" Click="button_taskDel_Click" />
+                            <Button Content="←" IsEnabled="{Binding SelectedIndex, ElementName=listBox_itemTask, Converter={StaticResource notEqualConvert}, ConverterParameter=-1}" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppButtonStyle}" Click="button_taskAdd_Click" />
+                            <Button Content="↓" IsEnabled="{Binding SelectedIndex, ElementName=listBox_viewTask, Converter={StaticResource notEqualConvert}, ConverterParameter=-1}" Margin="{StaticResource AppWideMarginT}" Style="{StaticResource AppButtonStyle}" Tag="{Binding ElementName=listBox_viewTask}" Click="button_down_Click" />
                         </StackPanel>
                         <Label Content="項目" Grid.Column="2" Margin="{StaticResource AppMarginB}" Style="{StaticResource AppLabelStyle}" />
                         <ListBox Grid.Column="2" Grid.Row="1" Name="listBox_itemTask" />

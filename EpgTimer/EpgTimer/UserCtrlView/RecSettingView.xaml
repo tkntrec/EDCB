@@ -3,7 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:my="clr-namespace:EpgTimer">
     <UserControl.Resources>
-        <my:BoolConverter x:Key="convert" />
+        <my:ToStringValueIsNotEqualConverter x:Key="notEqualConvert" />
+        <my:ToStringValueIsZeroOrOneConverter x:Key="invert" />
     </UserControl.Resources>
     <DockPanel>
         <Grid DockPanel.Dock="Top" Margin="{StaticResource AppEdgeMarginLR}">
@@ -81,17 +82,17 @@
                 <FrameworkElement Grid.Row="4" Margin="{StaticResource AppWideMarginT}" />
                 <Label Content="録画マージン" Grid.ColumnSpan="2" Grid.Row="5" Style="{StaticResource AppTermLabelStyle}" />
                 <CheckBox Content="デフォルト" Grid.Column="2" Grid.Row="5" HorizontalAlignment="Left" Margin="{StaticResource AppMarginR}" Name="checkBox_margineDef" Style="{StaticResource AppCheckBoxStyle}" />
-                <StackPanel Grid.Column="3" Grid.Row="5" IsEnabled="{Binding IsChecked, ElementName=checkBox_margineDef, Converter={StaticResource convert}, ConverterParameter=not}" Orientation="Horizontal">
+                <StackPanel Grid.Column="3" Grid.Row="5" IsEnabled="{Binding IsChecked, ElementName=checkBox_margineDef, Converter={StaticResource invert}}" Orientation="Horizontal">
                     <Label Content="開始" Style="{StaticResource AppTermLabelStyle}" />
                     <TextBox InputMethod.IsInputMethodEnabled="False" Margin="{StaticResource AppMarginR}" Name="textBox_margineStart" Text="0" Style="{StaticResource AppNarrowTextBoxStyle}" />
                 </StackPanel>
-                <Label Content="終了" Grid.Column="4" Grid.Row="5" HorizontalAlignment="Right" IsEnabled="{Binding IsChecked, ElementName=checkBox_margineDef, Converter={StaticResource convert}, ConverterParameter=not}" Style="{StaticResource AppTermLabelStyle}" />
-                <TextBox Grid.Column="5" Grid.Row="5" InputMethod.IsInputMethodEnabled="False" Name="textBox_margineEnd" Text="0" IsEnabled="{Binding IsChecked, ElementName=checkBox_margineDef, Converter={StaticResource convert}, ConverterParameter=not}" Style="{StaticResource AppNarrowTextBoxStyle}" />
+                <Label Content="終了" Grid.Column="4" Grid.Row="5" HorizontalAlignment="Right" IsEnabled="{Binding IsChecked, ElementName=checkBox_margineDef, Converter={StaticResource invert}}" Style="{StaticResource AppTermLabelStyle}" />
+                <TextBox Grid.Column="5" Grid.Row="5" InputMethod.IsInputMethodEnabled="False" Name="textBox_margineEnd" Text="0" IsEnabled="{Binding IsChecked, ElementName=checkBox_margineDef, Converter={StaticResource invert}}" Style="{StaticResource AppNarrowTextBoxStyle}" />
                 <FrameworkElement Grid.Row="6" Margin="{StaticResource AppWideMarginT}" />
                 <Label Content="指定サービス対象データ" Grid.ColumnSpan="2" Grid.Row="7" Style="{StaticResource AppTermLabelStyle}" />
                 <CheckBox Content="デフォルト" Grid.Column="2" Grid.Row="7" HorizontalAlignment="Left" Margin="{StaticResource AppMarginR}" Name="checkBox_serviceMode" Style="{StaticResource AppCheckBoxStyle}" />
-                <CheckBox Content="字幕を含める" Grid.Column="3" Grid.Row="7" HorizontalAlignment="Left" IsEnabled="{Binding IsChecked, ElementName=checkBox_serviceMode, Converter={StaticResource convert}, ConverterParameter=not}" Margin="{StaticResource AppMarginR}" Name="checkBox_serviceCaption" Style="{StaticResource AppCheckBoxStyle}" />
-                <CheckBox Content="データカルーセルを含める" Grid.Column="4" Grid.ColumnSpan="2" Grid.Row="7" HorizontalAlignment="Left" IsEnabled="{Binding IsChecked, ElementName=checkBox_serviceMode, Converter={StaticResource convert}, ConverterParameter=not}" Name="checkBox_serviceData" Style="{StaticResource AppCheckBoxStyle}" />
+                <CheckBox Content="字幕を含める" Grid.Column="3" Grid.Row="7" HorizontalAlignment="Left" IsEnabled="{Binding IsChecked, ElementName=checkBox_serviceMode, Converter={StaticResource invert}}" Margin="{StaticResource AppMarginR}" Name="checkBox_serviceCaption" Style="{StaticResource AppCheckBoxStyle}" />
+                <CheckBox Content="データカルーセルを含める" Grid.Column="4" Grid.ColumnSpan="2" Grid.Row="7" HorizontalAlignment="Left" IsEnabled="{Binding IsChecked, ElementName=checkBox_serviceMode, Converter={StaticResource invert}}" Name="checkBox_serviceData" Style="{StaticResource AppCheckBoxStyle}" />
                 <Grid Grid.ColumnSpan="6" Grid.Row="8" Margin="{StaticResource AppWideMarginT}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -135,8 +136,8 @@
                         </Grid.RowDefinitions>
                         <Button Content="追加" Grid.ColumnSpan="2" Grid.Row="1" Margin="{StaticResource AppMarginLT}" Name="button_recFolderAdd" Style="{StaticResource AppButtonStyle}" Click="button_recFolderAdd_Click" />
                         <Button Content="部分受信追加" Grid.ColumnSpan="2" Grid.Row="2" Margin="{StaticResource AppMarginLT}" Name="button_recFolderAdd_1seg" Style="{StaticResource AppButtonStyle}" Click="button_recFolderAdd_1seg_Click" />
-                        <Button Content="変更" Margin="{StaticResource AppMarginL}" Name="button_recFolderChg" Style="{StaticResource AppButtonStyle}" Click="button_recFolderChg_Click" />
-                        <Button Content="削除" Grid.Column="1" Margin="{StaticResource AppMarginL}" Name="button_recFolderDel" Style="{StaticResource AppButtonStyle}" Click="button_recFolderDel_Click" />
+                        <Button Content="変更" IsEnabled="{Binding SelectedIndex, ElementName=listView_recFolder, Converter={StaticResource notEqualConvert}, ConverterParameter=-1}" Margin="{StaticResource AppMarginL}" Name="button_recFolderChg" Style="{StaticResource AppButtonStyle}" Click="button_recFolderChg_Click" />
+                        <Button Content="削除" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=listView_recFolder, Converter={StaticResource notEqualConvert}, ConverterParameter=-1}" Margin="{StaticResource AppMarginL}" Name="button_recFolderDel" Style="{StaticResource AppButtonStyle}" Click="button_recFolderDel_Click" />
                     </Grid>
                 </Grid>
                 <FrameworkElement Grid.Row="9" Margin="{StaticResource AppMarginT}" />
@@ -149,7 +150,7 @@
                 <StackPanel Grid.ColumnSpan="6" Grid.Row="14" Orientation="Horizontal">
                     <Label Content="録画後動作" Style="{StaticResource AppTermLabelStyle}" />
                     <CheckBox Content="デフォルト" Name="checkBox_suspendDef" Style="{StaticResource AppCheckBoxStyle}" />
-                    <StackPanel IsEnabled="{Binding IsChecked, ElementName=checkBox_suspendDef, Converter={StaticResource convert}, ConverterParameter=not}" Orientation="Horizontal">
+                    <StackPanel IsEnabled="{Binding IsChecked, ElementName=checkBox_suspendDef, Converter={StaticResource invert}}" Orientation="Horizontal">
                         <RadioButton Content="何もしない" Margin="{StaticResource AppWideMarginL}" Name="radioButton_non" Style="{StaticResource AppRadioButtonStyle}" />
                         <RadioButton Content="スタンバイ" Margin="{StaticResource AppWideMarginL}" Name="radioButton_standby" Style="{StaticResource AppRadioButtonStyle}" />
                         <RadioButton Content="休止" Margin="{StaticResource AppWideMarginL}" Name="radioButton_supend" Style="{StaticResource AppRadioButtonStyle}" />

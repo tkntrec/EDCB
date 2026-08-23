@@ -254,13 +254,8 @@ namespace EpgTimer
                              tabItem_cs3.IsSelected ? listBox_serviceCS3 :
                              tabItem_tere.IsSelected ? listBox_serviceTere :
                              tabItem_other.IsSelected ? listBox_serviceOther : null;
-            if (target != null)
+            if (target != null && target.SelectedItem != null)
             {
-                if (target.SelectedItem == null)
-                {
-                    MessageBox.Show("アイテムが選択されていません");
-                    return;
-                }
                 var info = (Tuple<string, ulong>)target.SelectedItem;
                 if (listBox_serviceView.Items.Cast<Tuple<string, ulong>>().All(info2 => info2.Item2 != info.Item2))
                 {
@@ -368,10 +363,6 @@ namespace EpgTimer
                     listBox_jyanruView.Items.Add(listBox_jyanru.SelectedItem);
                 }
             }
-            else
-            {
-                MessageBox.Show("アイテムが選択されていません");
-            }
         }
 
         /// <summary>
@@ -399,12 +390,18 @@ namespace EpgTimer
             listBox_jyanruView.Items.Clear();
         }
 
-        private void listBox_service_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void listBox_or_tabControl_service_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             string text = "";
-            if (((ListBox)sender).SelectedItem != null)
+            ListBox target = sender == listBox_serviceView ? listBox_serviceView :
+                             tabItem_bs.IsSelected ? listBox_serviceBS :
+                             tabItem_cs.IsSelected ? listBox_serviceCS :
+                             tabItem_cs3.IsSelected ? listBox_serviceCS3 :
+                             tabItem_tere.IsSelected ? listBox_serviceTere :
+                             tabItem_other.IsSelected ? listBox_serviceOther : null;
+            if (target != null && target.SelectedItem != null)
             {
-                var info = (Tuple<string, ulong>)((ListBox)sender).SelectedItem;
+                var info = (Tuple<string, ulong>)target.SelectedItem;
                 if (info.Item2 >> 48 != 0)
                 {
                     text = info.Item1;

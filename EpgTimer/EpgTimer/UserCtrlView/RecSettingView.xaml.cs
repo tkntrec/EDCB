@@ -319,6 +319,8 @@ namespace EpgTimer
                 {
                     RecPresetItem item = comboBox_preSet.SelectedItem as RecPresetItem;
                     UpdateView(item.ID == 0xFFFFFFFF ? setDefSetting : Settings.CreateRecSetting(item.ID));
+                    button_chg_preset.IsEnabled = item.ID != 0xFFFFFFFF;
+                    button_del_preset.IsEnabled = item.ID != 0 && item.ID != 0xFFFFFFFF;
                 }
             }
             catch (Exception ex)
@@ -531,25 +533,12 @@ namespace EpgTimer
         {
             try
             {
-                if (comboBox_preSet.SelectedItem != null)
+                var item = comboBox_preSet.SelectedItem as RecPresetItem;
+                if (item != null && item.ID != 0 && item.ID != 0xFFFFFFFF)
                 {
-                    RecPresetItem item = comboBox_preSet.SelectedItem as RecPresetItem;
-                    if (item.ID == 0)
-                    {
-                        MessageBox.Show("デフォルトは削除できません");
-                        return;
-                    }
-                    else if (item.ID == 0xFFFFFFFF)
-                    {
-                        MessageBox.Show("このプリセットは変更できません");
-                        return;
-                    }
-                    else
-                    {
-                        comboBox_preSet.Items.Remove(item);
-                        comboBox_preSet.SelectedIndex = 0;
-                        SavePreset(null, null);
-                    }
+                    comboBox_preSet.Items.Remove(item);
+                    comboBox_preSet.SelectedIndex = 0;
+                    SavePreset(null, null);
                 }
             }
             catch (Exception ex)
@@ -583,16 +572,9 @@ namespace EpgTimer
         {
             try
             {
-                if (comboBox_preSet.SelectedItem != null)
+                var item = comboBox_preSet.SelectedItem as RecPresetItem;
+                if (item != null && item.ID != 0xFFFFFFFF)
                 {
-                    RecPresetItem item = comboBox_preSet.SelectedItem as RecPresetItem;
-
-                    if (item.ID == 0xFFFFFFFF)
-                    {
-                        MessageBox.Show("このプリセットは変更できません");
-                        return;
-                    }
-
                     AddPresetWindow setting = new AddPresetWindow();
                     PresentationSource topWindow = PresentationSource.FromVisual(this);
                     if (topWindow != null)

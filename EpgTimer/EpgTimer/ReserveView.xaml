@@ -1,6 +1,7 @@
 ﻿<UserControl x:Class="EpgTimer.ReserveView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:EpgTimer"
              IsVisibleChanged="UserControl_IsVisibleChanged">
     <UserControl.Resources>
         <ContextMenu x:Key="itemHeader">
@@ -57,6 +58,7 @@
             <Separator />
             <MenuItem Header="プログラム予約追加" Click="button_add_manual_Click" />
         </ContextMenu>
+        <local:ToStringValueIsNotEqualConverter x:Key="notEqualConvert" />
     </UserControl.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
@@ -214,11 +216,13 @@
             </ListView.View>
         </ListView>
         <StackPanel Grid.Column="1" Margin="{StaticResource AppEdgeMarginT}" Name="stackPanel_button">
-            <Button Content="削除" Style="{StaticResource AppSideMenuButtonStyle}" ToolTip="Delete" Click="button_del_Click" />
-            <Button Content="有効←→無効" Style="{StaticResource AppSideMenuButtonStyle}" ToolTip="Ctrl + R" Click="button_no_Click" />
-            <Button Content="番組表へジャンプ" Style="{StaticResource AppSideMenuButtonStyle}" ToolTip="F3" Click="jumpToProgramTable_Click" />
-            <Button Content="自動予約登録" Style="{StaticResource AppSideMenuButtonStyle}" Click="autoadd_Click" />
-            <Button Content="追っかけ再生" Style="{StaticResource AppSideMenuButtonStyle}" ToolTip="Ctrl + P" Click="timeShiftPlay_Click" />
+            <StackPanel IsEnabled="{Binding SelectedIndex, ElementName=listView_reserve, Converter={StaticResource notEqualConvert}, ConverterParameter=-1}">
+                <Button Content="削除" Style="{StaticResource AppSideMenuButtonStyle}" ToolTip="Delete" Click="button_del_Click" />
+                <Button Content="有効←→無効" Style="{StaticResource AppSideMenuButtonStyle}" ToolTip="Ctrl + R" Click="button_no_Click" />
+                <Button Content="番組表へジャンプ" Style="{StaticResource AppSideMenuButtonStyle}" ToolTip="F3" Click="jumpToProgramTable_Click" />
+                <Button Content="自動予約登録" Style="{StaticResource AppSideMenuButtonStyle}" Click="autoadd_Click" />
+                <Button Content="追っかけ再生" Style="{StaticResource AppSideMenuButtonStyle}" ToolTip="Ctrl + P" Click="timeShiftPlay_Click" />
+            </StackPanel>
             <Button Content="プログラム予約追加" Style="{StaticResource AppSideMenuButtonStyle}" Click="button_add_manual_Click" />
         </StackPanel>
     </Grid>

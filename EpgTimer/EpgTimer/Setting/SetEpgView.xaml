@@ -7,7 +7,9 @@
              mc:Ignorable="d" 
              d:DesignHeight="500" d:DesignWidth="780" d:DataContext="{d:DesignInstance local:Settings}" DataContextChanged="UserControl_DataContextChanged">
     <UserControl.Resources>
-        <local:BoolConverter x:Key="convert" />
+        <local:ToStringValueIsNotEqualConverter x:Key="notEqualConvert" />
+        <local:ToStringValueIsOneOrZeroConverter x:Key="convert" />
+        <local:ToStringValueIsZeroOrOneConverter x:Key="invert" />
     </UserControl.Resources>
     <TabControl>
         <TabItem Header="基本">
@@ -79,11 +81,11 @@
                                 <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
                             <Label Content="マウス縦スクロールサイズ" Style="{StaticResource AppTermLabelStyle}" />
-                            <TextBox Grid.Column="1" InputMethod.IsInputMethodEnabled="False" IsEnabled="{Binding IsChecked, Converter={StaticResource convert}, ConverterParameter=not, ElementName=checkBox_mouseScrollAuto}" Style="{StaticResource AppNarrowTextBoxStyle}" Text="{Binding ScrollSize}" />
+                            <TextBox Grid.Column="1" InputMethod.IsInputMethodEnabled="False" IsEnabled="{Binding IsChecked, Converter={StaticResource invert}, ElementName=checkBox_mouseScrollAuto}" Style="{StaticResource AppNarrowTextBoxStyle}" Text="{Binding ScrollSize}" />
                             <CheckBox Content="自動" Grid.Column="2" IsChecked="{Binding MouseScrollAuto}" Margin="{StaticResource AppMarginL}" Name="checkBox_mouseScrollAuto" Style="{StaticResource AppCheckBoxStyle}" />
                             <FrameworkElement Grid.Row="1" Margin="{StaticResource AppMarginT}" />
                             <Label Content="マウス横スクロールサイズ" Grid.Row="2" Style="{StaticResource AppTermLabelStyle}" />
-                            <TextBox Grid.Column="1" Grid.Row="2" InputMethod.IsInputMethodEnabled="False" IsEnabled="{Binding IsChecked, Converter={StaticResource convert}, ConverterParameter=not, ElementName=checkBox_mouseHorizontalScrollAuto}" Style="{StaticResource AppNarrowTextBoxStyle}" Text="{Binding HorizontalScrollSize}" />
+                            <TextBox Grid.Column="1" Grid.Row="2" InputMethod.IsInputMethodEnabled="False" IsEnabled="{Binding IsChecked, Converter={StaticResource invert}, ElementName=checkBox_mouseHorizontalScrollAuto}" Style="{StaticResource AppNarrowTextBoxStyle}" Text="{Binding HorizontalScrollSize}" />
                             <CheckBox Content="自動" Grid.Column="2" Grid.Row="2" HorizontalAlignment="Left" IsChecked="{Binding MouseHorizontalScrollAuto}" Margin="{StaticResource AppMarginL}" Name="checkBox_mouseHorizontalScrollAuto" Style="{StaticResource AppCheckBoxStyle}" />
                             <FrameworkElement Grid.Row="3" Margin="{StaticResource AppMarginT}" />
                             <Label Content="サービス１つの幅" Grid.Row="4" Style="{StaticResource AppTermLabelStyle}" />
@@ -298,7 +300,7 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
                 <StackPanel>
-                    <RadioButton Content="デフォルト表示" HorizontalAlignment="Left" IsChecked="{Binding IsChecked, ElementName=radioButton_1_cust, Converter={StaticResource convert}, ConverterParameter=not}" Style="{StaticResource AppRadioButtonStyle}" />
+                    <RadioButton Content="デフォルト表示" HorizontalAlignment="Left" IsChecked="{Binding IsChecked, ElementName=radioButton_1_cust, Converter={StaticResource invert}}" Style="{StaticResource AppRadioButtonStyle}" />
                     <RadioButton Content="カスタマイズ表示" HorizontalAlignment="Left" IsChecked="{Binding UseCustomEpgView}" Margin="{StaticResource AppMarginT}" Name="radioButton_1_cust" Style="{StaticResource AppRadioButtonStyle}" />
                 </StackPanel>
                 <Grid Grid.Row="1" IsEnabled="{Binding IsChecked, ElementName=radioButton_1_cust}" Margin="{StaticResource AppIndentMargin}">
@@ -315,10 +317,10 @@
                     <ListBox Grid.Row="1" Name="listBox_tab" />
                     <StackPanel Grid.Column="1" Grid.Row="1" Margin="{StaticResource AppMarginL}">
                         <Button Content="追加" Style="{StaticResource AppButtonStyle}" Click="button_tab_add_Click" />
-                        <Button Content="変更" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppButtonStyle}" Click="button_tab_chg_Click" />
-                        <Button Content="削除" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppButtonStyle}" Click="button_tab_del_Click" />
-                        <Button Content="↑" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppButtonStyle}" Click="button_tab_up_Click" />
-                        <Button Content="↓" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppButtonStyle}" Click="buttontab_down_Click" />
+                        <Button Content="変更" IsEnabled="{Binding SelectedIndex, ElementName=listBox_tab, Converter={StaticResource notEqualConvert}, ConverterParameter=-1}" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppButtonStyle}" Click="button_tab_chg_Click" />
+                        <Button Content="削除" IsEnabled="{Binding SelectedIndex, ElementName=listBox_tab, Converter={StaticResource notEqualConvert}, ConverterParameter=-1}" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppButtonStyle}" Click="button_tab_del_Click" />
+                        <Button Content="↑" IsEnabled="{Binding SelectedIndex, ElementName=listBox_tab, Converter={StaticResource notEqualConvert}, ConverterParameter=-1}" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppButtonStyle}" Click="button_tab_up_Click" />
+                        <Button Content="↓" IsEnabled="{Binding SelectedIndex, ElementName=listBox_tab, Converter={StaticResource notEqualConvert}, ConverterParameter=-1}" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppButtonStyle}" Click="buttontab_down_Click" />
                     </StackPanel>
                 </Grid>
                 <StackPanel Grid.Row="2">

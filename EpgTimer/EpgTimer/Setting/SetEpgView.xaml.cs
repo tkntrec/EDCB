@@ -233,10 +233,6 @@ namespace EpgTimer.Setting
                     OnUpdateTabListBox();
                 }
             }
-            else
-            {
-                MessageBox.Show("アイテムが選択されていません");
-            }
         }
 
         private void button_tab_del_Click(object sender, RoutedEventArgs e)
@@ -249,10 +245,6 @@ namespace EpgTimer.Setting
                     listBox_tab.SelectedIndex = 0;
                 }
                 OnUpdateTabListBox();
-            }
-            else
-            {
-                MessageBox.Show("アイテムが選択されていません");
             }
         }
 

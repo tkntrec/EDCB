@@ -1,6 +1,7 @@
 ﻿<UserControl x:Class="EpgTimer.EpgAutoAddView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:EpgTimer"
              IsVisibleChanged="UserControl_IsVisibleChanged" PreviewKeyDown="UserControl_PreviewKeyDown">
     <UserControl.Resources>
         <ContextMenu x:Key="itemHeader">
@@ -40,6 +41,7 @@
             <MenuItem Header="並びを保存" Name="saveItemOrder" Click="button_saveItemOrder_Click" InputGestureText="Ctrl + S" />
             <MenuItem Header="並びを元に戻す" Name="reloadItem" Click="button_reloadItem_Click" InputGestureText="Ctrl + Z" />
         </ContextMenu>
+        <local:ToStringValueIsNotEqualConverter x:Key="notEqualConvert" />
     </UserControl.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
@@ -195,11 +197,13 @@
         <Button Content="並びを元に戻す" Grid.ColumnSpan="2" HorizontalAlignment="Left" Name="button_side_ref" Style="{StaticResource AppSideMenuButtonStyle}" VerticalAlignment="Top" Visibility="Hidden" />
         <StackPanel Grid.Column="1" Margin="{StaticResource AppEdgeMarginT}" Name="stackPanel_button">
             <Button Content="追加" Style="{StaticResource AppSideMenuButtonStyle}" Click="button_add_Click" />
-            <Button Content="削除" Style="{StaticResource AppSideMenuButtonStyle}" ToolTip="Delete" Click="button_del_Click" />
-            <Button Content="予約ごと削除" Style="{StaticResource AppSideMenuButtonStyle}" Click="button_del2_Click" />
-            <FrameworkElement Height="{StaticResource AppSideMenuButtonSeparatorHeight}" />
-            <Button Content="↑" Style="{StaticResource AppSideMenuButtonStyle}" ToolTip="Ctrl + ↑" Click="button_up_Click" />
-            <Button Content="↓" Style="{StaticResource AppSideMenuButtonStyle}" ToolTip="Ctrl + ↓" Click="button_down_Click" />
+            <StackPanel IsEnabled="{Binding SelectedIndex, ElementName=listView_key, Converter={StaticResource notEqualConvert}, ConverterParameter=-1}">
+                <Button Content="削除" Style="{StaticResource AppSideMenuButtonStyle}" ToolTip="Delete" Click="button_del_Click" />
+                <Button Content="予約ごと削除" Style="{StaticResource AppSideMenuButtonStyle}" Click="button_del2_Click" />
+                <FrameworkElement Height="{StaticResource AppSideMenuButtonSeparatorHeight}" />
+                <Button Content="↑" Style="{StaticResource AppSideMenuButtonStyle}" ToolTip="Ctrl + ↑" Click="button_up_Click" />
+                <Button Content="↓" Style="{StaticResource AppSideMenuButtonStyle}" ToolTip="Ctrl + ↓" Click="button_down_Click" />
+            </StackPanel>
             <Button Content="並びを保存" IsEnabled="False" Name="button_saveItemOrder" Style="{StaticResource AppSideMenuButtonStyle}" ToolTip="Ctrl + S" Click="button_saveItemOrder_Click" />
             <Button Content="並びを元に戻す" IsEnabled="False" Name="button_reloadItem" Style="{StaticResource AppSideMenuButtonStyle}" ToolTip="Ctrl + Z" Click="button_reloadItem_Click" />
             <TextBlock MaxWidth="{Binding ActualWidth, ElementName=button_side_ref}" Name="textBox_ItemOrderStatus" Text="並びが変更されましたが保存されていません。" TextWrapping="Wrap" />
