@@ -125,21 +125,19 @@ namespace EpgTimer
             return true;
         }
 
-        public bool StartStreamingPlay(string filePath, uint reserveID)
+        public string StartStreamingPlay(string filePath, uint reserveID)
         {
             try
             {
                 if (Settings.Instance.TvTestExe.Length == 0)
                 {
-                    MessageBox.Show("TVTest.exeのパスが設定されていません");
-                    return false;
+                    return "TVTest.exeのパスが設定されていません";
                 }
                 if (CommonManager.Instance.NWMode == false && (Settings.Instance.NwTvModeTCP == false || Settings.Instance.NwTvModePipe == false))
                 {
                     if (IniFileHandler.GetPrivateProfileInt("SET", "EnableTCPSrv", 0, SettingPath.TimerSrvIniPath) == 0)
                     {
-                        MessageBox.Show("動作設定でネットワーク接続を許可する必要があります。");
-                        return false;
+                        return "動作設定でネットワーク接続を許可する必要があります";
                     }
                 }
                 var sendInfo = new TVTestStreamingInfo();
@@ -150,7 +148,7 @@ namespace EpgTimer
                     if (err != ErrCode.CMD_SUCCESS)
                     {
                         MessageBox.Show(CommonManager.GetErrCodeText(err) ?? "まだ録画が開始されていません。");
-                        return false;
+                        return null;
                     }
                     sendInfo.ctrlID = playInfo.ctrlID;
                     sendInfo.filePath = playInfo.filePath;
@@ -161,7 +159,7 @@ namespace EpgTimer
                     if (err != ErrCode.CMD_SUCCESS)
                     {
                         MessageBox.Show(CommonManager.GetErrCodeText(err) ?? "ファイルを開けませんでした。");
-                        return false;
+                        return null;
                     }
                 }
 
@@ -213,7 +211,7 @@ namespace EpgTimer
             {
                 MessageBox.Show(ex.ToString());
             }
-            return true;
+            return null;
         }
 
         private void OpenTVTest(int openWait, bool acceptViewApp)

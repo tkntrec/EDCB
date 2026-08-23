@@ -5,7 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
-             d:DesignHeight="500" d:DesignWidth="780" d:DataContext="{d:DesignInstance local:Settings}" DataContextChanged="UserControl_DataContextChanged">
+             d:DesignHeight="500" d:DesignWidth="780" d:DataContext="{d:DesignInstance local:Settings}" DataContextChanged="UserControl_DataContextChanged" PreviewKeyDown="UserControl_PreviewKeyDown">
     <UserControl.Resources>
         <local:ToStringValueIsNotEqualConverter x:Key="notEqualConvert" />
         <local:ToStringValueIsZeroOrOneConverter x:Key="invert" />
@@ -148,9 +148,12 @@
                         <ListBox Grid.Row="1" Name="listBox_viewBtn" />
                         <StackPanel Grid.Column="1" Grid.Row="1" Margin="{StaticResource AppWideMarginLR}">
                             <Button Content="　↑　" IsEnabled="{Binding SelectedIndex, ElementName=listBox_viewBtn, Converter={StaticResource notEqualConvert}, ConverterParameter=-1}" Style="{StaticResource AppButtonStyle}" Tag="{Binding ElementName=listBox_viewBtn}" Click="button_up_Click" />
-                            <Button Content="→" IsEnabled="{Binding SelectedIndex, ElementName=listBox_viewBtn, Converter={StaticResource notEqualConvert}, ConverterParameter=-1}" Margin="{StaticResource AppWideMarginT}" Style="{StaticResource AppButtonStyle}" Click="button_btnDel_Click" />
+                            <Button Content="→" IsEnabled="{Binding SelectedIndex, ElementName=listBox_viewBtn, Converter={StaticResource notEqualConvert}, ConverterParameter=-1}" Margin="{StaticResource AppWideMarginT}" Name="button_btnDel" Style="{StaticResource AppButtonStyle}" Click="button_btnDel_Click" />
                             <Button Content="←" IsEnabled="{Binding SelectedIndex, ElementName=listBox_itemBtn, Converter={StaticResource notEqualConvert}, ConverterParameter=-1}" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppButtonStyle}" Click="button_btnAdd_Click" />
                             <Button Content="↓" IsEnabled="{Binding SelectedIndex, ElementName=listBox_viewBtn, Converter={StaticResource notEqualConvert}, ConverterParameter=-1}" Margin="{StaticResource AppWideMarginT}" Style="{StaticResource AppButtonStyle}" Tag="{Binding ElementName=listBox_viewBtn}" Click="button_down_Click" />
+                            <Popup Name="popup_btnDel" PlacementTarget="{Binding ElementName=button_btnDel}" StaysOpen="False" Style="{StaticResource AppErrorMessagePopupStyle}">
+                                <ContentControl Template="{StaticResource AppErrorMessagePopupTemplate}" />
+                            </Popup>
                         </StackPanel>
                         <Label Content="項目" Grid.Column="2" Margin="{StaticResource AppMarginB}" Style="{StaticResource AppLabelStyle}" />
                         <ListBox Grid.Column="2" Grid.Row="1" Name="listBox_itemBtn" />
@@ -175,9 +178,12 @@
                         <ListBox Grid.Row="1" Name="listBox_viewTask" />
                         <StackPanel Grid.Column="1" Grid.Row="1" Margin="{StaticResource AppWideMarginLR}">
                             <Button Content="　↑　" IsEnabled="{Binding SelectedIndex, ElementName=listBox_viewTask, Converter={StaticResource notEqualConvert}, ConverterParameter=-1}" Style="{StaticResource AppButtonStyle}" Tag="{Binding ElementName=listBox_viewTask}" Click="button_up_Click" />
-                            <Button Content="→" IsEnabled="{Binding SelectedIndex, ElementName=listBox_viewTask, Converter={StaticResource notEqualConvert}, ConverterParameter=-1}" Margin="{StaticResource AppWideMarginT}" Style="{StaticResource AppButtonStyle}" Click="button_taskDel_Click" />
+                            <Button Content="→" IsEnabled="{Binding SelectedIndex, ElementName=listBox_viewTask, Converter={StaticResource notEqualConvert}, ConverterParameter=-1}" Margin="{StaticResource AppWideMarginT}" Name="button_taskDel" Style="{StaticResource AppButtonStyle}" Click="button_taskDel_Click" />
                             <Button Content="←" IsEnabled="{Binding SelectedIndex, ElementName=listBox_itemTask, Converter={StaticResource notEqualConvert}, ConverterParameter=-1}" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppButtonStyle}" Click="button_taskAdd_Click" />
                             <Button Content="↓" IsEnabled="{Binding SelectedIndex, ElementName=listBox_viewTask, Converter={StaticResource notEqualConvert}, ConverterParameter=-1}" Margin="{StaticResource AppWideMarginT}" Style="{StaticResource AppButtonStyle}" Tag="{Binding ElementName=listBox_viewTask}" Click="button_down_Click" />
+                            <Popup Name="popup_taskDel" PlacementTarget="{Binding ElementName=button_taskDel}" StaysOpen="False" Style="{StaticResource AppErrorMessagePopupStyle}">
+                                <ContentControl Template="{StaticResource AppErrorMessagePopupTemplate}" />
+                            </Popup>
                         </StackPanel>
                         <Label Content="項目" Grid.Column="2" Margin="{StaticResource AppMarginB}" Style="{StaticResource AppLabelStyle}" />
                         <ListBox Grid.Column="2" Grid.Row="1" Name="listBox_itemTask" />
@@ -279,12 +285,15 @@
                     <ListBox Grid.Column="2" Grid.Row="1" Name="listBox_iEPG" />
                     <FrameworkElement Grid.Row="2" Margin="{StaticResource AppMarginT}" />
                     <TextBox Grid.Column="2" Grid.Row="3" Name="textBox_station" Style="{StaticResource AppTextBoxStyle}" />
-                    <Button Content="追加" Grid.Column="3" Grid.Row="3" Margin="{StaticResource AppMarginL}" Style="{StaticResource AppButtonStyle}" Click="button_add_iepg_Click" />
+                    <Button Content="追加" Grid.Column="3" Grid.Row="3" Margin="{StaticResource AppMarginL}" Name="button_add_iepg" Style="{StaticResource AppButtonStyle}" Click="button_add_iepg_Click" />
                     <Button Content="削除" Grid.Column="3" Grid.Row="1" Margin="{StaticResource AppMarginL}" Style="{StaticResource AppButtonStyle}" VerticalAlignment="Bottom" Click="button_del_iepg_Click" />
                     <StackPanel Grid.Column="2" Grid.ColumnSpan="2" Grid.Row="5" Margin="{StaticResource AppMarginT}">
                         <Label Content="iEPG放送局名は.tvpiファイルのstation:項目と比較されます。" Style="{StaticResource AppLabelStyle}" />
                         <Label Content="全半角と大小文字は区別しません。" Style="{StaticResource AppLabelStyle}" />
                     </StackPanel>
+                    <Popup Name="popup_add_iepg" PlacementTarget="{Binding ElementName=button_add_iepg}" StaysOpen="False" Style="{StaticResource AppErrorMessagePopupStyle}">
+                        <ContentControl Template="{StaticResource AppErrorMessagePopupTemplate}" />
+                    </Popup>
                 </Grid>
             </DockPanel>
         </TabItem>

@@ -91,6 +91,15 @@
     <Color x:Key="AppEpgWeekDayHeaderSaturdayTextBackgroundColor">Lavender</Color>
     <Color x:Key="AppEpgWeekDayHeaderSundayTextBackgroundColor">MistyRose</Color>
 
+    <ControlTemplate x:Key="AppErrorMessagePopupTemplate">
+        <Border Background="Pink" BorderBrush="Red" BorderThickness="1" CornerRadius="5" Margin="0,0,6,6">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="3" Opacity="0.3" />
+            </Border.Effect>
+            <TextBlock Foreground="Black" Margin="8" MaxWidth="600" Text="{Binding}" TextWrapping="Wrap" />
+        </Border>
+    </ControlTemplate>
+
     <DataTemplate x:Key="AppColorNameItemTemplate">
         <StackPanel Orientation="Horizontal">
             <Label Background="{Binding Value}" Width="20" />
@@ -198,6 +207,12 @@
         <Setter Property="Opacity" Value="0.7" />
         <Setter Property="Stroke" Value="Red" />
         <Setter Property="StrokeThickness" Value="3" />
+    </Style>
+
+    <Style x:Key="AppErrorMessagePopupStyle" TargetType="Popup">
+        <Setter Property="AllowsTransparency" Value="True" />
+        <Setter Property="Placement" Value="Bottom" />
+        <Setter Property="VerticalOffset" Value="10" />
     </Style>
 
     <Style x:Key="AppSuspendCheckProgressBarStyle" BasedOn="{StaticResource {x:Type ProgressBar}}" TargetType="ProgressBar">

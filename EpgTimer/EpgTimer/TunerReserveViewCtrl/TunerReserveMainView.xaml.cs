@@ -260,9 +260,12 @@ namespace EpgTimer
         /// <param name="e"></param>
         private void cm_timeShiftPlay_Click(object sender, RoutedEventArgs e)
         {
+            var reserve = (ReserveData)((MenuItem)sender).DataContext;
+            var errorMessage = CommonManager.Instance.FilePlay(reserve.ReserveID);
+            if (errorMessage != null)
             {
-                var reserve = (ReserveData)((MenuItem)sender).DataContext;
-                CommonManager.Instance.FilePlay(reserve.ReserveID);
+                popup_error.DataContext = errorMessage;
+                popup_error.IsOpen = true;
             }
         }
 

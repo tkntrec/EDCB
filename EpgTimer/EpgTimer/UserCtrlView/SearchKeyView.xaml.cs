@@ -289,7 +289,8 @@ namespace EpgTimer
                 EnableContentListBox(true);
                 if (listBox_content.Items.Contains(select))
                 {
-                    MessageBox.Show("すでに追加されています");
+                    popup_content_add.DataContext = "すでに追加されています";
+                    popup_content_add.IsOpen = true;
                     return;
                 }
                 listBox_content.Items.Add(select);
@@ -542,6 +543,11 @@ namespace EpgTimer
                 Settings.Instance.NotKeyList.Add((string)comboBox_notKey.Items[i]);
             }
             Settings.SaveToXmlFile();
+        }
+
+        private void UserControl_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            popup_content_add.IsOpen = false;
         }
     }
 }

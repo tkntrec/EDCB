@@ -79,5 +79,8 @@
                 </ContextMenu>
             </Grid.ContextMenu>
         </Grid>
+        <Popup Name="popup_error" Placement="Mouse" StaysOpen="False" Style="{StaticResource AppErrorMessagePopupStyle}">
+            <ContentControl Template="{StaticResource AppErrorMessagePopupTemplate}" />
+        </Popup>
     </Grid>
 </UserControl>

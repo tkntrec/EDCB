@@ -306,8 +306,14 @@ namespace EpgTimer
         {
             if (listView_reserve.SelectedItem != null)
             {
-                ReserveItem info = listView_reserve.SelectedItem as ReserveItem;
-                CommonManager.Instance.FilePlay(info.ReserveInfo.ReserveID);
+                var item = (ReserveItem)listView_reserve.SelectedItem;
+                string errorMessage = CommonManager.Instance.FilePlay(item.ID);
+                if (errorMessage != null)
+                {
+                    popup_error.DataContext = errorMessage;
+                    popup_error.PlacementTarget = sender as Button ?? listView_reserve.ItemContainerGenerator.ContainerFromItem(item) as UIElement ?? listView_reserve;
+                    popup_error.IsOpen = true;
+                }
             }
         }
 
@@ -351,6 +357,11 @@ namespace EpgTimer
                 ReDrawReserveData();
                 RedrawReserve = false;
             }
+        }
+
+        private void UserControl_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            popup_error.IsOpen = false;
         }
 
         private void ContextMenu_Header_ContextMenuOpening(object sender, ContextMenuEventArgs e)

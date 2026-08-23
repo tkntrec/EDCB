@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
-             d:DesignHeight="500" d:DesignWidth="700" IsVisibleChanged="UserControl_IsVisibleChanged">
+             d:DesignHeight="500" d:DesignWidth="700" IsVisibleChanged="UserControl_IsVisibleChanged" PreviewKeyDown="UserControl_PreviewKeyDown">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="{StaticResource AppEpgListServiceGridWidth}" />
@@ -172,5 +172,8 @@
             <Button Content="全チェック" Grid.Column="3" Name="button_chkAll" Style="{StaticResource AppEpgListButtonStyle}" Click="button_chkAll_Click" />
             <Button Content="クリア" Grid.Column="4" Name="button_clearAll" Style="{StaticResource AppEpgListButtonStyle}" Click="button_clearAll_Click" />
         </Grid>
+        <Popup Name="popup_error" StaysOpen="False" Style="{StaticResource AppErrorMessagePopupStyle}">
+            <ContentControl Template="{StaticResource AppErrorMessagePopupTemplate}" />
+        </Popup>
     </Grid>
 </UserControl>

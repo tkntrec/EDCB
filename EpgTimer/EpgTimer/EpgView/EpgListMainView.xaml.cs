@@ -848,13 +848,17 @@ namespace EpgTimer
 
         private void cm_timeShiftPlay_Click(object sender, RoutedEventArgs e)
         {
+            if (listView_event.SelectedItem != null)
             {
-                if (listView_event.SelectedItem != null)
+                SearchItem item = listView_event.SelectedItem as SearchItem;
+                if (item.IsReserved)
                 {
-                    SearchItem item = listView_event.SelectedItem as SearchItem;
-                    if (item.IsReserved == true)
+                    var errorMessage = CommonManager.Instance.FilePlay(item.ReserveInfo.ReserveID);
+                    if (errorMessage != null)
                     {
-                        CommonManager.Instance.FilePlay(item.ReserveInfo.ReserveID);
+                        popup_error.DataContext = errorMessage;
+                        popup_error.PlacementTarget = listView_event.ItemContainerGenerator.ContainerFromItem(item) as UIElement ?? listView_event;
+                        popup_error.IsOpen = true;
                     }
                 }
             }
@@ -990,6 +994,11 @@ namespace EpgTimer
                     updateEpgData = false;
                 }
             }
+        }
+
+        private void UserControl_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            popup_error.IsOpen = false;
         }
     }
 }

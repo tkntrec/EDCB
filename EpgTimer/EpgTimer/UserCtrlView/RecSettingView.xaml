@@ -1,7 +1,8 @@
 ﻿<UserControl x:Class="EpgTimer.RecSettingView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:my="clr-namespace:EpgTimer">
+             xmlns:my="clr-namespace:EpgTimer"
+             PreviewKeyDown="UserControl_PreviewKeyDown">
     <UserControl.Resources>
         <my:ToStringValueIsNotEqualConverter x:Key="notEqualConvert" />
         <my:ToStringValueIsZeroOrOneConverter x:Key="invert" />
@@ -138,6 +139,12 @@
                         <Button Content="部分受信追加" Grid.ColumnSpan="2" Grid.Row="2" Margin="{StaticResource AppMarginLT}" Name="button_recFolderAdd_1seg" Style="{StaticResource AppButtonStyle}" Click="button_recFolderAdd_1seg_Click" />
                         <Button Content="変更" IsEnabled="{Binding SelectedIndex, ElementName=listView_recFolder, Converter={StaticResource notEqualConvert}, ConverterParameter=-1}" Margin="{StaticResource AppMarginL}" Name="button_recFolderChg" Style="{StaticResource AppButtonStyle}" Click="button_recFolderChg_Click" />
                         <Button Content="削除" Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=listView_recFolder, Converter={StaticResource notEqualConvert}, ConverterParameter=-1}" Margin="{StaticResource AppMarginL}" Name="button_recFolderDel" Style="{StaticResource AppButtonStyle}" Click="button_recFolderDel_Click" />
+                        <Popup Name="popup_recFolderAdd" PlacementTarget="{Binding ElementName=button_recFolderAdd}" StaysOpen="False" Style="{StaticResource AppErrorMessagePopupStyle}">
+                            <ContentControl Template="{StaticResource AppErrorMessagePopupTemplate}" />
+                        </Popup>
+                        <Popup Name="popup_recFolderAdd_1seg" PlacementTarget="{Binding ElementName=button_recFolderAdd_1seg}" StaysOpen="False" Style="{StaticResource AppErrorMessagePopupStyle}">
+                            <ContentControl Template="{StaticResource AppErrorMessagePopupTemplate}" />
+                        </Popup>
                     </Grid>
                 </Grid>
                 <FrameworkElement Grid.Row="9" Margin="{StaticResource AppMarginT}" />

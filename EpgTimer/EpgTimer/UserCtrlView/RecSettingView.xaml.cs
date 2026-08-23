@@ -491,7 +491,8 @@ namespace EpgTimer
                         setInfo.WritePlugIn.Equals(info.WritePlugIn, StringComparison.OrdinalIgnoreCase) &&
                         setInfo.RecNamePlugIn.Equals(info.RecNamePlugIn, StringComparison.OrdinalIgnoreCase))
                     {
-                        MessageBox.Show("すでに追加されています");
+                        popup_recFolderAdd.DataContext = "すでに追加されています";
+                        popup_recFolderAdd.IsOpen = true;
                         return;
                     }
                 }
@@ -618,7 +619,8 @@ namespace EpgTimer
                         setInfo.WritePlugIn.Equals(info.WritePlugIn, StringComparison.OrdinalIgnoreCase) &&
                         setInfo.RecNamePlugIn.Equals(info.RecNamePlugIn, StringComparison.OrdinalIgnoreCase))
                     {
-                        MessageBox.Show("すでに追加されています");
+                        popup_recFolderAdd_1seg.DataContext = "すでに追加されています";
+                        popup_recFolderAdd_1seg.IsOpen = true;
                         return;
                     }
                 }
@@ -626,6 +628,10 @@ namespace EpgTimer
             }
         }
 
-
+        private void UserControl_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            popup_recFolderAdd.IsOpen = false;
+            popup_recFolderAdd_1seg.IsOpen = false;
+        }
     }
 }

@@ -150,6 +150,13 @@ namespace EpgTimer.Setting
             }
         }
 
+        private void UserControl_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            popup_btnDel.IsOpen = false;
+            popup_taskDel.IsOpen = false;
+            popup_add_iepg.IsOpen = false;
+        }
+
         private void button_up_Click(object sender, RoutedEventArgs e)
         {
             var listBox = (ListBox)((Button)sender).Tag;
@@ -186,7 +193,8 @@ namespace EpgTimer.Setting
                 {
                     if (listBox_viewTask.Items.OfType<string>().All(a => a != "設定"))
                     {
-                        MessageBox.Show("設定は上部表示ボタンか右クリック表示項目のどちらかに必要です");
+                        popup_btnDel.DataContext = "設定は上部表示ボタンか右クリック表示項目のどちらかに必要です";
+                        popup_btnDel.IsOpen = true;
                         return;
                     }
                 }
@@ -212,7 +220,8 @@ namespace EpgTimer.Setting
                 {
                     if (listBox_viewBtn.Items.OfType<string>().All(a => a != "設定"))
                     {
-                        MessageBox.Show("設定は上部表示ボタンか右クリック表示項目のどちらかに必要です");
+                        popup_taskDel.DataContext = "設定は上部表示ボタンか右クリック表示項目のどちらかに必要です";
+                        popup_taskDel.IsOpen = true;
                         return;
                     }
                 }
@@ -419,7 +428,8 @@ namespace EpgTimer.Setting
                     if (string.Compare(info.StationName, textBox_station.Text, new System.Globalization.CultureInfo("ja-JP"),
                                        System.Globalization.CompareOptions.IgnoreWidth | System.Globalization.CompareOptions.IgnoreCase) == 0)
                     {
-                        MessageBox.Show("すでに登録済みです");
+                        popup_add_iepg.DataContext = "すでに登録済みです";
+                        popup_add_iepg.IsOpen = true;
                         return;
                     }
                 }

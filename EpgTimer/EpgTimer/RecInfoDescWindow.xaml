@@ -25,12 +25,18 @@
                 <Label Content="ファイル" Style="{StaticResource AppTermLabelStyle}" />
                 <TextBox Grid.Column="1" Name="textBox_recFilePath" Style="{StaticResource AppTextBoxStyle}" TextChanged="textBox_recFilePath_TextChanged" />
                 <Button Content="リネーム" Grid.Column="2" IsEnabled="False" Margin="{StaticResource AppMarginL}" Name="button_rename" Style="{StaticResource AppButtonStyle}" ToolTip="ファイルが存在すれば同時に移動します。拡張子が付加されたファイルも移動します。" Click="button_rename_Click" />
+                <Popup Name="popup_rename" PlacementTarget="{Binding ElementName=button_rename}" StaysOpen="False" Style="{StaticResource AppErrorMessagePopupStyle}">
+                    <ContentControl Template="{StaticResource AppErrorMessagePopupTemplate}" />
+                </Popup>
             </Grid>
             <StackPanel Margin="{StaticResource AppEdgeMarginT}" Orientation="Horizontal">
-                <Button Content="再生" Margin="{StaticResource AppConfirmMargin}" Style="{StaticResource AppConfirmButtonStyle}" Click="button_play_Click" />
+                <Button Content="再生" Margin="{StaticResource AppConfirmMargin}" Name="button_play" Style="{StaticResource AppConfirmButtonStyle}" Click="button_play_Click" />
                 <Button Content="削除" Margin="{StaticResource AppConfirmMargin}" Style="{StaticResource AppConfirmButtonStyle}" Click="button_del_Click" />
                 <Button Content="キャンセル" Margin="{StaticResource AppConfirmMargin}" Style="{StaticResource AppConfirmButtonStyle}" Click="button_cancel_Click" />
                 <Button Content="番組情報を保存" Margin="{StaticResource AppWideConfirmMargin}" IsEnabled="False" Name="button_save_program" Style="{StaticResource AppConfirmButtonStyle}" Click="button_save_program_Click" />
+                <Popup Name="popup_play" PlacementTarget="{Binding ElementName=button_play}" StaysOpen="False" Style="{StaticResource AppErrorMessagePopupStyle}">
+                    <ContentControl Template="{StaticResource AppErrorMessagePopupTemplate}" />
+                </Popup>
             </StackPanel>
         </StackPanel>
     </Grid>

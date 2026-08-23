@@ -955,7 +955,7 @@ namespace EpgTimer
             return para;
         }
 
-        public void FilePlay(uint reserveID)
+        public string FilePlay(uint reserveID)
         {
             if (Settings.Instance.FilePlay && Settings.Instance.FilePlayOnAirWithExe)
             {
@@ -968,52 +968,51 @@ namespace EpgTimer
                         CreateSrvCtrl().SendNwPlayClose(info.ctrlID);
                         if (info.filePath != "")
                         {
-                            FilePlay(info.filePath);
-                            return;
+                            return FilePlay(info.filePath);
                         }
                     }
                 }
                 catch { }
-                MessageBox.Show("録画ファイルの場所がわかりませんでした。", "追っかけ再生", MessageBoxButton.OK, MessageBoxImage.Information);
+                return "録画ファイルの場所がわかりませんでした";
             }
-            else
-            {
-                TVTestCtrl.StartStreamingPlay(null, reserveID);
-            }
+            return TVTestCtrl.StartStreamingPlay(null, reserveID);
         }
 
-        public void FilePlay(string filePath)
+        public string FilePlay(string filePath)
         {
-            try
+            if (filePath.Length == 0)
             {
-                if (Settings.Instance.FilePlay)
+                return "ファイルパスが空です";
+            }
+            if (Settings.Instance.FilePlay)
+            {
+                filePath = ReplaceText(filePath, CreateReplaceDictionary(Settings.Instance.FilePathReplacePattern));
+                if (filePath.Length == 0)
                 {
-                    filePath = ReplaceText(filePath, CreateReplaceDictionary(Settings.Instance.FilePathReplacePattern));
-                    if (filePath.Length > 0)
+                    return "ファイルパスが空です";
+                }
+                try
+                {
+                    if (Settings.Instance.FilePlayExe.Length == 0)
                     {
-                        if (Settings.Instance.FilePlayExe.Length == 0)
-                        {
-                            using (Process.Start(new ProcessStartInfo(filePath) { UseShellExecute = true })) { }
-                        }
-                        else
-                        {
-                            string cmdLine = Settings.Instance.FilePlayCmd;
-                            //'$'->'\t'は再帰的な展開を防ぐため
-                            cmdLine = cmdLine.Replace("$FileNameExt$", Path.GetFileName(filePath).Replace('$', '\t'));
-                            cmdLine = cmdLine.Replace("$FilePath$", filePath).Replace('\t', '$');
-                            using (Process.Start(new ProcessStartInfo(Settings.Instance.FilePlayExe, cmdLine) { UseShellExecute = false })) { }
-                        }
+                        using (Process.Start(new ProcessStartInfo(filePath) { UseShellExecute = true })) { }
+                    }
+                    else
+                    {
+                        string cmdLine = Settings.Instance.FilePlayCmd;
+                        //'$'->'\t'は再帰的な展開を防ぐため
+                        cmdLine = cmdLine.Replace("$FileNameExt$", Path.GetFileName(filePath).Replace('$', '\t'));
+                        cmdLine = cmdLine.Replace("$FilePath$", filePath).Replace('\t', '$');
+                        using (Process.Start(new ProcessStartInfo(Settings.Instance.FilePlayExe, cmdLine) { UseShellExecute = false })) { }
                     }
                 }
-                else
+                catch (Exception ex)
                 {
-                    TVTestCtrl.StartStreamingPlay(filePath, 0);
+                    return ex.Message;
                 }
+                return null;
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.ToString());
-            }
+            return TVTestCtrl.StartStreamingPlay(filePath, 0);
         }
 
         private string saveProgramTextDirectory;

@@ -1,6 +1,7 @@
 ﻿<UserControl x:Class="EpgTimer.SearchKeyView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             PreviewKeyDown="UserControl_PreviewKeyDown">
     <DockPanel Margin="{StaticResource AppEdgeMarginLTR}">
         <Grid DockPanel.Dock="Top">
             <Grid.ColumnDefinitions>
@@ -71,7 +72,10 @@
                     <Button Content="削除" Grid.Column="1" Grid.Row="1" Margin="{StaticResource AppMarginLT}" Style="{StaticResource AppButtonStyle}" Click="button_content_del_Click" />
                     <FrameworkElement Grid.Row="2" Margin="{StaticResource AppMarginT}" />
                     <ComboBox Grid.Row="3" Name="comboBox_content" Style="{StaticResource AppComboBoxStyle}" />
-                    <Button Content="追加" Grid.Column="1" Grid.Row="3" Margin="{StaticResource AppMarginL}" Style="{StaticResource AppButtonStyle}" Click="button_content_add_Click" />
+                    <Button Content="追加" Grid.Column="1" Grid.Row="3" Margin="{StaticResource AppMarginL}" Name="button_content_add" Style="{StaticResource AppButtonStyle}" Click="button_content_add_Click" />
+                    <Popup Name="popup_content_add" PlacementTarget="{Binding ElementName=button_content_add}" StaysOpen="False" Style="{StaticResource AppErrorMessagePopupStyle}">
+                        <ContentControl Template="{StaticResource AppErrorMessagePopupTemplate}" />
+                    </Popup>
                 </Grid>
                 <Label Content="時間絞り込み" Grid.Row="2" Margin="{StaticResource AppMarginTB}" Style="{StaticResource AppLabelStyle}" />
                 <Grid Grid.Row="3">

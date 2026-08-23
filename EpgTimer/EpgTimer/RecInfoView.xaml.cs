@@ -189,7 +189,16 @@ namespace EpgTimer
         {
             if (Settings.Instance.PlayDClick)
             {
-                button_play_Click(sender, e);
+                if (listView_recinfo.SelectedItem != null)
+                {
+                    var item = (RecInfoItem)listView_recinfo.SelectedItem;
+                    string errorMessage = CommonManager.Instance.FilePlay(item.RecFilePath);
+                    if (errorMessage != null && item.RecFilePath.Length > 0)
+                    {
+                        // ポップアップはすぐ閉じてしまうため
+                        MessageBox.Show(errorMessage);
+                    }
+                }
             }
             else
             {
@@ -240,10 +249,13 @@ namespace EpgTimer
         {
             if (listView_recinfo.SelectedItem != null)
             {
-                RecFileInfo info = ((RecInfoItem)listView_recinfo.SelectedItem).RecInfo;
-                if (info.RecFilePath.Length > 0)
+                var item = (RecInfoItem)listView_recinfo.SelectedItem;
+                string errorMessage = CommonManager.Instance.FilePlay(item.RecFilePath);
+                if (errorMessage != null)
                 {
-                    CommonManager.Instance.FilePlay(info.RecFilePath);
+                    popup_error.DataContext = errorMessage;
+                    popup_error.PlacementTarget = sender as Button ?? listView_recinfo.ItemContainerGenerator.ContainerFromItem(item) as UIElement ?? listView_recinfo;
+                    popup_error.IsOpen = true;
                 }
             }
         }
@@ -276,6 +288,11 @@ namespace EpgTimer
             }
         }
 
+        private void UserControl_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            popup_error.IsOpen = false;
+        }
+
         private void button_recInfo_Click(object sender, RoutedEventArgs e)
         {
             if (listView_recinfo.SelectedItem != null)
@@ -299,11 +316,11 @@ namespace EpgTimer
             if (listView_recinfo.SelectedItem != null)
             {
                 string folderPath = "";
-                RecInfoItem info = listView_recinfo.SelectedItem as RecInfoItem;
-                if (info.RecFilePath.Length > 0)
+                var item = (RecInfoItem)listView_recinfo.SelectedItem;
+                if (item.RecFilePath.Length > 0)
                 {
                     string filePath =
-                        CommonManager.ReplaceText(info.RecFilePath, CommonManager.CreateReplaceDictionary(Settings.Instance.FilePathReplacePattern));
+                        CommonManager.ReplaceText(item.RecFilePath, CommonManager.CreateReplaceDictionary(Settings.Instance.FilePathReplacePattern));
                     try
                     {
                         string explorer = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe");
@@ -329,7 +346,9 @@ namespace EpgTimer
                         return;
                     }
                 }
-                MessageBox.Show("録画フォルダ" + (folderPath.Length > 0 ? " \"" + folderPath + "\" " : "") + "が存在しません");
+                popup_error.DataContext = "録画フォルダ" + (folderPath.Length > 0 ? " \"" + folderPath + "\" " : "") + "が存在しません";
+                popup_error.PlacementTarget = sender as Button ?? listView_recinfo.ItemContainerGenerator.ContainerFromItem(item) as UIElement ?? listView_recinfo;
+                popup_error.IsOpen = true;
             }
         }
 
