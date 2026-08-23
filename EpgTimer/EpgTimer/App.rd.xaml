@@ -19,7 +19,7 @@
     <sys:Double x:Key="AppSearchWindowHeight">600</sys:Double>
     <sys:Double x:Key="AppSearchWindowWidth">820</sys:Double>
     <sys:Double x:Key="AppSetDefSearchSettingWindowHeight">500</sys:Double>
-    <sys:Double x:Key="AppSettingWindowHeight">640</sys:Double>
+    <sys:Double x:Key="AppSettingWindowHeight">620</sys:Double>
     <sys:Double x:Key="AppSettingWindowWidth">820</sys:Double>
 
     <sys:Double x:Key="AppEpgListServiceColumnWidth">150</sys:Double>

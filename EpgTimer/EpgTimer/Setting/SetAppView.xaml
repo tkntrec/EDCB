@@ -118,8 +118,6 @@
                             </Grid>
                         </StackPanel>
                     </DockPanel>
-                    <TextBlock Margin="{StaticResource AppMarginT}" />
-                    <Button Content="EpgTimerSrv設定" HorizontalAlignment="Left" Name="button_srvSetting" Style="{StaticResource AppButtonStyle}" Click="button_srvSetting_Click" />
                 </StackPanel>
                 <TextBlock HorizontalAlignment="Right" Margin="{StaticResource AppEdgeMarginRB}" Name="textBlock_versionText" Panel.ZIndex="-1" Text="Ver." VerticalAlignment="Bottom" />
             </Grid>

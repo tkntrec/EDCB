@@ -113,11 +113,9 @@
                                     </StackPanel>
                                 </StackPanel>
                                 <CheckBox Content="番組内容をポップアップ表示する" HorizontalAlignment="Left" IsChecked="{Binding EpgPopup}" Margin="{StaticResource AppMarginT}" Name="checkBox_epgPopup" Style="{StaticResource AppCheckBoxStyle}" />
-                                <StackPanel IsEnabled="{Binding IsChecked, ElementName=checkBox_epgPopup, UpdateSourceTrigger=PropertyChanged}" Margin="{StaticResource AppIndentMargin}">
-                                    <CheckBox Content="なるべく画面内に収める" HorizontalAlignment="Left" IsChecked="{Binding EpgAdjustPopup}" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppCheckBoxStyle}" />
-                                    <StackPanel Margin="{StaticResource AppIndentMargin}" Orientation="Horizontal">
-                                        <CheckBox Content="詳細も表示" IsChecked="{Binding EpgExtInfoPopup}" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppCheckBoxStyle}" />
-                                    </StackPanel>
+                                <StackPanel IsEnabled="{Binding IsChecked, ElementName=checkBox_epgPopup, UpdateSourceTrigger=PropertyChanged}" Margin="{StaticResource AppIndentMargin}" Orientation="Horizontal">
+                                    <CheckBox Content="なるべく画面内に収める" IsChecked="{Binding EpgAdjustPopup}" Margin="{StaticResource AppMarginT}" Style="{StaticResource AppCheckBoxStyle}" />
+                                    <CheckBox Content="詳細も表示" IsChecked="{Binding EpgExtInfoPopup}" Margin="{StaticResource AppMarginLT}" Style="{StaticResource AppCheckBoxStyle}" />
                                 </StackPanel>
                             </StackPanel>
                             <StackPanel Margin="{StaticResource AppIndentMargin}">

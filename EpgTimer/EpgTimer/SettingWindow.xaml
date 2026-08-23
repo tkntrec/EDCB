@@ -19,6 +19,7 @@
                 <my:SetOtherAppView />
             </TabItem>
         </TabControl>
+        <Button Content="EpgTimerSrv設定" Grid.Row="1" HorizontalAlignment="Left" Margin="{StaticResource AppEdgeMargin}" Name="button_srvSetting" Style="{StaticResource AppConfirmButtonStyle}" VerticalAlignment="Bottom" Click="button_srvSetting_Click" />
         <StackPanel Grid.Row="1" HorizontalAlignment="Right" Margin="{StaticResource AppEdgeMargin}" Orientation="Horizontal">
             <Button Content="OK" Style="{StaticResource AppConfirmButtonStyle}" Click="button_OK_Click" />
             <Button Content="キャンセル" Margin="{StaticResource AppConfirmMargin}" Style="{StaticResource AppConfirmButtonStyle}" Click="button_cancel_Click" />

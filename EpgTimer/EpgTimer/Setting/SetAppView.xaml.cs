@@ -12,7 +12,6 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Interop;
-using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 
@@ -43,7 +42,6 @@ namespace EpgTimer.Setting
 
             checkBox_wakeReconnect.IsEnabled = CommonManager.Instance.NWMode;
             checkBox_suspendClose.IsEnabled = CommonManager.Instance.NWMode;
-            button_srvSetting.IsEnabled = CommonManager.Instance.NWMode == false;
 
 #if NETCOREAPP
 #pragma warning disable WPF0001
@@ -321,26 +319,6 @@ namespace EpgTimer.Setting
                 }
                 button_shortCutAdd.Visibility = Visibility.Visible;
                 button_shortCutDel.Visibility = Visibility.Hidden;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.ToString());
-            }
-        }
-
-        private void button_srvSetting_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                if (CommonManager.Instance.SrvSettingProcess == null || CommonManager.Instance.SrvSettingProcess.HasExited)
-                {
-                    CommonManager.Instance.SrvSettingProcess = Process.Start(
-                        new ProcessStartInfo(System.IO.Path.Combine(SettingPath.ModulePath, "EpgTimerSrv.exe"), "/setting") { UseShellExecute = false });
-                }
-                else
-                {
-                    CommonUtil.SetForegroundWindow(CommonManager.Instance.SrvSettingProcess.MainWindowHandle);
-                }
             }
             catch (Exception ex)
             {
