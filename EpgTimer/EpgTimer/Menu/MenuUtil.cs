@@ -73,7 +73,7 @@ namespace EpgTimer
                     KeyWord = TrimKeywordCheckToggled(KeyWord, Settings.Instance.MenuSet.SearchTitle_Trim, (bool)NotToggle);
                 }
                 string txtURI = Settings.Instance.MenuSet.SearchURI + UrlEncode(KeyWord, System.Text.Encoding.UTF8);
-                using (System.Diagnostics.Process.Start(txtURI)) { }
+                using (System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(txtURI) { UseShellExecute = true })) { }
             }
             catch (Exception ex)
             {

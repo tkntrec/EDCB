@@ -92,7 +92,7 @@ namespace EpgTimer
                     {
                         try
                         {
-                            using (Process.Start(exePath)) { }
+                            using (Process.Start(new ProcessStartInfo(exePath) { UseShellExecute = false })) { }
                         }
                         catch
                         {
@@ -1210,13 +1210,13 @@ namespace EpgTimer
                 switch (id)
                 {
                     case 1:
-                        using (Process.Start(Settings.Instance.Cust1BtnCmd, Settings.Instance.Cust1BtnCmdOpt)) { }
+                        using (Process.Start(new ProcessStartInfo(Settings.Instance.Cust1BtnCmd, Settings.Instance.Cust1BtnCmdOpt) { UseShellExecute = true })) { }
                         break;
                     case 2:
-                        using (Process.Start(Settings.Instance.Cust2BtnCmd, Settings.Instance.Cust2BtnCmdOpt)) { }
+                        using (Process.Start(new ProcessStartInfo(Settings.Instance.Cust2BtnCmd, Settings.Instance.Cust2BtnCmdOpt) { UseShellExecute = true })) { }
                         break;
                     case 3:
-                        using (Process.Start(Settings.Instance.Cust3BtnCmd, Settings.Instance.Cust3BtnCmdOpt)) { }
+                        using (Process.Start(new ProcessStartInfo(Settings.Instance.Cust3BtnCmd, Settings.Instance.Cust3BtnCmdOpt) { UseShellExecute = true })) { }
                         break;
                 }
             }

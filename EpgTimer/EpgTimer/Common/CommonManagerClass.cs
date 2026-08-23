@@ -1165,7 +1165,7 @@ namespace EpgTimer
                             {
                                 try
                                 {
-                                    using (Process.Start(((Hyperlink)sender).NavigateUri.ToString())) { }
+                                    using (Process.Start(new ProcessStartInfo(((Hyperlink)sender).NavigateUri.ToString()) { UseShellExecute = true })) { }
                                 }
                                 catch (Exception ex) { MessageBox.Show(ex.ToString()); }
                             };
@@ -1367,8 +1367,9 @@ namespace EpgTimer
                 else
                 {
                     //オプションに応じて一つ上のフォルダから対象フォルダを選択した状態で開く。
+                    string explorer = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe");
                     string cmd = isFile == true || noParent == false && Settings.Instance.MenuSet.OpenParentFolder == true ? "/select," : "";
-                    using (Process.Start("EXPLORER.EXE", cmd + "\"" + path + "\"")) { }
+                    using (Process.Start(new ProcessStartInfo(explorer, cmd + "\"" + path + "\"") { UseShellExecute = false })) { }
                 }
             }
             catch (Exception ex) { MessageBox.Show(ex.ToString()); }
@@ -1454,7 +1455,7 @@ namespace EpgTimer
                             MessageBox.Show("録画ファイルが見つかりません。\r\n\r\n" + cmdLine, "録画ファイルの再生", MessageBoxButton.OK, MessageBoxImage.Information);
                             return;
                         }
-                        using (Process.Start(cmdLine)) { }
+                        using (Process.Start(new ProcessStartInfo(cmdLine) { UseShellExecute = true })) { }
                     }
                     else
                     {
@@ -1463,7 +1464,7 @@ namespace EpgTimer
                             MessageBox.Show("再生アプリが見つかりません。\r\n設定を確認してください。\r\n\r\n" + playExe, "録画ファイルの再生", MessageBoxButton.OK, MessageBoxImage.Information);
                             return;
                         }
-                        using (Process.Start(playExe, mark + cmdLine + mark)) { }
+                        using (Process.Start(new ProcessStartInfo(playExe, mark + cmdLine + mark) { UseShellExecute = false })) { }
                     }
                 }
             }
@@ -1573,7 +1574,7 @@ namespace EpgTimer
             {
                 if (SrvSettingProcess == null || SrvSettingProcess.HasExited)
                 {
-                    SrvSettingProcess = Process.Start(Path.Combine(SettingPath.ModulePath, "EpgTimerSrv.exe"), "/setting");
+                    SrvSettingProcess = Process.Start(new ProcessStartInfo(Path.Combine(SettingPath.ModulePath, "EpgTimerSrv.exe"), "/setting") { UseShellExecute = false });
                 }
                 else
                 {

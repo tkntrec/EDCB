@@ -235,7 +235,7 @@ namespace EpgTimer
                 {
                     // EpgTimerPlugInと仮定
                     processType = "TvTest";
-                    process = Process.Start(Settings.Instance.TvTestExe, Settings.Instance.TvTestCmd);
+                    process = Process.Start(new ProcessStartInfo(Settings.Instance.TvTestExe, Settings.Instance.TvTestCmd) { UseShellExecute = false });
                     if (acceptViewApp)
                     {
                         for (int i = 0; i < 100; i++)
