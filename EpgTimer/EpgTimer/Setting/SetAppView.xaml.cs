@@ -12,6 +12,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Interop;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 
@@ -324,8 +325,8 @@ namespace EpgTimer.Setting
             {
                 if (CommonManager.Instance.SrvSettingProcess == null || CommonManager.Instance.SrvSettingProcess.HasExited)
                 {
-                    CommonManager.Instance.SrvSettingProcess =
-                        System.Diagnostics.Process.Start(System.IO.Path.Combine(SettingPath.ModulePath, "EpgTimerSrv.exe"), "/setting");
+                    CommonManager.Instance.SrvSettingProcess = Process.Start(
+                        new ProcessStartInfo(System.IO.Path.Combine(SettingPath.ModulePath, "EpgTimerSrv.exe"), "/setting") { UseShellExecute = false });
                 }
                 else
                 {

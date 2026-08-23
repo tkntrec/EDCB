@@ -13,6 +13,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.ComponentModel;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 
 
 namespace EpgTimer
@@ -305,9 +306,10 @@ namespace EpgTimer
                         CommonManager.ReplaceText(info.RecFilePath, CommonManager.CreateReplaceDictionary(Settings.Instance.FilePathReplacePattern));
                     try
                     {
+                        string explorer = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe");
                         if (System.IO.File.Exists(filePath))
                         {
-                            using (System.Diagnostics.Process.Start("EXPLORER.EXE", "/select,\"" + filePath + "\"")) { }
+                            using (Process.Start(new ProcessStartInfo(explorer, "/select,\"" + filePath + "\"") { UseShellExecute = false })) { }
                             return;
                         }
                         try
@@ -317,7 +319,7 @@ namespace EpgTimer
                         catch { }
                         if (System.IO.Directory.Exists(folderPath))
                         {
-                            using (System.Diagnostics.Process.Start("EXPLORER.EXE", "\"" + folderPath + "\"")) { }
+                            using (Process.Start(new ProcessStartInfo(explorer, "\"" + folderPath + "\"") { UseShellExecute = false })) { }
                             return;
                         }
                     }

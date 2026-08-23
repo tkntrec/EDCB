@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -142,7 +143,7 @@ namespace EpgTimer
                     {
                         try
                         {
-                            using (System.Diagnostics.Process.Start(exePath)) { }
+                            using (Process.Start(new ProcessStartInfo(exePath) { UseShellExecute = false })) { }
                         }
                         catch
                         {
@@ -197,7 +198,7 @@ namespace EpgTimer
                 if (CommonManager.Instance.NWMode == false)
                 {
                     int pid;
-                    using (var process = System.Diagnostics.Process.GetCurrentProcess())
+                    using (var process = Process.GetCurrentProcess())
                     {
                         pid = process.Id;
                     }
@@ -581,7 +582,7 @@ namespace EpgTimer
                 {
                     var cmd = CommonManager.CreateSrvCtrl();
                     cmd.SetConnectTimeOut(3000);
-                    using (var process = System.Diagnostics.Process.GetCurrentProcess())
+                    using (var process = Process.GetCurrentProcess())
                     {
                         cmd.SendUnRegistGUI((uint)process.Id);
                     }
@@ -953,7 +954,7 @@ namespace EpgTimer
         {
             try
             {
-                using (System.Diagnostics.Process.Start(Settings.Instance.Cust1BtnCmd, Settings.Instance.Cust1BtnCmdOpt)) { }
+                using (Process.Start(new ProcessStartInfo(Settings.Instance.Cust1BtnCmd, Settings.Instance.Cust1BtnCmdOpt) { UseShellExecute = true })) { }
             }
             catch (Exception ex)
             {
@@ -965,7 +966,7 @@ namespace EpgTimer
         {
             try
             {
-                using (System.Diagnostics.Process.Start(Settings.Instance.Cust2BtnCmd, Settings.Instance.Cust2BtnCmdOpt)) { }
+                using (Process.Start(new ProcessStartInfo(Settings.Instance.Cust2BtnCmd, Settings.Instance.Cust2BtnCmdOpt) { UseShellExecute = true })) { }
             }
             catch (Exception ex)
             {
@@ -999,7 +1000,7 @@ namespace EpgTimer
 
         private Tuple<ErrCode, byte[], uint> OutsideCmdCallback(uint cmdParam, byte[] cmdData, bool networkFlag, uint execBat)
         {
-            System.Diagnostics.Trace.WriteLine((CtrlCmd)cmdParam);
+            Trace.WriteLine((CtrlCmd)cmdParam);
             var res = new Tuple<ErrCode, byte[], uint>(ErrCode.CMD_NON_SUPPORT, null, 0);
 
             switch ((CtrlCmd)cmdParam)
@@ -1024,7 +1025,7 @@ namespace EpgTimer
                             int i = exeCmd.IndexOf('"', 1);
                             if (i >= 2 && (exeCmd.Length == i + 1 || exeCmd[i + 1] == ' '))
                             {
-                                var startInfo = new System.Diagnostics.ProcessStartInfo(exeCmd.Substring(1, i - 1));
+                                var startInfo = new ProcessStartInfo(exeCmd.Substring(1, i - 1));
                                 startInfo.UseShellExecute = true;
                                 if (exeCmd.Length > i + 2)
                                 {
@@ -1034,18 +1035,18 @@ namespace EpgTimer
                                 {
                                     if (execBat == 0)
                                     {
-                                        startInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Minimized;
+                                        startInfo.WindowStyle = ProcessWindowStyle.Minimized;
                                     }
                                     else if (execBat == 1)
                                     {
-                                        startInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
+                                        startInfo.WindowStyle = ProcessWindowStyle.Hidden;
                                     }
                                 }
                                 //FileNameは実行ファイルか.batのフルパス。チェックはしない(安全性云々はここで考えることではない)
                                 try
                                 {
                                     //ShellExecute相当なので.batなどもそのまま与える
-                                    using (var process = System.Diagnostics.Process.Start(startInfo))
+                                    using (var process = Process.Start(startInfo))
                                     {
                                         if (process != null)
                                         {
@@ -1149,7 +1150,7 @@ namespace EpgTimer
 
         void NotifyStatus(NotifySrvInfo status)
         {
-            System.Diagnostics.Trace.WriteLine((UpdateNotifyItem)status.notifyID);
+            Trace.WriteLine((UpdateNotifyItem)status.notifyID);
 
             switch ((UpdateNotifyItem)status.notifyID)
             {

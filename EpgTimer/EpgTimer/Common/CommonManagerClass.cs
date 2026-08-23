@@ -931,7 +931,7 @@ namespace EpgTimer
                             {
                                 try
                                 {
-                                    using (Process.Start(((Hyperlink)sender).NavigateUri.ToString())) { }
+                                    using (Process.Start(new ProcessStartInfo(((Hyperlink)sender).NavigateUri.ToString()) { UseShellExecute = true })) { }
                                 }
                                 catch (Exception ex)
                                 {
@@ -993,7 +993,7 @@ namespace EpgTimer
                     {
                         if (Settings.Instance.FilePlayExe.Length == 0)
                         {
-                            using (Process.Start(filePath)) { }
+                            using (Process.Start(new ProcessStartInfo(filePath) { UseShellExecute = true })) { }
                         }
                         else
                         {
@@ -1001,7 +1001,7 @@ namespace EpgTimer
                             //'$'->'\t'は再帰的な展開を防ぐため
                             cmdLine = cmdLine.Replace("$FileNameExt$", Path.GetFileName(filePath).Replace('$', '\t'));
                             cmdLine = cmdLine.Replace("$FilePath$", filePath).Replace('\t', '$');
-                            using (Process.Start(Settings.Instance.FilePlayExe, cmdLine)) { }
+                            using (Process.Start(new ProcessStartInfo(Settings.Instance.FilePlayExe, cmdLine) { UseShellExecute = false })) { }
                         }
                     }
                 }
