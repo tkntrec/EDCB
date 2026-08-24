@@ -1,6 +1,13 @@
 "use strict";
 //jshint browser: true, esversion: 3
 
+var base64ToUint8Array=window.Uint8Array&&(Uint8Array.fromBase64?function(a){return Uint8Array.fromBase64(a);}:function(a){
+  var b=atob(a);
+  var u=new Uint8Array(b.length);
+  for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);
+  return u;
+});
+
 if(window.addEventListener)window.addEventListener("DOMContentLoaded",function(){
   var unloadCount=0;
   function createUnloaded(){
@@ -219,11 +226,7 @@ if(window.addEventListener)window.addEventListener("DOMContentLoaded",function()
         thumbs.appendChild(div);
         var streams=JSON.parse(document.getElementById("vid-thumb-streams").text);
         for(var i=0;i<streams.length;i++){
-          var b=atob(streams[i][0]);
-          var u=new Uint8Array(b.length);
-          for(var j=0;j<b.length;j++){
-            u[j]=b.charCodeAt(j);
-          }
+          var u=base64ToUint8Array(streams[i][0]);
           var buffer=mod.getGrabberInputBuffer(u.length);
           buffer.set(u);
           var frame=mod.grabFirstFrame(u.length);

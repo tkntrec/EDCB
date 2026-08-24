@@ -145,11 +145,11 @@ const progressPsiDataChatMixedStream=(reader,onData,onChat)=>{
             i=i<0?response.length:i;
             const n=Math.floor((i-offset+atobRemain.length)/4)*4;
             if(n){
-              const addData=atob(atobRemain+response.substring(offset,offset+n-atobRemain.length));
+              const addData=base64ToUint8Array(atobRemain+response.substring(offset,offset+n-atobRemain.length));
               atobRemain=response.substring(offset+n-atobRemain.length,i);
               const concatData=new Uint8Array(psiData.length+addData.length);
-              for(let j=0;j<psiData.length;j++)concatData[j]=psiData[j];
-              for(let j=0;j<addData.length;j++)concatData[psiData.length+j]=addData.charCodeAt(j);
+              concatData.set(psiData);
+              concatData.set(addData,psiData.length);
               psiData=readPsiData(concatData.buffer,(sec,dict,code,pid)=>{
                 if(onData)onData(pid,dict,code,Math.floor(sec*90000));
                 return true;
