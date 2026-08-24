@@ -218,7 +218,6 @@ else
                    ..(ALLOW_HLS and (ALWAYS_USE_HLS and ' data-always-use-hls="1"' or '')
                         ..' data-ctok="'..CsrfToken('xcode.lua')..'"'
                         ..' data-hls="'..(edcb.CreateRandom and edcb.CreateRandom(8) or os.time()%86400)..'"'
-                        ..(USE_MP4_HLS and ' data-hls-mp4="'..(USE_MP4_LLHLS and '2' or '1')..'"' or '')
                         ..' data-' or ' ')..'src="'..src..'">xcode</video>')
             ..VideoWrapperEnd(JKRDLOG_PATH and GetChatStreamNameList(),shiftable)..'\n'..TranscodeScriptTemplate(false,xq,{fsec=fsec}))
         end
