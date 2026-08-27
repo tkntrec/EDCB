@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -65,7 +66,32 @@ namespace EpgTimer.EpgView
                     if (e.ClickCount == 2)
                     {
                         var serviceInfo = ((FrameworkElement)sender).DataContext as EpgServiceInfo;
-                        CommonManager.Instance.TVTestCtrl.SetLiveCh(serviceInfo.ONID, serviceInfo.TSID, serviceInfo.SID);
+                        if (Settings.Instance.UseWatchCmd == false)
+                        {
+                            CommonManager.Instance.TVTestCtrl.SetLiveCh(info.ONID, info.TSID, info.SID);
+                        }
+                        else if (Settings.Instance.WatchCmd.Length > 0)
+                        {
+                            var cmdLine = new string[] { Settings.Instance.WatchCmd, Settings.Instance.WatchCmdOpt };
+                            for (int i = 0; i < 2; i++)
+                            {
+                                cmdLine[i] = cmdLine[i]
+                                    .Replace("$ONID$", info.ONID.ToString())
+                                    .Replace("$ONID10$", info.ONID.ToString())
+                                    .Replace("$ONID16$", info.ONID.ToString("X4"))
+                                    .Replace("$TSID$", info.TSID.ToString())
+                                    .Replace("$TSID10$", info.TSID.ToString())
+                                    .Replace("$TSID16$", info.TSID.ToString("X4"))
+                                    .Replace("$SID$", info.SID.ToString())
+                                    .Replace("$SID10$", info.SID.ToString())
+                                    .Replace("$SID16$", info.SID.ToString("X4"));
+                            }
+                            try
+                            {
+                                using (Process.Start(new ProcessStartInfo(cmdLine[0], cmdLine[1]) { UseShellExecute = true })) { }
+                            }
+                            catch (Exception ex) { MessageBox.Show(ex.ToString()); }
+                        }
                     }
                 };
                 //service1.DataContext = info;

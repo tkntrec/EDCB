@@ -45,6 +45,12 @@ namespace EpgTimer
             base.SetParam(false, new CheckBox());
             this.Pinned = true;
 
+            if (CommonManager.Instance.NWMode)
+            {
+                button_srvSetting.IsEnabled = false;
+            }
+            button_srvSetting.Click += (sender, e) => CommonManager.OpenSrvSetting();
+
             button_Reload.Click += (sender, e) => LoadSetting();
             button_Apply.Click += (sender, e) => { Apply(); LoadSetting(); };
             button_OK.Click += (sender, e) => { this.Close(); Apply(); };

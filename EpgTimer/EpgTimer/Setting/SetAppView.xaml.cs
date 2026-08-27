@@ -61,7 +61,6 @@ namespace EpgTimer.Setting
                 checkBox_suspendClose.IsEnabled = true;
                 checkBox_keepTCPConnect.IsEnabled = true;
                 grid_srvResident.IsEnabled = false;
-                button_srvSetting.IsEnabled = false;
                 label_shortCutSrv.IsEnabled = false;
                 button_shortCutSrv.IsEnabled = false;
                 checkBox_srvSaveNotifyLog.IsEnabled = false;
@@ -70,8 +69,6 @@ namespace EpgTimer.Setting
             }
 
             //0 全般
-            button_srvSetting.Click += (sender, e) => CommonManager.OpenSrvSetting();
-
             var SetScButton = new Action<Button, string, string>((btn, baseName, scLinkPath) =>
             {
                 string scPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Startup), baseName + ".lnk");

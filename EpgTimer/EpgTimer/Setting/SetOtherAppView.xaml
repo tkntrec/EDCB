@@ -60,9 +60,23 @@
                 <CheckBox Content="Pipe方式 (BonDriver__NetworkPipe.dll) ※ローカル通信専用" Margin="38,6,0,0" IsChecked="{Binding NwTvModePipe}" IsEnabled="{Binding NwTvModeTCP}"/>
             </StackPanel>
         </TabItem>
-        <TabItem Header="ファイル再生" Name="tabItem_play">
+        <TabItem Header="視聴・ファイル再生" Name="tabItem_play">
             <StackPanel Margin="10,10,6,6" >
-                <CheckBox Content="有効にする (未チェック時、TVTest連携のパスが指定されていればNetworkTVモードで再生を試みます)" IsChecked="{Binding FilePlay}" Margin="0,6,0,0" />
+                <CheckBox Content="視聴アプリを指定 (未チェック時はTVTest連携の設定に従います)" IsChecked="{Binding UseWatchCmd}" Margin="0,6,0,0" />
+                <DockPanel Margin="0,6,0,0">
+                    <Label Content="視聴アプリのexe・URL等" Name="label_wapp_path" IsEnabled="{Binding UseWatchCmd}" />
+                    <Button DockPanel.Dock="Right" Content="開く" Name="button_wplayExe" />
+                    <local:TextBoxWithReadOnlyEffect Margin="6,0" x:Name="textBox_wplayExe" Text="{Binding WatchCmd, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding UseWatchCmd, Converter={StaticResource invert}}"/>
+                </DockPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                    <Label Content="コマンドライン引数" Width="{Binding ActualWidth, ElementName=label_wapp_path}" IsEnabled="{Binding UseWatchCmd}" />
+                    <local:TextBoxWithReadOnlyEffect Margin="6,0" Text="{Binding WatchCmdOpt}" IsReadOnly="{Binding UseWatchCmd, Converter={StaticResource invert}}" Width="{Binding ActualWidth, ElementName=textBox_wplayExe}" />
+                </StackPanel>
+                <DockPanel Margin="0,6,0,0" IsEnabled="{Binding UseWatchCmd}" >
+                    <TextBlock Width="{Binding ActualWidth, ElementName=label_wapp_path}" />
+                    <TextBlock Margin="12,0" TextWrapping="Wrap" Text="exe・URL等、引数ともに、$SID$、$ONID$、$TSID$、が使用出来ます。&#10;$SID16$のように、後ろに'16'を付けると16進数で展開されます。('10'の場合は10進数、省略可)" />
+                </DockPanel>
+                <CheckBox Content="再生アプリを指定 (未チェック時、TVTest連携のパスが指定されていればNetworkTVモードで再生を試みます)" IsChecked="{Binding FilePlay}" Margin="0,16,0,0" />
                 <CheckBox Content="追っかけ再生にも使用する" Margin="18,6,0,0"  IsChecked="{Binding FilePlayOnAirWithExe}" IsEnabled="{Binding FilePlay}" />
                 <DockPanel Margin="0,6,0,0">
                     <Label Content="再生アプリのexeパス" Name="label_app_path" IsEnabled="{Binding FilePlay}" />
@@ -75,9 +89,9 @@
                 </StackPanel>
                 <DockPanel Margin="0,6,0,0" IsEnabled="{Binding FilePlay}" >
                     <TextBlock Width="{Binding ActualWidth, ElementName=label_app_path}" />
-                    <TextBlock Margin="12,0" TextWrapping="Wrap" Text="再生アプリのexeパスが未指定の場合は規定の再生アプリを使用します。&#10;コマンドラインでは、$FilePath$:(パス+ファイル名)、$FileNameExt$:(ファイル名のみ)、が使用出来ます。&#10;　※再生アプリが未指定の場合も、コマンドラインをファイル名として展開します。&#10;　※空白は$FilePath$相当です。&#10;&#10;(参考)「再生アプリのexeパス」「コマンドライン引数」とも空白にしておくと、録画ファイルを関連付けで開きます。" />
+                    <TextBlock Margin="12,0" TextWrapping="Wrap" Text="再生アプリのexeパスが未指定の場合は規定の再生アプリを使用します。&#10;コマンドラインでは、$FilePath$:(パス+ファイル名)、$FileNameExt$:(ファイル名のみ)、が使用出来ます。&#10;　※再生アプリが未指定の場合も、コマンドラインをファイル名として展開します。&#10;　※空白は$FilePath$相当です。&#10;(参考)「再生アプリのexeパス」「コマンドライン引数」とも空白にしておくと、録画ファイルを関連付けで開きます。" />
                 </DockPanel>
-                <CheckBox Content="録画済みファイルのパスを置換する" IsChecked="{Binding FilePathReplaceRecFile}" Margin="0,26,0,0" ToolTip="録画後にファイルを移動している場合などに利用できます。&#10;なお、EpgTimerNWでこのオプションを有効にした場合、録画済みファイルに対してはEpgTimerSrvからのUNCパス取得を行いません。" />
+                <CheckBox Content="録画済みファイルのパスを置換する" IsChecked="{Binding FilePathReplaceRecFile}" Margin="0,16,0,0" ToolTip="録画後にファイルを移動している場合などに利用できます。&#10;なお、EpgTimerNWでこのオプションを有効にした場合、録画済みファイルに対してはEpgTimerSrvからのUNCパス取得を行いません。" />
                 <Label IsEnabled="{Binding FilePathReplaceRecFile}" Content="ファイルパスの文字列置換リスト（/置換前/置換後/…） ※録画済み一覧画面の「録画フォルダを開く」機能にも適用されます" />
                 <local:TextBoxWithReadOnlyEffect Margin="6,0" x:Name="textBox_replacePattern" Text="{Binding FilePathReplacePattern}" TextChanged="replaceTest_TextChanged" IsReadOnly="{Binding FilePathReplaceRecFile, Converter={StaticResource invert}}"/>
                 <DockPanel Margin="0,6,0,0">

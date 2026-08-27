@@ -23,11 +23,14 @@
                 <my:SetOtherAppView x:Name="setOtherAppView" />
             </TabItem>
         </TabControl>
-        <DockPanel Grid.Row="1" Margin="30,10,30,6" HorizontalAlignment="Right" >
-            <Button Content="再読込" Margin="0,0,20,0" Name="button_Reload" MinWidth="75"/>
-            <Button Content="適用" Margin="0,0,20,0" Name="button_Apply" MinWidth="75"/>
-            <Button Content="OK" Margin="0,0,20,0" Name="button_OK" MinWidth="75" ToolTip="適用して閉じる"/>
-            <Button Content="キャンセル" Name="button_cancel" MinWidth="75" IsCancel="True" />
+        <DockPanel Grid.Row="1" Margin="30,10,30,6">
+            <Button DockPanel.Dock="Left" Content="EpgTimerSrvの設定画面を開く" Name="button_srvSetting" ToolTip="※設定項目は、この設定画面と重複します。"/>
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="再読込" Margin="0,0,20,0" Name="button_Reload" MinWidth="75"/>
+                <Button Content="適用" Margin="0,0,20,0" Name="button_Apply" MinWidth="75"/>
+                <Button Content="OK" Margin="0,0,20,0" Name="button_OK" MinWidth="75" ToolTip="適用して閉じる"/>
+                <Button Content="キャンセル" Name="button_cancel" MinWidth="75" IsCancel="True" />
+            </StackPanel>
         </DockPanel>
     </Grid>
 </local:AttendantWindow>

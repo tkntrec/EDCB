@@ -14,6 +14,7 @@ namespace EpgTimer.Setting
             InitializeComponent();
 
             button_exe.Click += ViewUtil.OpenFileNameDialog(textBox_exe, false, "", ".exe");
+            button_wplayExe.Click += ViewUtil.OpenFileNameDialog(textBox_wplayExe, false, "", ".exe");
             button_playExe.Click += ViewUtil.OpenFileNameDialog(textBox_playExe, false, "", ".exe");
 
             //エスケープキャンセルだけは常に有効にする。

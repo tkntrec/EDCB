@@ -99,6 +99,11 @@
                             <GridViewColumnHeader Content="録画ファイル" Uid="RecFilePath" />
                         </GridViewColumn.Header>
                     </GridViewColumn>
+                    <GridViewColumn DisplayMemberBinding="{Binding ReplacedRecFilePath}">
+                        <GridViewColumn.Header>
+                            <GridViewColumnHeader Content="録画ファイル(置換後)" Uid="ReplacedRecFilePath" />
+                        </GridViewColumn.Header>
+                    </GridViewColumn>
                     <GridViewColumn DisplayMemberBinding="{Binding DisplayID}">
                         <GridViewColumn.Header>
                             <GridViewColumnHeader Content="ID" Uid="ID" />
