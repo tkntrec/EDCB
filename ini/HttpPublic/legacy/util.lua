@@ -108,7 +108,8 @@ XCODE_FAST_RATES={
 --editorFast:単独で倍速再生にできないトランスコーダーの手前に置く編集コマンド。指定方法はxcoderと同様
 --editorOptionFastFunc:標準入出力ともにMPEG2-TSで倍速再生になるようにオプションを返す関数を指定する
 --autoCinema:TS-Live!方式専用。Cinema(逆テレシネ)モードを自動切り替え
---deinterlace:TS-Live!方式専用。デインタレース方式。'none'か'yadif'か'bwdif'
+--deinterlace:TS-Live!方式専用。デインタレース方式。'none'か'yadif[=1]'か'bwdif[=1]'
+--maxRateForDoubling:TS-Live!方式専用。再生速度がこれよりも大きいときは負荷軽減のためデインタレース方式から'=1'を除去する
 XCODE_OPTIONS={
   {
     --ffmpegの例。-b:vでおおよその最大ビットレートを決め、-qminで動きの少ないシーンのデータ量を節約する
@@ -262,6 +263,18 @@ XCODE_OPTIONS={
     tslive=true,
     autoCinema=true,
     deinterlace='bwdif',
+    xcoder='',
+    option='',
+    filter=':',
+    filterFastFunc=function() return ':' end,
+    output={'m2t',''},
+  },
+  {
+    name='TS-Live! 60fps',
+    tslive=true,
+    autoCinema=true,
+    deinterlace='bwdif=1',
+    maxRateForDoubling=1.0,
     xcoder='',
     option='',
     filter=':',
@@ -431,7 +444,8 @@ function GetTranscodeQueries(qs)
     poster=XCODE_OPTIONS[option or 1].poster,
     tslive=XCODE_OPTIONS[option or 1].tslive,
     autoCinema=XCODE_OPTIONS[option or 1].autoCinema,
-    deinterlace=(XCODE_OPTIONS[option or 1].deinterlace or ''):match('^[0-9A-Za-z]+$'),
+    deinterlace=(XCODE_OPTIONS[option or 1].deinterlace or ''):match('^[0-9A-Za-z=]+$'),
+    maxRateForDoubling=tonumber(XCODE_OPTIONS[option or 1].maxRateForDoubling),
     offset=GetVarInt(qs,'offset',-100000,100),
     audio2=GetVarInt(qs,'audio2')==1,
     cinema=GetVarInt(qs,'cinema')==1,
@@ -541,7 +555,7 @@ function PlaybackScriptTemplate(datacastLabel,live,jikkyo,caption,captionLabel)
   local zip=NVRAM_ZIP:match('^'..('[0-9]'):rep(7)..'$')
   local prefecture=math.floor(math.max(NVRAM_REGION<=50 and NVRAM_REGION or 0,0))
   return [=[
-<script type="text/javascript" src="script.js?ver=20260824" defer></script>
+<script type="text/javascript" src="script.js?ver=20260902" defer></script>
 ]=]..(USE_DATACAST and [=[
 <div class="remote-control" style="display:none">
   <button

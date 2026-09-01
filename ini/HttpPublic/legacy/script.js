@@ -1821,6 +1821,13 @@ const runTsliveScript=()=>{
     if(abortState=="paused"){
       mod.resume();
     }
+    let deinterlace=vid.e.dataset.deinterlace;
+    if(deinterlace&&mod.setDeinterlace){
+      if(vid.fast>(vid.e.dataset.maxRateForDoubling||1)){
+        deinterlace=deinterlace.replace("=1,","=0,").replace(/=1$/,"");
+      }
+      mod.setDeinterlace(deinterlace);
+    }
     mod.setPlaybackRate(vid.fast);
     mod.reset();
     const ctrl=new AbortController();
@@ -1912,9 +1919,9 @@ const runTsliveScript=()=>{
         }else{
           autoCinema=false;
         }
-        if(vid.e.dataset.deinterlace&&mod.setDeinterlace){
-          mod.setDeinterlace(vid.e.dataset.deinterlace);
-        }
+        let statCount=0;
+        let renderedCount=0;
+        let prevNow=performance.now();
         mod.setStatsCallback(stats=>{
           if(statsTime!=stats[stats.length-1].time){
             vid.currentTime+=stats[stats.length-1].time-statsTime;
@@ -1925,6 +1932,17 @@ const runTsliveScript=()=>{
           if(autoCinema){
             const f=stats[stats.length-1].TelecineFlag;
             if(cbCinema.checked!=f)cbCinema.checked=f;
+          }
+          statCount+=stats.length-1;
+          for(const stat of stats){
+            renderedCount+=stat.RenderedFlag?1:0;
+          }
+          const now=performance.now();
+          if(now-prevNow>10000){
+            console.log("stat "+(renderedCount*1000/(now-prevNow))+" fps "+(statCount*1000/(now-prevNow))+" rAF calls/s");
+            statCount=0;
+            renderedCount=0;
+            prevNow=now;
           }
         });
         setTimeout(()=>{
