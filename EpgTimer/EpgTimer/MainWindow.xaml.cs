@@ -124,6 +124,14 @@ namespace EpgTimer
                 rd.Add("AppFontSize", fontSize);
                 rd.Add("AppLargeFontSize", largeFontSize);
             }
+            else if (fontSize == 12)
+            {
+                //既定値のときはシステムのフォントサイズを使う
+                largeFontSize += SystemFonts.MessageFontSize - fontSize;
+                fontSize = SystemFonts.MessageFontSize;
+                rd.Add("AppFontSize", fontSize);
+                rd.Add("AppLargeFontSize", largeFontSize);
+            }
             style.Setters.Add(new Setter(FontSizeProperty, fontSize));
             rd.Add("AppWindowStyle", style);
             Application.Current.Resources.MergedDictionaries.Add(rd);
