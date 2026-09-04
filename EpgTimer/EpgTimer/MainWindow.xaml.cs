@@ -169,6 +169,10 @@ namespace EpgTimer
 
             Title = appName;
 
+            //スクロールバーの操作性のため
+            tabControl_main.BorderThickness = new Thickness(0, tabControl_main.BorderThickness.Top, 0, 0);
+            tabControl_main.Padding = new Thickness(0, tabControl_main.Padding.Top, 0, 0);
+
             try
             {
                 //ウインドウ位置の復元

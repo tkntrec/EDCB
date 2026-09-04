@@ -43,6 +43,8 @@ namespace EpgTimer
         {
             InitializeComponent();
 
+            double adjustment = (double)FindResource("AppScrollBarAdjustment");
+            epgProgramView.Margin = new Thickness(0, 0, adjustment, adjustment);
             nowViewTimer = new DispatcherTimer(DispatcherPriority.Normal);
             nowViewTimer.Tick += (sender, e) => ReDrawNowLine();
             setViewInfo = setInfo;

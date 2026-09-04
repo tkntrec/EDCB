@@ -35,7 +35,7 @@
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="auto" />
         </Grid.ColumnDefinitions>
-        <ListView ContextMenu="{DynamicResource itemHeader}" Margin="{StaticResource AppEdgeMargin}" Name="listView_recinfo" SelectionMode="Extended" ContextMenuOpening="ContextMenu_Header_ContextMenuOpening" GridViewColumnHeader.Click="GridViewColumnHeader_Click" MouseEnter="listView_recinfo_MouseEnter" MouseLeave="listView_recinfo_MouseLeave">
+        <ListView ContextMenu="{DynamicResource itemHeader}" Margin="{StaticResource AppEdgeMarginLTB}" Name="listView_recinfo" SelectionMode="Extended" ContextMenuOpening="ContextMenu_Header_ContextMenuOpening" GridViewColumnHeader.Click="GridViewColumnHeader_Click" MouseEnter="listView_recinfo_MouseEnter" MouseLeave="listView_recinfo_MouseLeave">
             <ListView.Resources>
                 <Style BasedOn="{StaticResource AppRecInfoListViewCheckBoxStyle}" TargetType="CheckBox" />
                 <Style x:Key="itemStyle" TargetType="ListViewItem">
@@ -153,7 +153,7 @@
                 </GridView>
             </ListView.View>
         </ListView>
-        <StackPanel Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=listView_recinfo, Converter={StaticResource notEqualConvert}, ConverterParameter=-1}" Margin="{StaticResource AppEdgeMarginT}" Name="stackPanel_button">
+        <StackPanel Grid.Column="1" IsEnabled="{Binding SelectedIndex, ElementName=listView_recinfo, Converter={StaticResource notEqualConvert}, ConverterParameter=-1}" Margin="{StaticResource AppEdgeMarginLT}" Name="stackPanel_button">
             <Button Content="削除" Style="{StaticResource AppSideMenuButtonStyle}" ToolTip="Delete" Click="button_del_Click" />
             <Button Content="再生" Style="{StaticResource AppSideMenuButtonStyle}" ToolTip="Ctrl + P" Click="button_play_Click" />
             <Button Content="自動予約登録" Style="{StaticResource AppSideMenuButtonStyle}" Click="autoadd_Click" />

@@ -26,6 +26,10 @@ namespace EpgTimer
         public EpgDataView()
         {
             InitializeComponent();
+
+            //スクロールバーの操作性のため
+            tabControl.BorderThickness = new Thickness(0, tabControl.BorderThickness.Top, 0, 0);
+            tabControl.Padding = new Thickness(0, tabControl.Padding.Top, 0, 0);
         }
 
         /// <summary>

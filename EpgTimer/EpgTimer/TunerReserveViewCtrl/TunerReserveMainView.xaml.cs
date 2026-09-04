@@ -29,6 +29,9 @@ namespace EpgTimer
         public TunerReserveMainView()
         {
             InitializeComponent();
+
+            double adjustment = (double)FindResource("AppScrollBarAdjustment");
+            tunerReserveView.Margin = new Thickness(0, 0, adjustment, adjustment);
             initialGridContainerDefinitionValues = new Tuple<double, double>(
                 grid_container.ColumnDefinitions[0].Width.Value,
                 grid_container.RowDefinitions[0].Height.Value);

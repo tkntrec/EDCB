@@ -65,7 +65,7 @@
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="auto" />
         </Grid.ColumnDefinitions>
-        <ListView ContextMenu="{DynamicResource itemHeader}" Margin="{StaticResource AppEdgeMargin}" Name="listView_reserve" SelectionMode="Extended" ContextMenuOpening="ContextMenu_Header_ContextMenuOpening" GridViewColumnHeader.Click="GridViewColumnHeader_Click" MouseEnter="listView_reserve_MouseEnter" MouseLeave="listView_reserve_MouseLeave">
+        <ListView ContextMenu="{DynamicResource itemHeader}" Margin="{StaticResource AppEdgeMarginLTB}" Name="listView_reserve" SelectionMode="Extended" ContextMenuOpening="ContextMenu_Header_ContextMenuOpening" GridViewColumnHeader.Click="GridViewColumnHeader_Click" MouseEnter="listView_reserve_MouseEnter" MouseLeave="listView_reserve_MouseLeave">
             <ListView.Resources>
                 <Style x:Key="itemStyle" TargetType="ListViewItem">
                     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -215,7 +215,7 @@
                 </GridView>
             </ListView.View>
         </ListView>
-        <StackPanel Grid.Column="1" Margin="{StaticResource AppEdgeMarginT}" Name="stackPanel_button">
+        <StackPanel Grid.Column="1" Margin="{StaticResource AppEdgeMarginLT}" Name="stackPanel_button">
             <StackPanel IsEnabled="{Binding SelectedIndex, ElementName=listView_reserve, Converter={StaticResource notEqualConvert}, ConverterParameter=-1}">
                 <Button Content="削除" Style="{StaticResource AppSideMenuButtonStyle}" ToolTip="Delete" Click="button_del_Click" />
                 <Button Content="有効←→無効" Style="{StaticResource AppSideMenuButtonStyle}" ToolTip="Ctrl + R" Click="button_no_Click" />

@@ -42,6 +42,12 @@ namespace EpgTimer
         {
             InitializeComponent();
 
+            //スクロールバーの操作性のため
+            var borderThickness = listView_event.BorderThickness;
+            borderThickness.Right = 0;
+            listView_event.BorderThickness = borderThickness;
+            listView_event.Margin = new Thickness(0, 0, (double)FindResource("AppScrollBarAdjustment"), 0);
+
             var style = (Style)listView_event.FindResource("itemStyle");
             style.BasedOn = listView_event.ItemContainerStyle;
             listView_event.ItemContainerStyle = style;

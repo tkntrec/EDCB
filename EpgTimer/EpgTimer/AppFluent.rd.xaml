@@ -24,6 +24,7 @@
 
     <sys:Double x:Key="AppEpgListServiceColumnWidth">150</sys:Double>
     <sys:Double x:Key="AppMainWindowButtonSeparatorWidth">15</sys:Double>
+    <sys:Double x:Key="AppScrollBarAdjustment">-1</sys:Double>
     <sys:Double x:Key="AppSearchServiceNameColumnWidth">200</sys:Double>
     <sys:Double x:Key="AppSideMenuButtonSeparatorHeight">10</sys:Double>
 
