@@ -54,6 +54,12 @@ namespace EpgTimer
             if (Settings.Instance.AutoAddEpgHideButton)
             {
                 stackPanel_button.Visibility = Visibility.Collapsed;
+                frameworkElement_buttonMargin.Visibility = Visibility.Collapsed;
+            }
+            if (Settings.Instance.AutoAddEpgDockButtonToLeft)
+            {
+                Grid.SetColumn(stackPanel_button, 0);
+                frameworkElement_buttonMargin.Visibility = Visibility.Collapsed;
             }
             listView_key.AlternationCount = Settings.Instance.ResAlternationCount;
             if (Settings.ContextMenuResourceDictionary != null)
@@ -226,14 +232,9 @@ namespace EpgTimer
                 MenuItem menuItem = item as MenuItem;
                 if (menuItem != null)
                 {
-                    if (menuItem.Name == "HideButton")
-                    {
-                        menuItem.IsChecked = Settings.Instance.AutoAddEpgHideButton;
-                    }
-                    else
-                    {
-                        menuItem.IsChecked = Settings.Instance.AutoAddEpgColumn.Any(info => info.Tag == menuItem.Name);
-                    }
+                    menuItem.IsChecked = menuItem.Name == "HideButton" ? Settings.Instance.AutoAddEpgHideButton :
+                                         menuItem.Name == "DockButtonToLeft" ? Settings.Instance.AutoAddEpgDockButtonToLeft :
+                                         Settings.Instance.AutoAddEpgColumn.Any(info => info.Tag == menuItem.Name);
                 }
             }
         }
@@ -273,6 +274,14 @@ namespace EpgTimer
         {
             Settings.Instance.AutoAddEpgHideButton = ((MenuItem)sender).IsChecked;
             stackPanel_button.Visibility = Settings.Instance.AutoAddEpgHideButton ? Visibility.Collapsed : Visibility.Visible;
+            frameworkElement_buttonMargin.Visibility = Settings.Instance.AutoAddEpgHideButton || Settings.Instance.AutoAddEpgDockButtonToLeft ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        private void dockButtonToLeft_Click(object sender, RoutedEventArgs e)
+        {
+            Settings.Instance.AutoAddEpgDockButtonToLeft = ((MenuItem)sender).IsChecked;
+            Grid.SetColumn(stackPanel_button, Settings.Instance.AutoAddEpgDockButtonToLeft ? 0 : 3);
+            frameworkElement_buttonMargin.Visibility = Settings.Instance.AutoAddEpgHideButton || Settings.Instance.AutoAddEpgDockButtonToLeft ? Visibility.Collapsed : Visibility.Visible;
         }
 
         private void listView_key_ContextMenuOpening(object sender, ContextMenuEventArgs e)

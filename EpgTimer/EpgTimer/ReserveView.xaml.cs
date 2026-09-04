@@ -54,6 +54,12 @@ namespace EpgTimer
             if (Settings.Instance.ResHideButton)
             {
                 stackPanel_button.Visibility = Visibility.Collapsed;
+                frameworkElement_buttonMargin.Visibility = Visibility.Collapsed;
+            }
+            if (Settings.Instance.ResDockButtonToLeft)
+            {
+                Grid.SetColumn(stackPanel_button, 0);
+                frameworkElement_buttonMargin.Visibility = Visibility.Collapsed;
             }
             listView_reserve.AlternationCount = Settings.Instance.ResAlternationCount;
             if (Settings.ContextMenuResourceDictionary != null)
@@ -376,14 +382,9 @@ namespace EpgTimer
                 MenuItem menuItem = item as MenuItem;
                 if (menuItem != null && menuItem.IsCheckable)
                 {
-                    if (menuItem.Name == "HideButton")
-                    {
-                        menuItem.IsChecked = Settings.Instance.ResHideButton;
-                    }
-                    else
-                    {
-                        menuItem.IsChecked = Settings.Instance.ReserveListColumn.Any(info => info.Tag == menuItem.Name);
-                    }
+                    menuItem.IsChecked = menuItem.Name == "HideButton" ? Settings.Instance.ResHideButton :
+                                         menuItem.Name == "DockButtonToLeft" ? Settings.Instance.ResDockButtonToLeft :
+                                         Settings.Instance.ReserveListColumn.Any(info => info.Tag == menuItem.Name);
                 }
             }
         }
@@ -423,6 +424,14 @@ namespace EpgTimer
         {
             Settings.Instance.ResHideButton = ((MenuItem)sender).IsChecked;
             stackPanel_button.Visibility = Settings.Instance.ResHideButton ? Visibility.Collapsed : Visibility.Visible;
+            frameworkElement_buttonMargin.Visibility = Settings.Instance.ResHideButton || Settings.Instance.ResDockButtonToLeft ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        private void dockButtonToLeft_Click(object sender, RoutedEventArgs e)
+        {
+            Settings.Instance.ResDockButtonToLeft = ((MenuItem)sender).IsChecked;
+            Grid.SetColumn(stackPanel_button, Settings.Instance.ResDockButtonToLeft ? 0 : 3);
+            frameworkElement_buttonMargin.Visibility = Settings.Instance.ResHideButton || Settings.Instance.ResDockButtonToLeft ? Visibility.Collapsed : Visibility.Visible;
         }
 
         void listView_reserve_KeyDown(object sender, KeyEventArgs e)

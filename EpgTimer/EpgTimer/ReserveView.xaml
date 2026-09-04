@@ -27,6 +27,7 @@
             <MenuItem Header="ID" Name="ID" IsCheckable="True" Click="headerSelect_Click" />
             <Separator />
             <MenuItem Header="ボタン列を隠す" Name="HideButton" IsCheckable="True" Click="hideButton_Click" />
+            <MenuItem Header="ボタン列を左に" Name="DockButtonToLeft" IsCheckable="True" Click="dockButtonToLeft_Click" />
             <Separator />
             <MenuItem Header="プログラム予約追加" Click="button_add_manual_Click" />
         </ContextMenu>
@@ -62,10 +63,12 @@
     </UserControl.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="auto" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
-        <ListView ContextMenu="{DynamicResource itemHeader}" Margin="{StaticResource AppEdgeMarginLTB}" Name="listView_reserve" SelectionMode="Extended" ContextMenuOpening="ContextMenu_Header_ContextMenuOpening" GridViewColumnHeader.Click="GridViewColumnHeader_Click" MouseEnter="listView_reserve_MouseEnter" MouseLeave="listView_reserve_MouseLeave">
+        <ListView ContextMenu="{DynamicResource itemHeader}" Grid.Column="1" Margin="{StaticResource AppEdgeMarginLTB}" Name="listView_reserve" SelectionMode="Extended" ContextMenuOpening="ContextMenu_Header_ContextMenuOpening" GridViewColumnHeader.Click="GridViewColumnHeader_Click" MouseEnter="listView_reserve_MouseEnter" MouseLeave="listView_reserve_MouseLeave">
             <ListView.Resources>
                 <Style x:Key="itemStyle" TargetType="ListViewItem">
                     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -215,7 +218,8 @@
                 </GridView>
             </ListView.View>
         </ListView>
-        <StackPanel Grid.Column="1" Margin="{StaticResource AppEdgeMarginLT}" Name="stackPanel_button">
+        <FrameworkElement Grid.Column="2" Margin="{StaticResource AppEdgeMarginL}" Name="frameworkElement_buttonMargin" />
+        <StackPanel Grid.Column="3" Margin="{StaticResource AppEdgeMarginT}" Name="stackPanel_button">
             <StackPanel IsEnabled="{Binding SelectedIndex, ElementName=listView_reserve, Converter={StaticResource notEqualConvert}, ConverterParameter=-1}">
                 <Button Content="削除" Style="{StaticResource AppSideMenuButtonStyle}" ToolTip="Delete" Click="button_del_Click" />
                 <Button Content="有効←→無効" Style="{StaticResource AppSideMenuButtonStyle}" ToolTip="Ctrl + R" Click="button_no_Click" />

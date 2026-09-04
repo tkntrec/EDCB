@@ -51,6 +51,12 @@ namespace EpgTimer
             if (Settings.Instance.AutoAddManualHideButton)
             {
                 stackPanel_button.Visibility = Visibility.Collapsed;
+                frameworkElement_buttonMargin.Visibility = Visibility.Collapsed;
+            }
+            if (Settings.Instance.AutoAddManualDockButtonToLeft)
+            {
+                Grid.SetColumn(stackPanel_button, 0);
+                frameworkElement_buttonMargin.Visibility = Visibility.Collapsed;
             }
             listView_key.AlternationCount = Settings.Instance.ResAlternationCount;
             if (Settings.ContextMenuResourceDictionary != null)
@@ -153,14 +159,9 @@ namespace EpgTimer
                 MenuItem menuItem = item as MenuItem;
                 if (menuItem != null && menuItem.IsCheckable)
                 {
-                    if (menuItem.Name == "HideButton")
-                    {
-                        menuItem.IsChecked = Settings.Instance.AutoAddManualHideButton;
-                    }
-                    else
-                    {
-                        menuItem.IsChecked = Settings.Instance.AutoAddManualColumn.Any(info => info.Tag == menuItem.Name);
-                    }
+                    menuItem.IsChecked = menuItem.Name == "HideButton" ? Settings.Instance.AutoAddManualHideButton :
+                                         menuItem.Name == "DockButtonToLeft" ? Settings.Instance.AutoAddManualDockButtonToLeft :
+                                         Settings.Instance.AutoAddManualColumn.Any(info => info.Tag == menuItem.Name);
                 }
             }
         }
@@ -200,6 +201,14 @@ namespace EpgTimer
         {
             Settings.Instance.AutoAddManualHideButton = ((MenuItem)sender).IsChecked;
             stackPanel_button.Visibility = Settings.Instance.AutoAddManualHideButton ? Visibility.Collapsed : Visibility.Visible;
+            frameworkElement_buttonMargin.Visibility = Settings.Instance.AutoAddManualHideButton || Settings.Instance.AutoAddManualDockButtonToLeft ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        private void dockButtonToLeft_Click(object sender, RoutedEventArgs e)
+        {
+            Settings.Instance.AutoAddManualDockButtonToLeft = ((MenuItem)sender).IsChecked;
+            Grid.SetColumn(stackPanel_button, Settings.Instance.AutoAddManualDockButtonToLeft ? 0 : 3);
+            frameworkElement_buttonMargin.Visibility = Settings.Instance.AutoAddManualHideButton || Settings.Instance.AutoAddManualDockButtonToLeft ? Visibility.Collapsed : Visibility.Visible;
         }
 
         private void listView_key_KeyDown(object sender, KeyEventArgs e)

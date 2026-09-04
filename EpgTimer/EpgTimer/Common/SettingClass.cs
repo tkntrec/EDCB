@@ -211,6 +211,7 @@ namespace EpgTimer
         public string ResColumnHead { get; set; }
         public ListSortDirection ResSortDirection { get; set; }
         public bool ResHideButton { get; set; }
+        public bool ResDockButtonToLeft { get; set; }
         public System.Windows.WindowState LastWindowState { get; set; }
         public double MainWndLeft { get; set; }
         public double MainWndTop { get; set; }
@@ -247,8 +248,11 @@ namespace EpgTimer
         public string RecInfoColumnHead { get; set; }
         public ListSortDirection RecInfoSortDirection { get; set; }
         public bool RecInfoHideButton { get; set; }
+        public bool RecInfoDockButtonToLeft { get; set; }
         public bool AutoAddEpgHideButton { get; set; }
+        public bool AutoAddEpgDockButtonToLeft { get; set; }
         public bool AutoAddManualHideButton { get; set; }
+        public bool AutoAddManualDockButtonToLeft { get; set; }
         public string TvTestExe { get; set; }
         public string TvTestCmd { get; set; }
         public bool NwTvMode { get; set; }
@@ -433,6 +437,7 @@ namespace EpgTimer
             Enum.TryParse(ConvertXElem(x, w, "ResSortDirection", ResSortDirection.ToString(), ""), out sd);
             r.ResSortDirection          = sd;
             r.ResHideButton             = ConvertXElem(x, w, "ResHideButton", ResHideButton, false);
+            r.ResDockButtonToLeft       = ConvertXElem(x, w, "ResDockButtonToLeft", ResDockButtonToLeft, false);
             WindowState ws;
             Enum.TryParse(ConvertXElem(x, w, "LastWindowState", LastWindowState.ToString(), ""), out ws);
             r.LastWindowState           = ws;
@@ -473,8 +478,11 @@ namespace EpgTimer
             Enum.TryParse(ConvertXElem(x, w, "RecInfoSortDirection", RecInfoSortDirection.ToString(), ""), out sd);
             r.RecInfoSortDirection      = sd;
             r.RecInfoHideButton         = ConvertXElem(x, w, "RecInfoHideButton", RecInfoHideButton, false);
+            r.RecInfoDockButtonToLeft   = ConvertXElem(x, w, "RecInfoDockButtonToLeft", RecInfoDockButtonToLeft, false);
             r.AutoAddEpgHideButton      = ConvertXElem(x, w, "AutoAddEpgHideButton", AutoAddEpgHideButton, false);
+            r.AutoAddEpgDockButtonToLeft = ConvertXElem(x, w, "AutoAddEpgDockButtonToLeft", AutoAddEpgDockButtonToLeft, false);
             r.AutoAddManualHideButton   = ConvertXElem(x, w, "AutoAddManualHideButton", AutoAddManualHideButton, false);
+            r.AutoAddManualDockButtonToLeft = ConvertXElem(x, w, "AutoAddManualDockButtonToLeft", AutoAddManualDockButtonToLeft, false);
             r.TvTestExe                 = ConvertXElem(x, w, "TvTestExe", TvTestExe, "");
             r.TvTestCmd                 = ConvertXElem(x, w, "TvTestCmd", TvTestCmd, "");
             r.NwTvMode                  = ConvertXElem(x, w, "NwTvMode", NwTvMode, false);
@@ -573,6 +581,7 @@ namespace EpgTimer
             dest.ResColumnHead = ResColumnHead;
             dest.ResSortDirection = ResSortDirection;
             dest.ResHideButton = ResHideButton;
+            dest.ResDockButtonToLeft = ResDockButtonToLeft;
             dest.LastWindowState = LastWindowState;
             dest.MainWndLeft = MainWndLeft;
             dest.MainWndTop = MainWndTop;
@@ -585,8 +594,11 @@ namespace EpgTimer
             dest.RecInfoColumnHead = RecInfoColumnHead;
             dest.RecInfoSortDirection = RecInfoSortDirection;
             dest.RecInfoHideButton = RecInfoHideButton;
+            dest.RecInfoDockButtonToLeft = RecInfoDockButtonToLeft;
             dest.AutoAddEpgHideButton = AutoAddEpgHideButton;
+            dest.AutoAddEpgDockButtonToLeft = AutoAddEpgDockButtonToLeft;
             dest.AutoAddManualHideButton = AutoAddManualHideButton;
+            dest.AutoAddManualDockButtonToLeft = AutoAddManualDockButtonToLeft;
             dest.NWServerIP = NWServerIP;
             dest.NWServerPort = NWServerPort;
             dest.NWWaitPort = NWWaitPort;
