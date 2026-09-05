@@ -92,7 +92,7 @@ CEpgTimerSrvSetting::SETTING CEpgTimerSrvSetting::LoadSetting(LPCWSTR iniPath)
 					//曜日指定接尾辞(w1=Mon,...,w7=Sun)
 					wday = (int)(wcstoul(endp + 1, NULL, 10) % 8);
 				}
-				s.epgCapTimeList.resize(s.epgCapTimeList.size() + 1);
+				s.epgCapTimeList.emplace_back();
 				s.epgCapTimeList.back().second.first = (wday * 24 + hour) * 60 + minute;
 				//有効か
 				swprintf_s(key, L"%dSelect", i);
@@ -189,7 +189,7 @@ vector<pair<wstring, wstring>> CEpgTimerSrvSetting::EnumBonFileName(LPCWSTR sett
 				bon += EDCB_LIB_EXT;
 				if( std::find_if(ret.begin(), ret.end(), [&](const pair<wstring, wstring>& a) {
 				        return UtilComparePath(a.first.c_str(), bon.c_str()) == 0; }) == ret.end() ){
-					ret.push_back(std::make_pair(std::move(bon), std::move(findData.fileName)));
+					ret.emplace_back(std::move(bon), std::move(findData.fileName));
 				}
 			}
 		}
@@ -580,6 +580,8 @@ INT_PTR CEpgTimerSrvSetting::OnInitDialog()
 	SetDlgItemInt(hwnd, IDC_EDIT_SET_TCP_RES_TO, GetPrivateProfileInt(L"SET", L"TCPResponseTimeoutSec", 120, iniPath.c_str()), FALSE);
 	SetDlgButtonCheck(hwnd, IDC_CHECK_SET_AUTODEL_REC_INFO, setting.autoDelRecInfo);
 	SetDlgItemInt(hwnd, IDC_EDIT_SET_AUTODEL_REC_INFO, setting.autoDelRecInfoNum, FALSE);
+	SetDlgItemInt(hwnd, IDC_EDIT_SET_REC_INFO2_MAX, setting.recInfo2Max, FALSE);
+	SetDlgItemInt(hwnd, IDC_EDIT_SET_REC_INFO2_DROP_CHK, setting.recInfo2DropChk, FALSE);
 	for( int i = 0; i <= 14; i++ ){
 		WCHAR val[16];
 		swprintf_s(val, L"%d", i);
@@ -885,6 +887,8 @@ void CEpgTimerSrvSetting::OnBnClickedOk()
 	WritePrivateProfileInt(L"SET", L"TCPResponseTimeoutSec", GetDlgItemInt(hwnd, IDC_EDIT_SET_TCP_RES_TO, NULL, FALSE), iniPath.c_str());
 	WritePrivateProfileInt(L"SET", L"AutoDelRecInfo", GetDlgButtonCheck(hwnd, IDC_CHECK_SET_AUTODEL_REC_INFO), iniPath.c_str());
 	WritePrivateProfileInt(L"SET", L"AutoDelRecInfoNum", GetDlgItemInt(hwnd, IDC_EDIT_SET_AUTODEL_REC_INFO, NULL, FALSE), iniPath.c_str());
+	WritePrivateProfileInt(L"SET", L"RecInfo2Max", GetDlgItemInt(hwnd, IDC_EDIT_SET_REC_INFO2_MAX, NULL, FALSE), iniPath.c_str());
+	WritePrivateProfileInt(L"SET", L"RecInfo2DropChk", GetDlgItemInt(hwnd, IDC_EDIT_SET_REC_INFO2_DROP_CHK, NULL, FALSE), iniPath.c_str());
 	//無制限は20000日(480000時間、整数秒で表せる大きな値)で表現する
 	int periodDay = ComboBox_GetCurSel(GetDlgItem(hwnd, IDC_COMBO_SET_EPG_ARCHIVE_PERIOD));
 	WritePrivateProfileInt(L"SET", L"EpgArchivePeriodHour", (periodDay > 14 ? 20000 : periodDay) * 24, iniPath.c_str());

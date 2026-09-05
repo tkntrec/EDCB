@@ -212,7 +212,8 @@ void CWriteMain::TeeThread(CWriteMain* sys)
 #ifdef _WIN32
 	wstring cmd = sys->teeCmd;
 	Replace(cmd, L"$FilePath$", sys->savePath);
-	vector<WCHAR> cmdBuff(cmd.c_str(), cmd.c_str() + cmd.size() + 1);
+	//CreateProcess()のlpCommandLineはconstでないため
+	cmd += L'\0';
 	HANDLE olEvents[] = { sys->teeThreadStopEvent.Handle(), CreateEvent(NULL, TRUE, FALSE, NULL) };
 	if( olEvents[1] ){
 		WCHAR pipeName[64];
@@ -235,7 +236,7 @@ void CWriteMain::TeeThread(CWriteMain* sys)
 				si.hStdOutput = CreateFile(L"nul", GENERIC_WRITE, 0, &sa, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 				si.hStdError = CreateFile(L"nul", GENERIC_WRITE, 0, &sa, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 				PROCESS_INFORMATION pi;
-				BOOL bRet = CreateProcess(NULL, cmdBuff.data(), NULL, NULL, TRUE, BELOW_NORMAL_PRIORITY_CLASS | CREATE_NO_WINDOW, NULL, currentDir.c_str(), &si, &pi);
+				BOOL bRet = CreateProcess(NULL, &cmd.front(), NULL, NULL, TRUE, BELOW_NORMAL_PRIORITY_CLASS | CREATE_NO_WINDOW, NULL, currentDir.c_str(), &si, &pi);
 				CloseHandle(readPipe);
 				if( si.hStdOutput != INVALID_HANDLE_VALUE ){
 					CloseHandle(si.hStdOutput);
@@ -310,7 +311,7 @@ void CWriteMain::TeeThread(CWriteMain* sys)
 			//シグナルマスクを初期化
 			sigset_t sset;
 			sigemptyset(&sset);
-			if( sigprocmask(SIG_SETMASK, &sset, NULL) == 0 && chdir(execDir.c_str()) == 0 ){
+			if( pthread_sigmask(SIG_SETMASK, &sset, NULL) == 0 && chdir(execDir.c_str()) == 0 ){
 				setenv("FilePath", filePath.c_str(), 0);
 				execl("/bin/sh", "sh", "-c", cmd.c_str(), NULL);
 			}

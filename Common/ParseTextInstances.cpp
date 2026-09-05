@@ -3,10 +3,6 @@
 #include "TimeUtil.h"
 #include "PathUtil.h"
 
-#if defined(_MSC_VER) && _MSC_VER < 1900
-#define wcstoll _wcstoi64
-#endif
-
 namespace
 {
 //タブ区切りの次のトークンに移動する
@@ -84,21 +80,34 @@ void ParseRecFolderList(LPCWSTR* token, vector<REC_FILE_SET_INFO>& list)
 {
 	for( int n = NextTokenToInt(token); n > 0; n-- ){
 		NextToken(token);
-		list.resize(list.size() + 1);
+		list.emplace_back();
 		list.back().recFolder.assign(token[0], token[1]);
 	}
-	for( size_t i = 0; i < list.size(); ){
-		if( list[i].recFolder.empty() ){
-			list.erase(list.begin() + i);
+	for( vector<REC_FILE_SET_INFO>::iterator itr = list.begin(); itr != list.end(); ){
+		if( itr->recFolder.empty() ){
+			itr = list.erase(itr);
 		}else{
 			//US制御文字があればそれで分割、なければ*で分割
-			LPCWSTR sep = list[i].recFolder.find(L'\x1F') != wstring::npos ? L"\x1F" : L"*";
-			Separate(list[i].recFolder, sep, list[i].recFolder, list[i].writePlugIn);
-			Separate(list[i].writePlugIn, sep, list[i].writePlugIn, list[i].recNamePlugIn);
-			if( list[i].writePlugIn.empty() ){
-				list[i].writePlugIn = L"Write_Default.dll";
+			LPCWSTR sep = itr->recFolder.find(L'\x1F') != wstring::npos ? L"\x1F" : L"*";
+			Separate(itr->recFolder, sep, itr->recFolder, itr->writePlugIn);
+			Separate(itr->writePlugIn, sep, itr->writePlugIn, itr->recNamePlugIn);
+			if( itr->writePlugIn.empty() ){
+				itr->writePlugIn = L"Write_Default" EDCB_LIB_EXT;
 			}
-			i++;
+			//互いに異なる環境でのEDCB_LIB_EXTはこの環境のEDCB_LIB_EXTに読みかえる
+#ifdef _WIN32
+			WCHAR ext[] = EDCB_UNIX_LIB_EXT;
+#else
+			WCHAR ext[] = EDCB_WIN_LIB_EXT;
+#endif
+			size_t extLen = array_size(ext) - 1;
+			if( itr->writePlugIn.size() >= extLen && CompareNoCase(itr->writePlugIn.c_str() + itr->writePlugIn.size() - extLen, ext) == 0 ){
+				itr->writePlugIn.replace(itr->writePlugIn.size() - extLen, extLen, EDCB_LIB_EXT);
+			}
+			if( itr->recNamePlugIn.size() >= extLen && CompareNoCase(itr->recNamePlugIn.c_str() + itr->recNamePlugIn.size() - extLen, ext) == 0 ){
+				itr->recNamePlugIn.replace(itr->recNamePlugIn.size() - extLen, extLen, EDCB_LIB_EXT);
+			}
+			itr++;
 		}
 	}
 }
@@ -141,7 +150,7 @@ void CParseChText4::SetFilePath(LPCWSTR path)
 DWORD CParseChText4::AddCh(const CH_DATA4& item)
 {
 	map<DWORD, CH_DATA4>::const_iterator itr =
-		this->itemMap.insert(pair<DWORD, CH_DATA4>(this->itemMap.empty() ? 1 : this->itemMap.rbegin()->first + 1, item)).first;
+		this->itemMap.emplace(this->itemMap.empty() ? 1 : this->itemMap.rbegin()->first + 1, item).first;
 	return itr->first;
 }
 
@@ -158,34 +167,34 @@ void CParseChText4::SetUseViewFlag(DWORD key, BOOL useViewFlag)
 	}
 }
 
-bool CParseChText4::ParseLine(LPCWSTR parseLine, pair<DWORD, CH_DATA4>& item)
+void CParseChText4::ParseLine(LPCWSTR parseLine)
 {
 	if( wcschr(parseLine, L'\t') == NULL ){
-		return false;
+		return;
 	}
 	LPCWSTR token[3] = {NULL, NULL, parseLine};
+	CH_DATA4 item;
 
 	NextToken(token);
-	item.second.chName.assign(token[0], token[1]);
+	item.chName.assign(token[0], token[1]);
 	NextToken(token);
-	item.second.serviceName.assign(token[0], token[1]);
+	item.serviceName.assign(token[0], token[1]);
 	NextToken(token);
-	item.second.networkName.assign(token[0], token[1]);
+	item.networkName.assign(token[0], token[1]);
 
-	item.second.space = NextTokenToInt(token);
-	item.second.ch = NextTokenToInt(token);
-	item.second.originalNetworkID = (WORD)NextTokenToInt(token);
-	item.second.transportStreamID = (WORD)NextTokenToInt(token);
-	item.second.serviceID = (WORD)NextTokenToInt(token);
-	item.second.serviceType = (WORD)NextTokenToInt(token);
-	item.second.partialFlag = NextTokenToInt(token) != 0;
-	item.second.useViewFlag = NextTokenToInt(token) != 0;
-	item.second.remoconID = (BYTE)NextTokenToInt(token);
-	item.first = this->itemMap.empty() ? 1 : this->itemMap.rbegin()->first + 1;
-	return true;
+	item.space = NextTokenToInt(token);
+	item.ch = NextTokenToInt(token);
+	item.originalNetworkID = (WORD)NextTokenToInt(token);
+	item.transportStreamID = (WORD)NextTokenToInt(token);
+	item.serviceID = (WORD)NextTokenToInt(token);
+	item.serviceType = (WORD)NextTokenToInt(token);
+	item.partialFlag = NextTokenToInt(token) != 0;
+	item.useViewFlag = NextTokenToInt(token) != 0;
+	item.remoconID = (BYTE)NextTokenToInt(token);
+	this->itemMap.emplace(this->itemMap.empty() ? 1 : this->itemMap.rbegin()->first + 1, std::move(item));
 }
 
-bool CParseChText4::SaveLine(const pair<DWORD, CH_DATA4>& item, wstring& saveLine) const
+bool CParseChText4::SaveLine(map<DWORD, CH_DATA4>::const_reference item, wstring& saveLine) const
 {
 	Format(saveLine, L"%ls\n%ls\n%ls\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d",
 		item.second.chName.c_str(),
@@ -249,37 +258,38 @@ bool CParseChText5::SaveTextWithExtraFields(string* saveToStr) const
 	return ret;
 }
 
-bool CParseChText5::ParseLine(LPCWSTR parseLine, pair<LONGLONG, CH_DATA5>& item)
+void CParseChText5::ParseLine(LPCWSTR parseLine)
 {
 	if( wcschr(parseLine, L'\t') == NULL ){
-		return false;
+		return;
 	}
 	LPCWSTR token[3] = {NULL, NULL, parseLine};
+	CH_DATA5 item;
 
 	NextToken(token);
-	item.second.serviceName.assign(token[0], token[1]);
+	item.serviceName.assign(token[0], token[1]);
 	NextToken(token);
-	item.second.networkName.assign(token[0], token[1]);
+	item.networkName.assign(token[0], token[1]);
 
-	item.second.originalNetworkID = (WORD)NextTokenToInt(token);
-	item.second.transportStreamID = (WORD)NextTokenToInt(token);
-	item.second.serviceID = (WORD)NextTokenToInt(token);
-	item.second.serviceType = (WORD)NextTokenToInt(token);
-	item.second.partialFlag = NextTokenToInt(token) != 0;
-	item.second.epgCapFlag = NextTokenToInt(token) != 0;
-	item.second.searchFlag = NextTokenToInt(token) != 0;
-	item.second.remoconID = 0;
-	item.first = (LONGLONG)item.second.originalNetworkID << 32 | (LONGLONG)item.second.transportStreamID << 16 | item.second.serviceID;
+	item.originalNetworkID = (WORD)NextTokenToInt(token);
+	item.transportStreamID = (WORD)NextTokenToInt(token);
+	item.serviceID = (WORD)NextTokenToInt(token);
+	item.serviceType = (WORD)NextTokenToInt(token);
+	item.partialFlag = NextTokenToInt(token) != 0;
+	item.epgCapFlag = NextTokenToInt(token) != 0;
+	item.searchFlag = NextTokenToInt(token) != 0;
+	item.remoconID = 0;
+	LONGLONG key = (LONGLONG)item.originalNetworkID << 32 | (LONGLONG)item.transportStreamID << 16 | item.serviceID;
 	if( this->itemMap.empty() ){
 		this->parsedOrder.clear();
 	}
-	if( this->itemMap.count(item.first) == 0 ){
-		this->parsedOrder.push_back(item.first);
+	if( this->itemMap.count(key) == 0 ){
+		this->parsedOrder.push_back(key);
 	}
-	return true;
+	this->itemMap.emplace(key, std::move(item));
 }
 
-bool CParseChText5::SaveLine(const pair<LONGLONG, CH_DATA5>& item, wstring& saveLine) const
+bool CParseChText5::SaveLine(map<LONGLONG, CH_DATA5>::const_reference item, wstring& saveLine) const
 {
 	WCHAR extra[16];
 	swprintf_s(extra, L"\n%d", item.second.remoconID);
@@ -303,8 +313,8 @@ bool CParseChText5::SelectItemToSave(vector<map<LONGLONG, CH_DATA5>::const_itera
 	//情報の追加がなければ読み込み順を維持
 	if( this->parsedOrder.size() == this->itemMap.size() ){
 		itemList.reserve(this->parsedOrder.size());
-		for( size_t i = 0; i < this->parsedOrder.size(); i++ ){
-			itemList.push_back(this->itemMap.find(this->parsedOrder[i]));
+		for( LONGLONG key : this->parsedOrder ){
+			itemList.push_back(this->itemMap.find(key));
 		}
 		return true;
 	}
@@ -321,19 +331,18 @@ void CParseContentTypeText::GetMimeType(wstring ext, wstring& mimeType) const
 	}
 }
 
-bool CParseContentTypeText::ParseLine(LPCWSTR parseLine, pair<wstring, wstring>& item)
+void CParseContentTypeText::ParseLine(LPCWSTR parseLine)
 {
 	if( wcschr(parseLine, L'\t') == NULL || parseLine[0] == L';' ){
 		//空行orコメント
-		return false;
+		return;
 	}
 	LPCWSTR token[3] = {NULL, NULL, parseLine};
 
 	NextToken(token);
-	item.first.assign(token[0], token[1]);
+	wstring key(token[0], token[1]);
 	NextToken(token);
-	item.second.assign(token[0], token[1]);
-	return true;
+	this->itemMap.emplace(std::move(key), wstring(token[0], token[1]));
 }
 
 void CParseServiceChgText::ChgText(wstring& chgText) const
@@ -344,23 +353,22 @@ void CParseServiceChgText::ChgText(wstring& chgText) const
 	}
 }
 
-bool CParseServiceChgText::ParseLine(LPCWSTR parseLine, pair<wstring, wstring>& item)
+void CParseServiceChgText::ParseLine(LPCWSTR parseLine)
 {
 	if( wcschr(parseLine, L'\t') == NULL || parseLine[0] == L';' ){
-		return false;
+		return;
 	}
 	LPCWSTR token[3] = {NULL, NULL, parseLine};
 
 	NextToken(token);
-	item.first.assign(token[0], token[1]);
+	wstring key(token[0], token[1]);
 	NextToken(token);
-	item.second.assign(token[0], token[1]);
-	return true;
+	this->itemMap.emplace(std::move(key), wstring(token[0], token[1]));
 }
 
 DWORD CParseRecInfoText::AddRecInfo(const REC_FILE_INFO_BASIC& item)
 {
-	map<DWORD, REC_FILE_INFO_BASIC>::iterator itr = this->itemMap.insert(std::make_pair(this->nextID, item)).first;
+	map<DWORD, REC_FILE_INFO_BASIC>::iterator itr = this->itemMap.emplace(this->nextID, item).first;
 	this->nextID = this->nextID % 100000000 + 1;
 	DWORD id = itr->second.id = itr->first;
 
@@ -420,7 +428,7 @@ void CParseRecInfoText::SetRecInfoFolder(LPCWSTR folder)
 	this->recInfoFolder = folder;
 }
 
-bool CParseRecInfoText::ParseLine(LPCWSTR parseLine, pair<DWORD, REC_FILE_INFO_BASIC>& item)
+void CParseRecInfoText::ParseLine(LPCWSTR parseLine)
 {
 	if( this->saveNextID == 1 ){
 		this->saveNextID = 0;
@@ -433,45 +441,46 @@ bool CParseRecInfoText::ParseLine(LPCWSTR parseLine, pair<DWORD, REC_FILE_INFO_B
 			}
 			this->saveNextID = 2;
 		}
-		return false;
+		return;
 	}else if( wcschr(parseLine, L'\t') == NULL ){
-		return false;
+		return;
 	}
 	LPCWSTR token[3] = {NULL, NULL, parseLine};
+	REC_FILE_INFO_BASIC item;
 
 	NextToken(token);
-	item.second.recFilePath.assign(token[0], token[1]);
+	item.recFilePath.assign(token[0], token[1]);
 	NextToken(token);
-	item.second.title.assign(token[0], token[1]);
+	item.title.assign(token[0], token[1]);
 
-	if( ParseDateTime(token, item.second.startTime, &item.second.durationSecond) == false ){
-		return false;
+	if( ParseDateTime(token, item.startTime, &item.durationSecond) == false ){
+		return;
 	}
 	NextToken(token);
-	item.second.serviceName.assign(token[0], token[1]);
-	item.second.originalNetworkID = (WORD)NextTokenToInt(token);
-	item.second.transportStreamID = (WORD)NextTokenToInt(token);
-	item.second.serviceID = (WORD)NextTokenToInt(token);
-	item.second.eventID = (WORD)NextTokenToInt(token);
-	item.second.drops = wcstoll(NextToken(token), NULL, 10);
-	item.second.scrambles = wcstoll(NextToken(token), NULL, 10);
-	item.second.recStatus = (DWORD)NextTokenToInt(token);
+	item.serviceName.assign(token[0], token[1]);
+	item.originalNetworkID = (WORD)NextTokenToInt(token);
+	item.transportStreamID = (WORD)NextTokenToInt(token);
+	item.serviceID = (WORD)NextTokenToInt(token);
+	item.eventID = (WORD)NextTokenToInt(token);
+	item.drops = wcstoll(NextToken(token), NULL, 10);
+	item.scrambles = wcstoll(NextToken(token), NULL, 10);
+	item.recStatus = (DWORD)NextTokenToInt(token);
 
-	if( ParseDateTime(token, item.second.startTimeEpg) == false ){
-		return false;
+	if( ParseDateTime(token, item.startTimeEpg) == false ){
+		return;
 	}
 	NextToken(token);
-	item.second.protectFlag = NextTokenToInt(token) != 0;
-	item.second.id = item.first = (DWORD)NextTokenToInt(token);
-	if( item.first == 0 || item.first > 100000000 || this->itemMap.count(item.first) ){
+	item.protectFlag = NextTokenToInt(token) != 0;
+	item.id = (DWORD)NextTokenToInt(token);
+	if( item.id == 0 || item.id > 100000000 || this->itemMap.count(item.id) ){
 		//新しいIDを与える
-		item.second.id = item.first = this->nextID;
+		item.id = this->nextID;
 	}
-	this->nextID = this->nextID > item.first + 50000000 ? item.first + 1 : (max(item.first + 1, this->nextID) - 1) % 100000000 + 1;
-	return true;
+	this->nextID = this->nextID > item.id + 50000000 ? item.id + 1 : (max(item.id + 1, this->nextID) - 1) % 100000000 + 1;
+	this->itemMap.emplace(item.id, std::move(item));
 }
 
-bool CParseRecInfoText::SaveLine(const pair<DWORD, REC_FILE_INFO_BASIC>& item, wstring& saveLine) const
+bool CParseRecInfoText::SaveLine(map<DWORD, REC_FILE_INFO_BASIC>::const_reference item, wstring& saveLine) const
 {
 	WCHAR id[32];
 	swprintf_s(id, L"%d", item.second.id);
@@ -585,10 +594,10 @@ void CParseRecInfoText::OnDelRecInfo(const REC_FILE_INFO_BASIC& item)
 		//カスタムルール
 		AddDebugLogFormat(L"★RecInfo Auto Delete : %ls", item.recFilePath.c_str());
 		wstring debug;
-		for( size_t i = 0; i < this->customDelExt.size(); i++ ){
+		for( const wstring& ext : this->customDelExt ){
 			wstring delPath = fs_path(item.recFilePath).replace_extension().native();
-			DeleteFile((delPath + this->customDelExt[i]).c_str());
-			debug = (debug.empty() ? delPath + L'(' : debug + L'|') + this->customDelExt[i];
+			DeleteFile((delPath + ext).c_str());
+			debug = (debug.empty() ? delPath + L'(' : debug + L'|') + ext;
 		}
 		if( debug.empty() == false ){
 			AddDebugLogFormat(L"★RecInfo Auto Delete : %ls)", debug.c_str());
@@ -596,10 +605,10 @@ void CParseRecInfoText::OnDelRecInfo(const REC_FILE_INFO_BASIC& item)
 		if( this->recInfoFolder.empty() == false ){
 			//録画情報フォルダにも適用
 			debug.clear();
-			for( size_t i = 0; i < this->customDelExt.size(); i++ ){
+			for( const wstring& ext : this->customDelExt ){
 				wstring delPath = fs_path(this->recInfoFolder).append(fs_path(item.recFilePath).stem().native()).native();
-				DeleteFile((delPath + this->customDelExt[i]).c_str());
-				debug = (debug.empty() ? delPath + L'(' : debug + L'|') + this->customDelExt[i];
+				DeleteFile((delPath + ext).c_str());
+				debug = (debug.empty() ? delPath + L'(' : debug + L'|') + ext;
 			}
 			if( debug.empty() == false ){
 				AddDebugLogFormat(L"★RecInfo Auto Delete : %ls)", debug.c_str());
@@ -622,29 +631,28 @@ void CParseRecInfoText::OnDelRecInfo(const REC_FILE_INFO_BASIC& item)
 
 DWORD CParseRecInfo2Text::Add(const PARSE_REC_INFO2_ITEM& item)
 {
-	map<DWORD, PARSE_REC_INFO2_ITEM>::const_iterator itr =
-		this->itemMap.insert(pair<DWORD, PARSE_REC_INFO2_ITEM>(this->itemMap.empty() ? 1 : this->itemMap.rbegin()->first + 1, item)).first;
-	return itr->first;
+	this->itemMap.emplace_back((DWORD)(this->itemMap.size() + 1), item);
+	return this->itemMap.back().first;
 }
 
-bool CParseRecInfo2Text::ParseLine(LPCWSTR parseLine, pair<DWORD, PARSE_REC_INFO2_ITEM>& item)
+void CParseRecInfo2Text::ParseLine(LPCWSTR parseLine)
 {
 	if( wcschr(parseLine, L'\t') == NULL || parseLine[0] == L';' ){
-		return false;
+		return;
 	}
 	LPCWSTR token[3] = {NULL, NULL, parseLine};
+	PARSE_REC_INFO2_ITEM item;
 
-	item.second.originalNetworkID = (WORD)NextTokenToInt(token);
-	item.second.transportStreamID = (WORD)NextTokenToInt(token);
-	item.second.serviceID = (WORD)NextTokenToInt(token);
+	item.originalNetworkID = (WORD)NextTokenToInt(token);
+	item.transportStreamID = (WORD)NextTokenToInt(token);
+	item.serviceID = (WORD)NextTokenToInt(token);
 
-	if( ParseDateTime(token, item.second.startTime) == false ){
-		return false;
+	if( ParseDateTime(token, item.startTime) == false ){
+		return;
 	}
 	NextToken(token);
-	item.second.eventName.assign(token[0], token[1]);
-	item.first = this->itemMap.empty() ? 1 : this->itemMap.rbegin()->first + 1;
-	return true;
+	item.eventName.assign(token[0], token[1]);
+	this->itemMap.emplace_back((DWORD)(this->itemMap.size() + 1), std::move(item));
 }
 
 bool CParseRecInfo2Text::SaveLine(const pair<DWORD, PARSE_REC_INFO2_ITEM>& item, wstring& saveLine) const
@@ -660,11 +668,11 @@ bool CParseRecInfo2Text::SaveLine(const pair<DWORD, PARSE_REC_INFO2_ITEM>& item,
 	return FinalizeField(saveLine) == 5;
 }
 
-bool CParseRecInfo2Text::SelectItemToSave(vector<map<DWORD, PARSE_REC_INFO2_ITEM>::const_iterator>& itemList) const
+bool CParseRecInfo2Text::SelectItemToSave(vector<vector<pair<DWORD, PARSE_REC_INFO2_ITEM>>::const_iterator>& itemList) const
 {
-	map<DWORD, PARSE_REC_INFO2_ITEM>::const_iterator itr = this->itemMap.begin();
+	vector<pair<DWORD, PARSE_REC_INFO2_ITEM>>::const_iterator itr = this->itemMap.begin();
 	if( this->itemMap.size() > this->keepCount ){
-		advance(itr, this->itemMap.size() - this->keepCount);
+		itr += this->itemMap.size() - this->keepCount;
 		itemList.reserve(this->keepCount);
 		for( ; itr != this->itemMap.end(); itr++ ){
 			itemList.push_back(itr);
@@ -676,7 +684,7 @@ bool CParseRecInfo2Text::SelectItemToSave(vector<map<DWORD, PARSE_REC_INFO2_ITEM
 
 DWORD CParseReserveText::AddReserve(const RESERVE_DATA& item)
 {
-	map<DWORD, RESERVE_DATA>::iterator itr = this->itemMap.insert(std::make_pair(this->nextID, item)).first;
+	map<DWORD, RESERVE_DATA>::iterator itr = this->itemMap.emplace(this->nextID, item).first;
 	this->nextID = this->nextID % 100000000 + 1;
 	this->sortByEventCache.clear();
 	return itr->second.reserveID = itr->first;
@@ -732,7 +740,7 @@ bool CParseReserveText::DelReserve(DWORD id)
 	return false;
 }
 
-bool CParseReserveText::ParseLine(LPCWSTR parseLine, pair<DWORD, RESERVE_DATA>& item)
+void CParseReserveText::ParseLine(LPCWSTR parseLine)
 {
 	if( this->saveNextID == 1 ){
 		this->saveNextID = 0;
@@ -745,70 +753,71 @@ bool CParseReserveText::ParseLine(LPCWSTR parseLine, pair<DWORD, RESERVE_DATA>& 
 			}
 			this->saveNextID = 2;
 		}
-		return false;
+		return;
 	}else if( wcschr(parseLine, L'\t') == NULL ){
-		return false;
+		return;
 	}
 	LPCWSTR token[3] = {NULL, NULL, parseLine};
+	RESERVE_DATA item;
 
-	if( ParseDateTime(token, item.second.startTime, &item.second.durationSecond) == false ){
-		return false;
+	if( ParseDateTime(token, item.startTime, &item.durationSecond) == false ){
+		return;
 	}
 	NextToken(token);
-	item.second.title.assign(token[0], token[1]);
+	item.title.assign(token[0], token[1]);
 	NextToken(token);
-	item.second.stationName.assign(token[0], token[1]);
-	item.second.originalNetworkID = (WORD)NextTokenToInt(token);
-	item.second.transportStreamID = (WORD)NextTokenToInt(token);
-	item.second.serviceID = (WORD)NextTokenToInt(token);
-	item.second.eventID = (WORD)NextTokenToInt(token);
-	item.second.recSetting.priority = (BYTE)NextTokenToInt(token);
-	item.second.recSetting.tuijyuuFlag = NextTokenToInt(token) != 0 && item.second.eventID != 0xFFFF;
-	item.second.reserveID = item.first = (DWORD)NextTokenToInt(token);
-	if( item.first == 0 || item.first > 100000000 ){
-		return false;
+	item.stationName.assign(token[0], token[1]);
+	item.originalNetworkID = (WORD)NextTokenToInt(token);
+	item.transportStreamID = (WORD)NextTokenToInt(token);
+	item.serviceID = (WORD)NextTokenToInt(token);
+	item.eventID = (WORD)NextTokenToInt(token);
+	item.recSetting.priority = (BYTE)NextTokenToInt(token);
+	item.recSetting.tuijyuuFlag = NextTokenToInt(token) != 0 && item.eventID != 0xFFFF;
+	item.reserveID = (DWORD)NextTokenToInt(token);
+	if( item.reserveID == 0 || item.reserveID > 100000000 ){
+		return;
 	}
-	item.second.recSetting.recMode = (BYTE)NextTokenToInt(token);
-	item.second.recSetting.pittariFlag = NextTokenToInt(token) != 0 && item.second.eventID != 0xFFFF;
+	item.recSetting.recMode = (BYTE)NextTokenToInt(token);
+	item.recSetting.pittariFlag = NextTokenToInt(token) != 0 && item.eventID != 0xFFFF;
 	NextToken(token);
-	if( item.second.recSetting.batFilePath.assign(token[0], token[1]) == L"0" ){
-		item.second.recSetting.batFilePath.clear();
+	if( item.recSetting.batFilePath.assign(token[0], token[1]) == L"0" ){
+		item.recSetting.batFilePath.clear();
 	}
 	//将来用
 	NextToken(token);
 	NextToken(token);
-	item.second.comment.assign(token[0], token[1]);
+	item.comment.assign(token[0], token[1]);
 	NextToken(token);
 	//録画フォルダパスの最初の要素だけここにある
-	item.second.recSetting.recFolderList.resize(1);
-	item.second.recSetting.recFolderList[0].recFolder.assign(token[0], token[1]);
-	item.second.recSetting.suspendMode = (BYTE)NextTokenToInt(token);
-	item.second.recSetting.rebootFlag = NextTokenToInt(token) != 0;
+	item.recSetting.recFolderList.resize(1);
+	item.recSetting.recFolderList[0].recFolder.assign(token[0], token[1]);
+	item.recSetting.suspendMode = (BYTE)NextTokenToInt(token);
+	item.recSetting.rebootFlag = NextTokenToInt(token) != 0;
 	//廃止(旧recFilePath)
 	NextToken(token);
-	item.second.recSetting.useMargineFlag = NextTokenToInt(token) != 0;
-	item.second.recSetting.startMargine = NextTokenToInt(token);
-	item.second.recSetting.endMargine = NextTokenToInt(token);
-	item.second.recSetting.serviceMode = (DWORD)NextTokenToInt(token);
+	item.recSetting.useMargineFlag = NextTokenToInt(token) != 0;
+	item.recSetting.startMargine = NextTokenToInt(token);
+	item.recSetting.endMargine = NextTokenToInt(token);
+	item.recSetting.serviceMode = (DWORD)NextTokenToInt(token);
 
-	if( ParseDateTime(token, item.second.startTimeEpg) == false ){
-		return false;
+	if( ParseDateTime(token, item.startTimeEpg) == false ){
+		return;
 	}
-	ParseRecFolderList(token, item.second.recSetting.recFolderList);
-	item.second.recSetting.continueRecFlag = NextTokenToInt(token) != 0;
-	item.second.recSetting.partialRecFlag = NextTokenToInt(token) != 0;
-	item.second.recSetting.tunerID = (DWORD)NextTokenToInt(token);
-	item.second.reserveStatus = (DWORD)NextTokenToInt(token);
+	ParseRecFolderList(token, item.recSetting.recFolderList);
+	item.recSetting.continueRecFlag = NextTokenToInt(token) != 0;
+	item.recSetting.partialRecFlag = NextTokenToInt(token) != 0;
+	item.recSetting.tunerID = (DWORD)NextTokenToInt(token);
+	item.reserveStatus = (DWORD)NextTokenToInt(token);
 
-	ParseRecFolderList(token, item.second.recSetting.partialRecFolder);
-	item.second.presentFlag = 0;
-	item.second.overlapMode = 0;
-	this->nextID = this->nextID > item.first + 50000000 ? item.first + 1 : (max(item.first + 1, this->nextID) - 1) % 100000000 + 1;
+	ParseRecFolderList(token, item.recSetting.partialRecFolder);
+	item.presentFlag = 0;
+	item.overlapMode = 0;
+	this->nextID = this->nextID > item.reserveID + 50000000 ? item.reserveID + 1 : (max(item.reserveID + 1, this->nextID) - 1) % 100000000 + 1;
 	this->sortByEventCache.clear();
-	return true;
+	this->itemMap.emplace(item.reserveID, std::move(item));
 }
 
-bool CParseReserveText::SaveLine(const pair<DWORD, RESERVE_DATA>& item, wstring& saveLine) const
+bool CParseReserveText::SaveLine(map<DWORD, RESERVE_DATA>::const_reference item, wstring& saveLine) const
 {
 	wstring strFirstRecFolder;
 	if( item.second.recSetting.recFolderList.empty() == false ){
@@ -882,9 +891,8 @@ bool CParseReserveText::SelectItemToSave(vector<map<DWORD, RESERVE_DATA>::const_
 	if( this->saveNextID == 0 ){
 		//NextIDコメントが無かったときは従来どおり予約日時順で保存する
 		vector<pair<LONGLONG, const RESERVE_DATA*>> sortItemList = GetReserveList();
-		vector<pair<LONGLONG, const RESERVE_DATA*>>::const_iterator itr;
-		for( itr = sortItemList.begin(); itr != sortItemList.end(); itr++ ){
-			itemList.push_back(this->itemMap.find(itr->second->reserveID));
+		for( const auto& item : sortItemList ){
+			itemList.push_back(this->itemMap.find(item.second->reserveID));
 		}
 		return true;
 	}
@@ -908,19 +916,18 @@ vector<pair<LONGLONG, const RESERVE_DATA*>> CParseReserveText::GetReserveList(BO
 	retList.reserve(this->itemMap.size());
 
 	//日時順にソート
-	map<DWORD, RESERVE_DATA>::const_iterator itr;
-	for( itr = this->itemMap.begin(); itr != this->itemMap.end(); itr++ ){
-		LONGLONG startTime = ConvertI64Time(itr->second.startTime);
+	for( const auto& item : this->itemMap ){
+		LONGLONG startTime = ConvertI64Time(item.second.startTime);
 		if( calcMargin != FALSE ){
-			LONGLONG endTime = startTime + itr->second.durationSecond * I64_1SEC;
+			LONGLONG endTime = startTime + item.second.durationSecond * I64_1SEC;
 			LONGLONG startMargin = defStartMargin * I64_1SEC;
-			if( itr->second.recSetting.useMargineFlag == TRUE ){
-				startMargin = itr->second.recSetting.startMargine * I64_1SEC;
+			if( item.second.recSetting.useMargineFlag == TRUE ){
+				startMargin = item.second.recSetting.startMargine * I64_1SEC;
 			}
 			//開始マージンは元の予約終了時刻を超えて負であってはならない
 			startTime -= max(startMargin, startTime - endTime);
 		}
-		retList.push_back( pair<LONGLONG, const RESERVE_DATA*>((startTime / I64_1SEC) << 16 | itr->second.transportStreamID, &itr->second) );
+		retList.emplace_back((startTime / I64_1SEC) << 16 | item.second.transportStreamID, &item.second);
 	}
 	std::sort(retList.begin(), retList.end());
 	return retList;
@@ -931,10 +938,10 @@ const vector<pair<ULONGLONG, DWORD>>& CParseReserveText::GetSortByEventList() co
 	if( this->sortByEventCache.empty() || this->itemMap.empty() ){
 		this->sortByEventCache.clear();
 		this->sortByEventCache.reserve(this->itemMap.size());
-		for( map<DWORD, RESERVE_DATA>::const_iterator itr = this->itemMap.begin(); itr != this->itemMap.end(); itr++ ){
-			this->sortByEventCache.push_back(std::make_pair(
-				(ULONGLONG)itr->second.originalNetworkID << 48 | (ULONGLONG)itr->second.transportStreamID << 32 |
-				(DWORD)itr->second.serviceID << 16 | itr->second.eventID, itr->first));
+		for( const auto& item : this->itemMap ){
+			this->sortByEventCache.emplace_back(
+				(ULONGLONG)item.second.originalNetworkID << 48 | (ULONGLONG)item.second.transportStreamID << 32 |
+				(DWORD)item.second.serviceID << 16 | item.second.eventID, item.first);
 		}
 		std::sort(this->sortByEventCache.begin(), this->sortByEventCache.end());
 	}
@@ -943,7 +950,7 @@ const vector<pair<ULONGLONG, DWORD>>& CParseReserveText::GetSortByEventList() co
 
 DWORD CParseEpgAutoAddText::AddData(const EPG_AUTO_ADD_DATA& item)
 {
-	map<DWORD, EPG_AUTO_ADD_DATA>::iterator itr = this->itemMap.insert(std::make_pair(this->nextID, item)).first;
+	map<DWORD, EPG_AUTO_ADD_DATA>::iterator itr = this->itemMap.emplace(this->nextID, item).first;
 	this->nextID = this->nextID % 100000000 + 1;
 	return itr->second.dataID = itr->first;
 }
@@ -973,7 +980,7 @@ bool CParseEpgAutoAddText::DelData(DWORD id)
 	return this->itemMap.erase(id) != 0;
 }
 
-bool CParseEpgAutoAddText::ParseLine(LPCWSTR parseLine, pair<DWORD, EPG_AUTO_ADD_DATA>& item)
+void CParseEpgAutoAddText::ParseLine(LPCWSTR parseLine)
 {
 	if( this->saveNextID == 1 ){
 		this->saveNextID = 0;
@@ -986,22 +993,23 @@ bool CParseEpgAutoAddText::ParseLine(LPCWSTR parseLine, pair<DWORD, EPG_AUTO_ADD
 			}
 			this->saveNextID = 2;
 		}
-		return false;
+		return;
 	}else if( wcschr(parseLine, L'\t') == NULL ){
-		return false;
+		return;
 	}
 	LPCWSTR token[3] = {NULL, NULL, parseLine};
+	EPG_AUTO_ADD_DATA item;
 
-	item.second.dataID = item.first = (DWORD)NextTokenToInt(token);
-	if( item.first == 0 || item.first > 100000000 ){
-		return false;
+	item.dataID = (DWORD)NextTokenToInt(token);
+	if( item.dataID == 0 || item.dataID > 100000000 ){
+		return;
 	}
 	NextToken(token);
-	item.second.searchInfo.andKey.assign(token[0], token[1]);
+	item.searchInfo.andKey.assign(token[0], token[1]);
 	NextToken(token);
-	item.second.searchInfo.notKey.assign(token[0], token[1]);
-	item.second.searchInfo.regExpFlag = NextTokenToInt(token) != 0;
-	item.second.searchInfo.titleOnlyFlag = NextTokenToInt(token) != 0;
+	item.searchInfo.notKey.assign(token[0], token[1]);
+	item.searchInfo.regExpFlag = NextTokenToInt(token) != 0;
+	item.searchInfo.titleOnlyFlag = NextTokenToInt(token) != 0;
 
 	LPCWSTR subToken[3] = {};
 	for( subToken[2] = NextToken(token); NextToken(subToken, L',') < token[1]; ){
@@ -1014,7 +1022,7 @@ bool CParseEpgAutoAddText::ParseLine(LPCWSTR parseLine, pair<DWORD, EPG_AUTO_ADD
 			addItem.content_nibble_level_2 = (BYTE)((DWORD)flag >> 16);
 			addItem.user_nibble_1 = (BYTE)((DWORD)flag >> 8);
 			addItem.user_nibble_2 = (BYTE)((DWORD)flag);
-			item.second.searchInfo.contentList.push_back(addItem);
+			item.searchInfo.contentList.push_back(addItem);
 		}
 	}
 	for( subToken[2] = NextToken(token); NextToken(subToken, L',') < token[1]; ){
@@ -1035,47 +1043,47 @@ bool CParseEpgAutoAddText::ParseLine(LPCWSTR parseLine, pair<DWORD, EPG_AUTO_ADD
 			addItem.endDayOfWeek = dwTime[2] % 7;
 			addItem.endHour = (dwTime[3] >> 16) % 24;
 			addItem.endMin = (dwTime[3] & 0xFFFF) % 60;
-			item.second.searchInfo.dateList.push_back(addItem);
+			item.searchInfo.dateList.push_back(addItem);
 		}
 	}
 	for( subToken[2] = NextToken(token); NextToken(subToken, L',') < token[1]; ){
 		LPWSTR endp;
 		LONGLONG llCh = wcstoll(subToken[0], &endp, 16);
 		if( endp != subToken[0] && endp <= subToken[1] ){
-			item.second.searchInfo.serviceList.push_back(llCh & 0xFFFFFFFFFFFFLL);
+			item.searchInfo.serviceList.push_back(llCh & 0xFFFFFFFFFFFFLL);
 		}
 	}
-	item.second.recSetting.recMode = (BYTE)NextTokenToInt(token);
-	item.second.recSetting.priority = (BYTE)NextTokenToInt(token);
-	item.second.recSetting.tuijyuuFlag = NextTokenToInt(token) != 0;
-	item.second.recSetting.serviceMode = (DWORD)NextTokenToInt(token);
-	item.second.recSetting.pittariFlag = NextTokenToInt(token) != 0;
+	item.recSetting.recMode = (BYTE)NextTokenToInt(token);
+	item.recSetting.priority = (BYTE)NextTokenToInt(token);
+	item.recSetting.tuijyuuFlag = NextTokenToInt(token) != 0;
+	item.recSetting.serviceMode = (DWORD)NextTokenToInt(token);
+	item.recSetting.pittariFlag = NextTokenToInt(token) != 0;
 	NextToken(token);
-	item.second.recSetting.batFilePath.assign(token[0], token[1]);
-	item.second.recSetting.suspendMode = (BYTE)NextTokenToInt(token);
-	item.second.recSetting.rebootFlag = NextTokenToInt(token) != 0;
-	item.second.recSetting.useMargineFlag = NextTokenToInt(token) != 0;
-	item.second.recSetting.startMargine = NextTokenToInt(token);
-	item.second.recSetting.endMargine = NextTokenToInt(token);
+	item.recSetting.batFilePath.assign(token[0], token[1]);
+	item.recSetting.suspendMode = (BYTE)NextTokenToInt(token);
+	item.recSetting.rebootFlag = NextTokenToInt(token) != 0;
+	item.recSetting.useMargineFlag = NextTokenToInt(token) != 0;
+	item.recSetting.startMargine = NextTokenToInt(token);
+	item.recSetting.endMargine = NextTokenToInt(token);
 
-	ParseRecFolderList(token, item.second.recSetting.recFolderList);
-	item.second.recSetting.continueRecFlag = NextTokenToInt(token) != 0;
-	item.second.recSetting.partialRecFlag = NextTokenToInt(token) != 0;
-	item.second.recSetting.tunerID = (DWORD)NextTokenToInt(token);
-	item.second.searchInfo.aimaiFlag = NextTokenToInt(token) != 0;
-	item.second.searchInfo.notContetFlag = NextTokenToInt(token) != 0;
-	item.second.searchInfo.notDateFlag = NextTokenToInt(token) != 0;
-	item.second.searchInfo.freeCAFlag = (BYTE)NextTokenToInt(token);
+	ParseRecFolderList(token, item.recSetting.recFolderList);
+	item.recSetting.continueRecFlag = NextTokenToInt(token) != 0;
+	item.recSetting.partialRecFlag = NextTokenToInt(token) != 0;
+	item.recSetting.tunerID = (DWORD)NextTokenToInt(token);
+	item.searchInfo.aimaiFlag = NextTokenToInt(token) != 0;
+	item.searchInfo.notContetFlag = NextTokenToInt(token) != 0;
+	item.searchInfo.notDateFlag = NextTokenToInt(token) != 0;
+	item.searchInfo.freeCAFlag = (BYTE)NextTokenToInt(token);
 
-	ParseRecFolderList(token, item.second.recSetting.partialRecFolder);
-	item.second.searchInfo.chkRecEnd = NextTokenToInt(token) != 0;
-	item.second.searchInfo.chkRecDay = (WORD)NextTokenToInt(token);
-	item.second.addCount = 0;
-	this->nextID = this->nextID > item.first + 50000000 ? item.first + 1 : (max(item.first + 1, this->nextID) - 1) % 100000000 + 1;
-	return true;
+	ParseRecFolderList(token, item.recSetting.partialRecFolder);
+	item.searchInfo.chkRecEnd = NextTokenToInt(token) != 0;
+	item.searchInfo.chkRecDay = (WORD)NextTokenToInt(token);
+	item.addCount = 0;
+	this->nextID = this->nextID > item.dataID + 50000000 ? item.dataID + 1 : (max(item.dataID + 1, this->nextID) - 1) % 100000000 + 1;
+	this->itemMap.emplace(item.dataID, std::move(item));
 }
 
-bool CParseEpgAutoAddText::SaveLine(const pair<DWORD, EPG_AUTO_ADD_DATA>& item, wstring& saveLine) const
+bool CParseEpgAutoAddText::SaveLine(map<DWORD, EPG_AUTO_ADD_DATA>::const_reference item, wstring& saveLine) const
 {
 	wstring strContent;
 	for( size_t i = 0; i < item.second.searchInfo.contentList.size(); i++ ){
@@ -1184,7 +1192,7 @@ bool CParseEpgAutoAddText::SelectItemToSave(vector<map<DWORD, EPG_AUTO_ADD_DATA>
 
 DWORD CParseManualAutoAddText::AddData(const MANUAL_AUTO_ADD_DATA& item)
 {
-	map<DWORD, MANUAL_AUTO_ADD_DATA>::iterator itr = this->itemMap.insert(std::make_pair(this->nextID, item)).first;
+	map<DWORD, MANUAL_AUTO_ADD_DATA>::iterator itr = this->itemMap.emplace(this->nextID, item).first;
 	this->nextID = this->nextID % 100000000 + 1;
 	itr->second.recSetting.pittariFlag = 0;
 	itr->second.recSetting.tuijyuuFlag = 0;
@@ -1208,7 +1216,7 @@ bool CParseManualAutoAddText::DelData(DWORD id)
 	return this->itemMap.erase(id) != 0;
 }
 
-bool CParseManualAutoAddText::ParseLine(LPCWSTR parseLine, pair<DWORD, MANUAL_AUTO_ADD_DATA>& item)
+void CParseManualAutoAddText::ParseLine(LPCWSTR parseLine)
 {
 	if( this->saveNextID == 1 ){
 		this->saveNextID = 0;
@@ -1221,50 +1229,51 @@ bool CParseManualAutoAddText::ParseLine(LPCWSTR parseLine, pair<DWORD, MANUAL_AU
 			}
 			this->saveNextID = 2;
 		}
-		return false;
+		return;
 	}else if( wcschr(parseLine, L'\t') == NULL ){
-		return false;
+		return;
 	}
 	LPCWSTR token[3] = {NULL, NULL, parseLine};
+	MANUAL_AUTO_ADD_DATA item;
 
-	item.second.dataID = item.first = (DWORD)NextTokenToInt(token);
-	if( item.first == 0 || item.first > 100000000 ){
-		return false;
+	item.dataID = (DWORD)NextTokenToInt(token);
+	if( item.dataID == 0 || item.dataID > 100000000 ){
+		return;
 	}
-	item.second.dayOfWeekFlag = (BYTE)NextTokenToInt(token);
-	item.second.startTime = (DWORD)NextTokenToInt(token);
-	item.second.durationSecond = (DWORD)NextTokenToInt(token);
+	item.dayOfWeekFlag = (BYTE)NextTokenToInt(token);
+	item.startTime = (DWORD)NextTokenToInt(token);
+	item.durationSecond = (DWORD)NextTokenToInt(token);
 	NextToken(token);
-	item.second.title.assign(token[0], token[1]);
+	item.title.assign(token[0], token[1]);
 	NextToken(token);
-	item.second.stationName.assign(token[0], token[1]);
-	item.second.originalNetworkID = (WORD)NextTokenToInt(token);
-	item.second.transportStreamID = (WORD)NextTokenToInt(token);
-	item.second.serviceID = (WORD)NextTokenToInt(token);
-	item.second.recSetting.recMode = (BYTE)NextTokenToInt(token);
-	item.second.recSetting.priority = (BYTE)NextTokenToInt(token);
-	item.second.recSetting.tuijyuuFlag = NextTokenToInt(token) != 0;
-	item.second.recSetting.serviceMode = (DWORD)NextTokenToInt(token);
-	item.second.recSetting.pittariFlag = NextTokenToInt(token) != 0;
+	item.stationName.assign(token[0], token[1]);
+	item.originalNetworkID = (WORD)NextTokenToInt(token);
+	item.transportStreamID = (WORD)NextTokenToInt(token);
+	item.serviceID = (WORD)NextTokenToInt(token);
+	item.recSetting.recMode = (BYTE)NextTokenToInt(token);
+	item.recSetting.priority = (BYTE)NextTokenToInt(token);
+	item.recSetting.tuijyuuFlag = NextTokenToInt(token) != 0;
+	item.recSetting.serviceMode = (DWORD)NextTokenToInt(token);
+	item.recSetting.pittariFlag = NextTokenToInt(token) != 0;
 	NextToken(token);
-	item.second.recSetting.batFilePath.assign(token[0], token[1]);
-	item.second.recSetting.suspendMode = (BYTE)NextTokenToInt(token);
-	item.second.recSetting.rebootFlag = NextTokenToInt(token) != 0;
-	item.second.recSetting.useMargineFlag = NextTokenToInt(token) != 0;
-	item.second.recSetting.startMargine = NextTokenToInt(token);
-	item.second.recSetting.endMargine = NextTokenToInt(token);
+	item.recSetting.batFilePath.assign(token[0], token[1]);
+	item.recSetting.suspendMode = (BYTE)NextTokenToInt(token);
+	item.recSetting.rebootFlag = NextTokenToInt(token) != 0;
+	item.recSetting.useMargineFlag = NextTokenToInt(token) != 0;
+	item.recSetting.startMargine = NextTokenToInt(token);
+	item.recSetting.endMargine = NextTokenToInt(token);
 
-	ParseRecFolderList(token, item.second.recSetting.recFolderList);
-	item.second.recSetting.continueRecFlag = NextTokenToInt(token) != 0;
-	item.second.recSetting.partialRecFlag = NextTokenToInt(token) != 0;
-	item.second.recSetting.tunerID = (DWORD)NextTokenToInt(token);
+	ParseRecFolderList(token, item.recSetting.recFolderList);
+	item.recSetting.continueRecFlag = NextTokenToInt(token) != 0;
+	item.recSetting.partialRecFlag = NextTokenToInt(token) != 0;
+	item.recSetting.tunerID = (DWORD)NextTokenToInt(token);
 
-	ParseRecFolderList(token, item.second.recSetting.partialRecFolder);
-	this->nextID = this->nextID > item.first + 50000000 ? item.first + 1 : (max(item.first + 1, this->nextID) - 1) % 100000000 + 1;
-	return true;
+	ParseRecFolderList(token, item.recSetting.partialRecFolder);
+	this->nextID = this->nextID > item.dataID + 50000000 ? item.dataID + 1 : (max(item.dataID + 1, this->nextID) - 1) % 100000000 + 1;
+	this->itemMap.emplace(item.dataID, std::move(item));
 }
 
-bool CParseManualAutoAddText::SaveLine(const pair<DWORD, MANUAL_AUTO_ADD_DATA>& item, wstring& saveLine) const
+bool CParseManualAutoAddText::SaveLine(map<DWORD, MANUAL_AUTO_ADD_DATA>::const_reference item, wstring& saveLine) const
 {
 	wstring strRecFolder;
 	for( size_t i = 0; i < item.second.recSetting.recFolderList.size(); i++ ){

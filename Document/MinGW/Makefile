@@ -5,6 +5,8 @@ TARGETS = EpgDataCap_Bon \
           RecName_Macro \
           SendTSTCP \
           Write_Default \
+          Write_OneService \
+          EdcbPlugIn \
           EpgTimerSrv
 
 all: tools cp_dep $(addsuffix .all, $(TARGETS))
@@ -19,16 +21,27 @@ ifdef MINGW_PREFIX
 endif
 clean_dep:
 	$(RM) libwinpthread-1.dll
-asyncbuf.exe: ../../ini/Tools/asyncbuf.c
+asyncbuf.exe: ../../Tools/asyncbuf.c
 	$(CC) -municode -Wl,-s -static -D_UNICODE -Os -o $@ $<
-relayread.exe: ../../ini/Tools/relayread.c
+relayread.exe: ../../Tools/relayread.c
 	$(CC) -municode -Wl,-s -static -D_UNICODE -Os -o $@ $<
 tsidmove.exe: ../../Common/ParseTextInstances.cpp \
               ../../Common/PathUtil.cpp \
               ../../Common/StringUtil.cpp \
               ../../Common/TimeUtil.cpp \
-              ../../ini/Tools/tsidmove/tsidmove.cpp
-	$(CXX) -municode -Wl,-s -static-libgcc -static-libstdc++ -I../../ini/Tools/tsidmove -D_UNICODE -std=c++17 -pedantic-errors -Os -o $@ $+
-tools: asyncbuf.exe relayread.exe tsidmove.exe
+              ../../Tools/tsidmove/tsidmove.cpp
+	$(CXX) -municode -Wl,-s -static-libgcc -static-libstdc++ -I../../Tools/tsidmove -D_UNICODE -std=c++17 -pedantic-errors -Os -o $@ $+
+tspgtxt.exe: ../../BonCtrl/PacketInit.cpp \
+             ../../BonCtrl/PATUtil.cpp \
+             ../../Common/EpgDataCap3Util.cpp \
+             ../../Common/EpgTimerUtil.cpp \
+             ../../Common/PathUtil.cpp \
+             ../../Common/StringUtil.cpp \
+             ../../Common/TimeUtil.cpp \
+             ../../Common/TSBuffUtil.cpp \
+             ../../Common/TSPacketUtil.cpp \
+             ../../Tools/tspgtxt/tspgtxt.cpp
+	$(CXX) -municode -Wl,-s -static-libgcc -static-libstdc++ -I../../Tools/tspgtxt -D_UNICODE -std=c++17 -pedantic-errors -Os -o $@ $+
+tools: asyncbuf.exe relayread.exe tsidmove.exe tspgtxt.exe
 clean_tools:
-	$(RM) asyncbuf.exe relayread.exe tsidmove.exe
+	$(RM) asyncbuf.exe relayread.exe tsidmove.exe tspgtxt.exe

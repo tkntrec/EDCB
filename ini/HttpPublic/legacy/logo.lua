@@ -1,10 +1,8 @@
 -- 局ロゴを転送するスクリプト
+-- 局ロゴはEpgDataCap_Bon設定の「ロゴデータを保存する」をチェックすることで取得できる
+-- EDCBのロゴフォルダにロゴがないときは公開フォルダ下の"img/logo/ONIDSID{.png|.bmp}"が使われる
 
 dofile(mg.script_name:gsub('[^\\/]*$','')..'util.lua')
-
--- EDCBのロゴフォルダにロゴがないときに検索する、LogoData.iniとLogoフォルダがあるフォルダの絶対パス
--- 未指定のときは公開フォルダ下の"img/logo/ONIDSID{.png|.bmp}"が使われる
---LOGO_DIR=EdcbModulePath()..'\\..\\TVTest'
 
 onid=GetVarInt(mg.request_info.query_string,'onid',0,65535) or 0
 sid=GetVarInt(mg.request_info.query_string,'sid',0,65535) or 0
@@ -33,35 +31,7 @@ if ddid then
   end
 end
 
-if not logo and LOGO_DIR then
-  fname=nil
-  f=edcb.io.open(PathAppend(LOGO_DIR,'LogoData.ini'),'rb')
-  if f then
-    -- ロゴ識別とServiceIDとの対応を調べる
-    ddid=tonumber(f:read('*a'):upper():match(('\n%04X%04X=(%%d+)'):format(onid,sid)))
-    f:close()
-    if ddid then
-      ff=edcb.FindFile(PathAppend(LOGO_DIR,PathAppend('Logo',('%04x_%03x_*'):format(onid,ddid))),12) or {}
-      -- ファイル名の末尾2桁はロゴタイプ(STD-B21)であると期待
-      for i,v in ipairs({'05%.png','05%.bmp','02%.png','02%.bmp','04%.png','04%.bmp','01%.png','01%.bmp','03%.png','03%.bmp','00%.png','00%.bmp'}) do
-        for j,w in ipairs(ff) do
-          if w.name:lower():find(v..'$') then
-            fname=w.name
-            break
-          end
-        end
-        if fname then
-          f=edcb.io.open(PathAppend(LOGO_DIR,PathAppend('Logo',fname)),'rb')
-          if f then
-            logo=f:read('*a')
-            f:close()
-          end
-          break
-        end
-      end
-    end
-  end
-elseif not logo then
+if not logo then
   fname=('%04x%04x.png'):format(onid,sid)
   f=edcb.io.open(DocumentToNativePath('img/logo/'..fname),'rb')
   if not f then

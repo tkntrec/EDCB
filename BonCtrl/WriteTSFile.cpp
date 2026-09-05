@@ -53,7 +53,7 @@ BOOL CWriteTSFile::StartSave(
 		this->subRecFlag = FALSE;
 		this->saveFolderSub = saveFolderSub_;
 		for( size_t i=0; i<saveFolder.size(); i++ ){
-			this->fileList.push_back(std::unique_ptr<SAVE_INFO>(new SAVE_INFO));
+			this->fileList.emplace_back(new SAVE_INFO);
 			SAVE_INFO& item = *this->fileList.back();
 			item.freeChk = FALSE;
 			item.writePlugIn = saveFolder[i].writePlugIn;
@@ -128,7 +128,7 @@ BOOL CWriteTSFile::AddTSBuff(
 					for( auto itr = this->tsBuffList.begin(); itr != this->tsBuffList.end(); (itr++)->clear() );
 					this->tsFreeList.splice(this->tsFreeList.end(), this->tsBuffList);
 				}else{
-					this->tsFreeList.push_back(vector<BYTE>());
+					this->tsFreeList.emplace_back();
 					this->tsFreeList.back().reserve(48128);
 				}
 			}

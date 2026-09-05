@@ -4,14 +4,13 @@ dofile(mg.script_name:gsub('[^\\/]*$','')..'util.lua')
 info=mg.get_info('system')
 info='mg_ver. '..(info:match('"version" : "(.-)"') or '')..', lua_ver. '..(info:match('"lua_version" : "(.-)"') or '')..', remote_addr='..mg.request_info.remote_addr
 info=info:gsub('[<>&]','')
+tools=WIN32 and PathAppend(EdcbModulePath(),'Tools')
 
 ct=CreateContentBuilder(GZIP_THRESHOLD_BYTE)
 ct:Append(DOCTYPE_HTML4_STRICT..[=[
 <html lang="ja">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<meta name="viewport" content="initial-scale=1">
-<link rel="stylesheet" type="text/css" href="default.css">
+]=]..DefaultHeadContents()..[=[
 <title>EDCB Legacy WebUIについて - EDCB</title>
 </head>
 <body>
@@ -19,7 +18,7 @@ ct:Append(DOCTYPE_HTML4_STRICT..[=[
 <div id="main">
   <p>
     EDCBの操作をブラウザから行うことができます。このWebUIではJavaScript(メディア再生や補助的なものを除く)やCookieは使用しません。<br>
-    このWebUIでは公開フォルダ(HttpPublic)にないファイルには原則アクセスしません。
+    このWebUIでは公開フォルダ(HttpPublic)にないファイルには原則アクセスしません。また、明示的に設定されないかぎり、CDNを含む外部サイトへのアクセスを一切行いません。
   </p><p>
     EDCBの<a href="setting_rec_folder.html">録画保存フォルダ</a>を公開フォルダ配下(公開フォルダ直下のvideoフォルダを推奨)に設定すれば、リンク表示などの追加機能を利用できます。
   </p><p>
@@ -36,10 +35,21 @@ ct:Append(DOCTYPE_HTML4_STRICT..[=[
     トランスコーダーなどのバージョンはとくに指定しませんが、なるべく新しいものを用意してください。<br>
     ブラウザの制限により自動再生されないことがあるので、その場合は再生画面をクリックやタップしてください。
   </p><p>
-    <a rel="noreferrer" href="https://github.com/ts-live/ts-live">TS-Live!</a>のWebAssemblyモジュールを利用してブラウザ上でMPEG2の再生やサムネイル画像の表示ができます。<br>
-    利用する場合は<a rel="noreferrer" href="https://github.com/xtne6f/ts-live/tree/main/public/wasm">ts-live@xtne6f/public/wasm</a>からts-live(-misc).jsとts-live(-misc).wasmの4ファイルを取得してこのWebUIに配置し、トランスコードオプションで「tslive」を選んでください。<br>
-    MPEG2の再生にはWebGPUが利用できること、localhostからのアクセス等セキュアコンテキストであること(<a href="#footer">環境情報</a>)が必要です。
-  </p><p>
+    <a rel="noreferrer" href="https://github.com/ts-live/ts-live">TS-Live!</a>のWebAssemblyモジュールを利用してブラウザ上でMPEG2の再生やサムネイル画像の表示ができます
+    (このWebUIに配置済みのものは<a rel="noreferrer" href="https://github.com/xtne6f/ts-live/tree/main/public/wasm">ts-live@xtne6f/public/wasm</a>)。<br>
+    利用する場合はトランスコードオプションで「TS-Live!」を選んでください。<br>
+    MPEG2の再生にはWebGPUが利用できること、localhostからのアクセス等セキュアコンテキストであること(<a href="#footer">環境情報</a>)が必要です。<br>
+    外部からWebUIにセキュアコンテキストでアクセスするには自己署名証明書を設定してHTTPSとしてアクセスするか、SSHポートフォワーディングでlocalhostにポート転送するなどしてください。<br>
+    安全のため外部からアクセスするための設定はじゅうぶん慎重に行ってください。<br>
+    LANなどでとくに暗号化がいらない場合は、Windowsに限りますがnetshコマンドを利用してポート転送できます。
+  </p><pre style="font-size:small">
+  [localhostの15510にポート転送する設定を追加する例(要管理者権限)]
+  &gt; netsh interface portproxy add v4tov4 listenport=15510 connectaddress={EDCBのあるPCのIPv4アドレス} connectport=5510
+  [設定を削除]
+  &gt; netsh interface portproxy del v4tov4 listenport=15510
+  [現在の設定状態を表示]
+  &gt; netsh interface portproxy show all
+</pre><p>
     視聴機能を利用する場合は、EpgDataCap_Bonなどの<a href="setting_app_network.html">TCP送信先</a>にSrvPipeを追加しておく必要があります。<br>
     予約一覧にあるviewボタンは起動済みのEpgDataCap_Bonなどに接続して視聴するものです。<br>
     リスト番組表にあるviewボタンはNetworkTVモードによりEpgDataCap_Bonなどを起動して視聴するものです。<br>
@@ -51,13 +61,15 @@ ct:Append(DOCTYPE_HTML4_STRICT..[=[
     トランスコード時や視聴時、psisiarc出力の.pscファイルが配置されたメディアファイル再生時は、<a rel="noreferrer" href="https://github.com/otya128/web-bml">web-bml</a>によるデータ放送の表示ができます。<br>
     ※指定サービス対象データに「データカルーセルを含める」必要があります。
   </p><p>
-    トランスコード時や視聴時、psisiarc出力の.pscファイルが配置されたメディアファイル再生時は、TVTestのNicoJKプラグインのログや実況の表示ができます。おもに録画用アプリをTVTestにしている人向けの機能です。<br>
+    トランスコード時や視聴時、psisiarc出力の.pscファイルか番組情報の.program.txtファイルが配置されたメディアファイル再生時は、TVTestのNicoJKプラグインのログや実況の表示ができます。<br>
+    番組情報ファイルは例えば"foo.mp4"というメディアファイルに対して"foo.program.txt"という名前で配置してください("foo.mp4.program.txt"ではありません)。<br>
     ※ログの表示にはutil.luaの JKRDLOG_PATH 定数の編集が必要です。<br>
-    ※実況の表示にはプラグインの commentShareMode の設定が必要です。<br>
+    ※実況の表示には<a rel="noreferrer" href="https://github.com/xtne6f/jkcnsl">jkcnsl</a>の2025年4月以降のものを用意してutil.luaの JKCNSL_PATH 定数を編集するか、NicoJKプラグインの commentShareMode の設定やjktaskの起動が必要です。<br>
     再生画面の中央やや下あたりをマウスオーバーやタップすると実況コメントを入力できます。"@sw"と入力して投稿すると投稿先がNX-Jikkyo・避難所に切り替わります。
   </p><p>
     ライブラリ機能などにある「DL」や「→DL」はメディアファイルを再生ではなく直接ダウンロードするためのリンクです。<br>
     ネットワークアドレスに対応した再生ソフトなどで利用できます。<br>
+    ダウンロードしたメディアファイルは「OpenFile」リンクで開いて再生することもできます(データ通信量節約などに)。TSファイルについてはトランスコードしたものを開いてください。<br>
     MP4ファイルにかぎり<a rel="noreferrer" href="https://github.com/xtne6f/psisimux">psisimux</a>を用意することで「Mux-to-TS」リンクにより上記のWebVTTや.pscファイルを結合してTSファイルに変換できます。
   </p><p>
     (Windowsのみ)tsreadex.exeを"edcbnosuspend.exe"という名前でコピーしてToolsフォルダに用意すると、<a href="index.html">メニュー</a>に「録画後動作を抑制」ボタンが現れます。<br>
@@ -86,24 +98,29 @@ ct:Append(DOCTYPE_HTML4_STRICT..[=[
   | (Windows以外では各コマンドはパスの通った場所に置く。以下はWindowsのみ)
   |
   |---Tools/
-  |    |---asyncbuf.exe
-  |    |---edcbnosuspend.exe ※tsreadex.exeをコピーしたもの
-  |    |---psisiarc.exe
-  |    |---psisimux.exe
-  |    |---tsmemseg.exe
-  |    |---tsreadex.exe
+  |    |---asyncbuf.exe<b>]=]..(tools and EdcbFindFilePlain(tools..'\\asyncbuf.exe') and '【配置済み】' or '')..[=[</b>
+  |    |---edcbnosuspend.exe ※tsreadex.exeをコピーしたもの<b>]=]..(tools and EdcbFindFilePlain(tools..'\\edcbnosuspend.exe') and '【配置済み】' or '')..[=[</b>
+  |    |---psisiarc.exe<b>]=]..(tools and EdcbFindFilePlain(tools..'\\psisiarc.exe') and '【配置済み】' or '')..[=[</b>
+  |    |---psisimux.exe<b>]=]..(tools and EdcbFindFilePlain(tools..'\\psisimux.exe') and '【配置済み】' or '')..[=[</b>
+  |    |---tsmemseg.exe<b>]=]..(tools and EdcbFindFilePlain(tools..'\\tsmemseg.exe') and '【配置済み】' or '')..[=[</b>
+  |    |---tspgtxt.exe<b>]=]..(tools and EdcbFindFilePlain(tools..'\\tspgtxt.exe') and '【配置済み】' or '')..[=[</b>
+  |    |---tsreadex.exe<b>]=]..(tools and EdcbFindFilePlain(tools..'\\tsreadex.exe') and '【配置済み】' or '')..[=[</b>
   |    |---ffmpeg/
-  |    |    |---ffmpeg.exe
+  |    |    |---ffmpeg.exe<b>]=]..(tools and EdcbFindFilePlain(tools..'\\ffmpeg\\ffmpeg.exe') and '【配置済み】' or '')..[=[</b>
   |    |    |---ffprobe.exe ※LegacyWebUIでは未使用
   |    |    :
   |    |
   |    |---NVEncC/
-  |    |    |---NVEncC.exeまたはNVEncC64.exe
+  |    |    |---NVEncC.exeまたはNVEncC64.exe<b>]=]..(tools and (EdcbFindFilePlain(tools..'\\NVEncC\\NVEncC64.exe') or EdcbFindFilePlain(tools..'\\NVEncC\\NVEncC.exe')) and '【配置済み】' or '')..[=[</b>
   |    |    :
   |    |
   |    |---QSVEncC/
-  |    |    |---QSVEncC.exeまたはQSVEncC64.exe
-  |    :    :
+  |    |    |---QSVEncC.exeまたはQSVEncC64.exe<b>]=]..(tools and (EdcbFindFilePlain(tools..'\\QSVEncC\\QSVEncC64.exe') or EdcbFindFilePlain(tools..'\\QSVEncC\\QSVEncC.exe')) and '【配置済み】' or '')..[=[</b>
+  |    |    :
+  |    |
+  |    |---VCEEncC/
+  |    :    |---VCEEncC.exeまたはVCEEncC64.exe<b>]=]..(tools and (EdcbFindFilePlain(tools..'\\VCEEncC\\VCEEncC64.exe') or EdcbFindFilePlain(tools..'\\VCEEncC\\VCEEncC.exe')) and '【配置済み】' or '')..[=[</b>
+  |         :
   |
   |---EpgTimer.exe
   |---EpgTimerSrv.exe
@@ -130,17 +147,6 @@ ct:Append(DOCTYPE_HTML4_STRICT..[=[
 <div id="footer">
   <a href="index.html">メニュー</a>
 </div>
-<script type="text/javascript">
-document.getElementById("env-info").innerHTML=window.isSecureContext?", secure_context":", <s>secure_context</s>";
-var initDate=new Date(document.getElementById("env-date").innerText+"Z");
-var initNow=Date.now();
-function addDate(){
-  var d=new Date(Date.now()-initNow+initDate.getTime());
-  document.getElementById("env-date").innerText=d.toISOString().substring(0,19);
-  setTimeout(addDate,10050-d.getTime()%10000);
-}
-addDate();
-</script>
 </body>
 </html>
 ]=])

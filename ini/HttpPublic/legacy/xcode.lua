@@ -2,6 +2,7 @@
 -- ファイルをタイムシフト再生できる: http://localhost:5510/xcode.lua?fname=video/foo.ts
 
 dofile(mg.script_name:gsub('[^\\/]*$','')..'util.lua')
+dofile(mg.script_name:gsub('[^\\/]*$','')..'jkconst.lua')
 
 -- HLSの開始はPOSTでなければならない
 query=AssertPost()
@@ -9,11 +10,12 @@ open=query and GetVarInt(query,'open')==1
 query=mg.request_info.query_string
 fpath=mg.get_var(query,'fname')
 if fpath then
+  fname=mg.md5(fpath:upper()):sub(27)
   fpath=DocumentToNativePath(fpath)
 end
 
-offset=GetVarInt(query,'offset',0,100) or 0
-ofssec=GetVarInt(query,'ofssec',0,100000)
+offset=GetVarInt(query,'offset',-100000,100) or 0
+ofssec=GetVarInt(query,'ofssec',0,100000) or offset<0 and -offset
 option=XCODE_OPTIONS[GetVarInt(query,'option',1,#XCODE_OPTIONS) or 1]
 audio2=(GetVarInt(query,'audio2',0,1) or 0)+(option.audioStartAt or 0)
 fastRate=GetVarInt(query,'fast',1,#XCODE_FAST_RATES)
@@ -21,6 +23,7 @@ fastRate=fastRate and XCODE_FAST_RATES[fastRate] or 1
 filter=fastRate~=1 and (GetVarInt(query,'cinema')==1 and option.filterCinemaFastFunc and option.filterCinemaFastFunc(fastRate) or
                         option.filterFastFunc and option.filterFastFunc(fastRate))
 fastRate=filter and fastRate or 1
+throttle=GetVarInt(query,'throttle')==1
 filter=filter or (GetVarInt(query,'cinema')==1 and option.filterCinema or option.filter or '')
 hlsKey=mg.get_var(query,'hls')
 hls4=GetVarInt(query,'hls4',0) or 0
@@ -32,39 +35,20 @@ if hlsKey and not (ALLOW_HLS and option.outputHls) then
 end
 psidata=GetVarInt(query,'psidata')==1
 jikkyo=GetVarInt(query,'jikkyo')==1
+jkID=GetVarInt(query,'jkid',1,65535)
+jkTM=GetVarInt(query,'jktm',1)
 reload=mg.get_var(query,'reload')
 loadKey=reload or mg.get_var(query,'load') or ''
 
 -- クエリのハッシュをキーとし、同一キーアクセスは出力中のインデックスファイルを返す
-hlsKey=hlsKey and mg.md5('xcode:'..hlsKey..':'..fpath..':'..option.xcoder..':'..option.option..':'..offset..':'..audio2..':'..filter..':'..caption..':'..output[2])
+hlsKey=hlsKey and fpath and mg.md5('xcode:'..hlsKey..':'..fpath)
 
 -- トランスコードを開始し、HLSの場合はインデックスファイルの情報、それ以外はMP4などのストリーム自体を返す
 function OpenTranscoder()
-  local searchName='xcode-'..mg.md5(fpath..':'..loadKey):sub(17)
+  local searchName='xcode-'..mg.md5(loadKey):sub(17)
   if XCODE_SINGLE then
-    -- トランスコーダーの親プロセスのリストを作る
-    local pids=nil
-    if WIN32 then
-      local pf=edcb.io.popen('wmic process where "name=\'tsreadex.exe\' and commandline like \'% -z edcb-legacy-%\'" get parentprocessid 2>nul | findstr /b [1-9]')
-      if pf then
-        for pid in (pf:read('*a') or ''):gmatch('[1-9][0-9]*') do
-          pids=(pids and pids..' or ' or '')..'processid='..pid
-        end
-        pf:close()
-      end
-    end
-    -- パイプラインの上流を終わらせる
+    -- パイプラインの上流をすべて終わらせる
     TerminateCommandlineLike('tsreadex',' -z edcb-legacy-')
-    if pids then
-      -- 親プロセスの終了を2秒だけ待つ。パイプラインの下流でストールしている可能性もあるので待ちすぎない
-      -- wmicコマンドのない環境では待たないがここの待機はさほど重要ではない
-      for i=1,4 do
-        edcb.Sleep(500)
-        if i==4 or not edcb.os.execute('wmic process where "'..pids..'" get processid 2>nul | findstr /b [1-9] >nul') then
-          break
-        end
-      end
-    end
   elseif reload then
     -- リロード時は前回のプロセスを速やかに終わらせる
     TerminateCommandlineLike('tsreadex',' -z edcb-legacy-'..searchName..' ')
@@ -88,13 +72,12 @@ function OpenTranscoder()
       xcoder=('|'..option.xcoder:gsub('%.exe$','')):match('[\\/|]([0-9A-Za-z._-]+)$')
       xcoder=xcoder and FindToolsCommand(xcoder) or ':'
     end
+    -- gsub('%%','%%%%')は置換文字列中の特殊文字を無効化するため
     cmd=' | '..xcoder..' '..option.option
-      :gsub('$SRC','-')
       :gsub('$AUDIO',audio2)
-      :gsub('$DUAL','')
-      :gsub('$FILTER',(filter:gsub('%%',WIN32 and '%%%%' or '%%')))
-      :gsub('$CAPTION',(caption:gsub('%%',WIN32 and '%%%%' or '%%')))
-      :gsub('$OUTPUT',(output[2]:gsub('%%',WIN32 and '%%%%' or '%%')))
+      :gsub('$FILTER',(filter:gsub('%%','%%%%')))
+      :gsub('$CAPTION',(caption:gsub('%%','%%%%')))
+      :gsub('$OUTPUT',(output[2]:gsub('%%','%%%%')))
   end
 
   if fastRate~=1 and option.editorFast and option.editorOptionFastFunc then
@@ -122,12 +105,12 @@ function OpenTranscoder()
     if f then
       f:write(cmd:sub(4)..'\n\n')
       f:close()
-      cmd=cmd..' 2>>'..QuoteCommandArgForPath(log)
+      cmd=cmd..' 2>>'..QuoteCommandArgForPath(log,hlsKey)
     end
   end
   if hlsKey then
     -- セグメント長は既定値(2秒)なので概ねキーフレーム(4～5秒)間隔
-    cmd=cmd..' | '..tsmemseg..(hls4>0 and ' -4' or '')..' -a 10 -r 100 -m 8192 -d 3 '..(WIN32 and '' or '-g '..QuoteCommandArgForPath(EdcbModulePath())..' ')..hlsKey..'_'
+    cmd=cmd..' | '..tsmemseg..(hls4>0 and ' -4' or '')..' -a 10 -r 100 -m 8192 -d 3 '..(WIN32 and '' or '-g '..QuoteCommandArgForPath(EdcbModulePath(),hlsKey)..' ')..hlsKey..'_'
   elseif XCODE_BUF>0 then
     cmd=cmd..' | '..asyncbuf..' '..XCODE_BUF..' '..XCODE_PREPARE
   end
@@ -135,7 +118,7 @@ function OpenTranscoder()
   local sync=WIN32 and edcb.GetPrivateProfile('SET','KeepDisk',0,'EpgTimerSrv.ini')~='0'
 
   -- "-z"はプロセス検索用
-  cmd=tsreadex..' -z edcb-legacy-'..searchName..' -s '..offset..' -l 16384 -t 6'..(sync and ' -m 1' or '')..' -x 18/38/39 -n -1 -a 9 -b 1 -c 5 -u 2 '..QuoteCommandArgForPath(fpath)..cmd
+  cmd=tsreadex..' -z edcb-legacy-'..searchName..' -s '..offset..' -l 16384 -t 6'..(sync and ' -m 1' or '')..' -x 18/38/39 -n -1 -a 9 -b 1 -c 5 -u 2 '..QuoteCommandArgForPath(fpath,hlsKey)..cmd
   if hlsKey then
     -- 極端に多く開けないようにする
     local indexCount=#(edcb.FindFile(TsmemsegPipePath('*_','00'),10) or {})
@@ -167,11 +150,16 @@ function OpenPsiDataArchiver()
   return edcb.io.popen(WIN32 and '"'..cmd..'"' or cmd,'r'..POPEN_BINARY)
 end
 
-function OpenJikkyoReader(tot,nid,sid)
-  local id=GetJikkyoID(nid,sid)
-  if not id or not JKRDLOG_PATH then return nil end
-  local cmd=QuoteCommandArgForPath(JKRDLOG_PATH)..' -r '..(fastRate*100)..' '..id..' '..(tot+ofssec)..' 0'
-  return edcb.io.popen(WIN32 and '"'..cmd..'"' or cmd)
+function OpenJikkyoReader(tot,jkID,nid,sid)
+  if JKRDLOG_PATH then
+    jkID=jkID or GetJikkyoID(nid,sid)
+    if not jkID then
+      return 'Unable to determine Jikkyo ID.'
+    end
+    local cmd=(WIN32 and QuoteCommandArgForPath(JKRDLOG_PATH) or FindToolsCommand(JKRDLOG_PATH))..' -r '..(fastRate*100)..' jk'..jkID..' '..(tot+ofssec)..' 0'
+    return edcb.io.popen(WIN32 and '"'..cmd..'"' or cmd)
+  end
+  return nil
 end
 
 function ReadPsiDataChunk(f,trailerSize,trailerRemainSize)
@@ -237,10 +225,10 @@ if fpath then
   if hlsKey and not open and not psidata and not jikkyo then
     f=OpenTsmemsegPipe(hlsKey..'_','00')
   else
-    fname='xcode'..(fpath:match('%.[0-9A-Za-z]+$') or '')
-    fnamets='xcode'..edcb.GetPrivateProfile('SET','TSExt','.ts','EpgTimerSrv.ini')
+    ext=fpath:match('%.[0-9A-Za-z]+$') or ''
+    extts=edcb.GetPrivateProfile('SET','TSExt','.ts','EpgTimerSrv.ini')
     -- 拡張子を限定
-    if IsEqualPath(fname,fnamets) then
+    if IsEqualPath(ext,extts) then
       f=edcb.io.open(fpath,'rb')
       if f then
         if ofssec then
@@ -248,7 +236,8 @@ if fpath then
           offset=0
           if ofssec~=0 then
             fsec,fsize=GetDurationSec(f)
-            if SeekSec(f,ofssec,fsec,fsize) then
+            -- 応答性向上のためPSI/SIは6秒(チャンク2つ)だけ手前から読む
+            if SeekSec(f,ofssec-(psidata and 6 or 0),fsec,fsize) then
               offset=f:seek('cur',0) or 0
             end
           end
@@ -258,7 +247,8 @@ if fpath then
           if offset~=0 then
             fsec,fsize=GetDurationSec(f)
             ofssec=math.floor(fsec*offset/100)
-            if offset~=100 and SeekSec(f,ofssec,fsec,fsize) then
+            -- 応答性向上のためPSI/SIは6秒(チャンク2つ)だけ手前から読む
+            if offset~=100 and SeekSec(f,ofssec-(psidata and 6 or 0),fsec,fsize) then
               offset=f:seek('cur',0) or 0
             else
               offset=math.floor(fsize*offset/100/188)*188
@@ -278,17 +268,17 @@ if fpath then
             end
           end
           if f and jikkyo then
-            f.jk=tot and OpenJikkyoReader(tot,nid,sid)
+            f.jk=tot and OpenJikkyoReader(jkTM or tot,jkID,nid,sid)
             if not f.jk then
               if f.psi then f.psi:close() end
               f=nil
             end
           end
-          fname='xcode.psc.txt'
+          fname=fname..'.psc.txt'
         else
           f:close()
           f=OpenTranscoder()
-          fname='xcode.'..output[1]
+          fname=fname..'.'..output[1]
         end
       end
     end
@@ -296,10 +286,7 @@ if fpath then
 end
 
 if not f then
-  ct=CreateContentBuilder()
-  ct:Append(DOCTYPE_HTML4_STRICT..'<title>xcode.lua</title><p><a href="index.html">メニュー</a></p>')
-  ct:Finish()
-  mg.write(ct:Pop(Response(404,'text/html','utf-8',ct.len)..'\r\n'))
+  mg.write(Response(404,nil,nil,0)..'\r\n')
 elseif psidata or jikkyo then
   -- PSI/SI、実況、またはその混合データストリームを返す
   mg.write(Response(200,mg.get_mime_type(fname),'utf-8')..'Content-Disposition: filename='..fname..'\r\n\r\n')
@@ -310,12 +297,20 @@ elseif psidata or jikkyo then
     failed=false
     repeat
       if psidata then
-        -- 3/fastRate秒間隔でチャンクを読めば主ストリームと等速になる
-        buf,trailerSize,trailerRemainSize=ReadPsiDataChunk(f.psi,trailerSize,trailerRemainSize)
-        failed=not buf or not mg.write(mg.base64_encode(buf))
+        -- 3/fastRate秒間隔でチャンクを読めば主ストリームと等速になる。初回だけ3つ読む
+        for i=(trailerSize==0 and 1 or 3),3 do
+          buf,trailerSize,trailerRemainSize=ReadPsiDataChunk(f.psi,trailerSize,trailerRemainSize)
+          failed=not buf or not mg.write(mg.base64_encode(buf))
+          if failed then break end
+        end
         if failed then break end
       end
-      if jikkyo then
+      if jikkyo and type(f.jk)=='string' then
+        -- メッセージを送って混合でなければ終了
+        failed=not mg.write('<!-- M='..f.jk..' -->\n') or not psidata
+        f.jk=nil
+      end
+      if jikkyo and f.jk then
         for i=1,3 do
           -- 1/fastRate秒間隔でブロックされる
           buf=ReadJikkyoChunk(f.jk)
@@ -331,7 +326,7 @@ elseif psidata or jikkyo then
     until failed
   end
   if f.psi then f.psi:close() end
-  if f.jk then f.jk:close() end
+  if f.jk and type(f.jk)~='string' then f.jk:close() end
 elseif hlsKey then
   -- インデックスファイルを返す
   i=1
@@ -353,19 +348,62 @@ elseif hlsKey then
   ct:Finish()
   mg.write(ct:Pop(Response(200,'application/vnd.apple.mpegurl','utf-8',ct.len)..'\r\n'))
 else
-  mg.write(Response(200,mg.get_mime_type(fname))..'Content-Disposition: filename='..fname..'\r\n\r\n')
+  mg.write(Response(200,mg.get_mime_type(fname))..'Content-Disposition: attachment; filename='..fname..'\r\n\r\n')
   if mg.request_info.request_method~='HEAD' then
+    bufRemain=''
+    throttle=throttle and fname:find('%.m2t$')
+    ts={}
+    baseTime=0
+    basePcr=0
     while true do
-      buf=f:read(188*128)
-      if buf and #buf~=0 then
-        if not mg.write(buf) then
-          -- キャンセルされた
-          mg.cry('canceled')
+      buf=f:read(188*128-#bufRemain)
+      if not buf or #buf==0 then
+        -- 終端に達した
+        break
+      end
+      if throttle then
+        -- 常に188バイト単位にする
+        if #bufRemain~=0 then
+          buf=bufRemain..buf
+          bufRemain=''
+        end
+        if #buf%188~=0 then
+          bufRemain=buf:sub(-(#buf%188))
+          buf=buf:sub(1,#buf-#bufRemain)
+        end
+        -- 送信速度をfastRateまでに制御
+        for i=1,#buf,188 do
+          if not ParseTsPacket(ts,buf,i) then
+            ts=nil
+            break
+          end
+          pcr=GetPcrFromTsPacket(ts.adaptation,buf,i)
+          if not ts.err and pcr then
+            timeDiff=math.floor(os.time()*fastRate-baseTime)
+            pcrDiff=math.floor(UintCounterDiff(pcr,basePcr)/45000)
+            if math.abs(timeDiff)>60 or pcrDiff>60 then
+              -- 制御をリセット。30秒ほど先読みを許す
+              baseTime=os.time()*fastRate+(baseTime==0 and 0 or 30)
+              basePcr=pcr
+            else
+              if timeDiff>=0 then
+                baseTime=baseTime+math.min(pcrDiff,timeDiff)
+                basePcr=(basePcr+math.min(pcrDiff,timeDiff)*45000)%0x100000000
+              end
+              if pcrDiff>timeDiff+30 then
+                edcb.Sleep(1000/fastRate)
+              end
+            end
+            break
+          end
+        end
+        if not ts then
+          mg.cry('throttling failed')
           break
         end
-      else
-        -- 終端に達した
-        mg.cry('end')
+      end
+      if #buf~=0 and not mg.write(buf) then
+        -- キャンセルされた
         break
       end
     end

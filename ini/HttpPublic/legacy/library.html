@@ -1,46 +1,66 @@
 -- vim:set ft=lua:
 dofile(mg.script_name:gsub('[^\\/]*$','')..'util.lua')
+if JKRDLOG_PATH then
+  dofile(mg.script_name:gsub('[^\\/]*$','')..'jkconst.lua')
+end
 
+--<0:再生画面へのリンク, 0:DLリンク, 1:トランスコード再生画面, 2～3:直接再生画面(偶数:ローカルファイル再生)
 vtag=GetVarInt(mg.request_info.query_string,'vtag') or -1
 
 ct=CreateContentBuilder(GZIP_THRESHOLD_BYTE)
 ct:Append((vtag<=0 and DOCTYPE_HTML4_STRICT or '<!DOCTYPE html>\n')..[=[
 <html lang="ja">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<meta name="viewport" content="initial-scale=1">
-<link rel="stylesheet" type="text/css" href="default.css">
+]=]..DefaultHeadContents()..[=[
 <title>ライブラリ - EDCB</title>
 </head>
 <body>
 ]=])
 
 dirname=nil
-index=GetVarInt(mg.request_info.query_string,'i',1,#LIBRARY_LIST)
-if index then
-  dir=DocumentToNativePath(LIBRARY_LIST[index])
+dirhash={}
+for v in (mg.get_var(mg.request_info.query_string,'d') or ''):gmatch('[0-9a-f]+') do
+  if #dirhash==0 then
+    --先頭はルートフォルダの番号
+    v=GetVarInt('i='..v,'i',1,#LIBRARY_LIST)
+    if not v then break end
+  end
+  dirhash[#dirhash+1]=v
+end
+--フォルダが1つのときはライブラリリストを省略
+if #dirhash==0 and #LIBRARY_LIST==1 then
+  dirhash[1]=1
+end
+--3階層まで
+if #dirhash>0 and #dirhash<=4 then
+  dir=DocumentToNativePath(LIBRARY_LIST[dirhash[1]])
   if dir then
-    dirhash=mg.get_var(mg.request_info.query_string,'d')
-    if dirhash then
-      for i,v in ipairs(edcb.FindFile(PathAppend(dir,'*'),0) or {}) do
-        if v.isdir and mg.md5(v.name)==dirhash then
-          dir=PathAppend(dir,v.name)
-          dirname=LIBRARY_LIST[index]..'/'..v.name
+    dirname=LIBRARY_LIST[dirhash[1]]
+    for i=2,#dirhash do
+      found=false
+      for j,w in ipairs(edcb.FindFile(PathAppend(dir,'*'),0) or {}) do
+        if w.isdir and not w.name:find('^%.') and mg.md5(dirname..'/'..w.name)==dirhash[i] then
+          found=true
+          dir=PathAppend(dir,w.name)
+          dirname=dirname..'/'..w.name
           break
         end
       end
-    else
-      dirname=LIBRARY_LIST[index]
+      if not found then
+        dirname=nil
+        break
+      end
     end
   end
 end
 
+thumbs={''}
 queryParent=''
 if not dirname then
-  ct:Append('<h1>ライブラリ</h1>\n<div class="nav"><ul>\n')
+  ct:Append('<h1>ライブラリリスト</h1>\n<div class="nav"><ul>\n')
   edcb.htmlEscape=15
   for i,v in ipairs(LIBRARY_LIST) do
-    ct:Append('<li><a href="library.html?i='..i..'">'..EdcbHtmlEscape(v)
+    ct:Append('<li><a href="library.html?d='..i..'">'..EdcbHtmlEscape(v)
       ..'</a> [<a href="'..PathToRoot()..mg.url_encode(v):gsub('%%2f','/')..'">index</a>]'
       ..'</li>\n')
   end
@@ -48,49 +68,78 @@ if not dirname then
 else
   tsx=edcb.GetPrivateProfile('SET','TSExt','.ts','EpgTimerSrv.ini')
   xlist={tsx,table.unpack(MEDIA_EXTENSION_LIST)}
+  --各階層のソート設定。空要素は既定値
+  sort={}
+  for s in ((mg.get_var(mg.request_info.query_string,'s') or '')..','):gmatch('([adns]*)[^adns]') do
+    sort[#sort+1]=s
+    if #sort>=#dirhash then break end
+  end
+  while #sort>0 and sort[#sort]=='' do
+    table.remove(sort)
+  end
   hash=mg.get_var(mg.request_info.query_string,'h')
   if not hash then
-    sort=mg.get_var(mg.request_info.query_string,'s') or 'dd'
-    queryParent=dirhash and '?i='..index or ''
+    sortParent={}
+    for i=1,math.min(#sort,#dirhash-1) do
+      sortParent[i]=sort[i]
+    end
+    while #sortParent>0 and sortParent[#sortParent]=='' do
+      table.remove(sortParent)
+    end
+    queryParent=#dirhash>1 and '?d='..table.concat(dirhash,',',1,#dirhash-1)..(#sortParent>0 and '&amp;s='..table.concat(sortParent,',') or '') or ''
+
+    --既定値は上位のソート設定かModifiedの降順
+    so=(sort[#dirhash] or '')=='' and (sortParent[#sortParent] or 'dd') or sort[#dirhash]
+    for i=#sortParent+1,#dirhash-1 do
+      sortParent[i]=''
+    end
+    sortParent[#sortParent+1]='#'
     ct:Append('<h1>ライブラリ</h1>\n<div class="nav"><table>\n<tr>'
-      ..'<th><a href="library.html?i='..index..'&amp;s='..(sort~='dd' and 'dd' or 'da')..(dirhash and '&amp;d='..dirhash or '')..'">Modified</a>'
-      ..'<th><a href="library.html?i='..index..'&amp;s='..(sort~='sa' and 'sa' or 'sd')..(dirhash and '&amp;d='..dirhash or '')..'">Size</a>'
-      ..'<th><a href="library.html?i='..index..'&amp;s='..(sort~='na' and 'na' or 'nd')..(dirhash and '&amp;d='..dirhash or '')..'">Name</a></tr>\n'
-      ..'<tr><td><td><td><a href="library.html'..queryParent..'">Parent directory ..</a></tr>\n')
+      ..'<th><a href="library.html?d='..table.concat(dirhash,',')..'&amp;s='..table.concat(sortParent,','):gsub('#',so=='da' and 'dd' or 'da')..'">Modified'..(so=='da' and 'ˆ' or so=='dd' and 'ˇ' or '')..'</a>'
+      ..'<th><a href="library.html?d='..table.concat(dirhash,',')..'&amp;s='..table.concat(sortParent,','):gsub('#',so=='sa' and 'sd' or 'sa')..'">Size'..(so=='sa' and 'ˆ' or so=='sd' and 'ˇ' or '')..'</a>'
+      ..'<th><a href="library.html?d='..table.concat(dirhash,',')..'&amp;s='..table.concat(sortParent,','):gsub('#',so=='na' and 'nd' or 'na')..'">Name'..(so=='na' and 'ˆ' or so=='nd' and 'ˇ' or '')..'</a></tr>\n')
     ff={}
     for i,v in ipairs(edcb.FindFile(PathAppend(dir,'*'),0) or {}) do
       if not v.isdir then
         for j,ext in ipairs(xlist) do
           if #v.name>#ext and IsEqualPath(v.name:sub(-#ext),ext) then
+            v.ists=ext==tsx
             ff[#ff+1]=v
             break
           end
         end
-      elseif not dirhash and not v.name:find('^%.') then
+      --3階層まで
+      elseif #dirhash<4 and not v.name:find('^%.') then
         ff[#ff+1]=v
       end
     end
-    if sort=='da' then
-      table.sort(ff,function(a,b) return os.time(a.mtime)<os.time(b.mtime) end)
-    elseif sort=='dd' then
-      table.sort(ff,function(a,b) return os.time(a.mtime)>os.time(b.mtime) end)
-    elseif sort=='sa' then
+    if so=='da' then
+      table.sort(ff,function(a,b) return CompareTime(a.mtime,b.mtime) end)
+    elseif so=='dd' then
+      table.sort(ff,function(a,b) return CompareTime(b.mtime,a.mtime) end)
+    elseif so=='sa' then
       table.sort(ff,function(a,b) return a.size<b.size end)
-    elseif sort=='sd' then
+    elseif so=='sd' then
       table.sort(ff,function(a,b) return a.size>b.size end)
-    elseif sort=='na' then
+    elseif so=='na' then
       table.sort(ff,function(a,b) return a.name<b.name end)
     else
       table.sort(ff,function(a,b) return a.name>b.name end)
     end
     edcb.htmlEscape=15
+    ct:Append('<tr><td><td><td>'
+      ..(#LIBRARY_LIST==1 and queryParent=='' and '/'..EdcbHtmlEscape(dirname)..'/ [<a href="'..PathToRoot()..mg.url_encode(dirname):gsub('%%2f','/')..'">index</a>]'
+           or '<a href="library.html'..queryParent..'">Parent directory of</a> /'..EdcbHtmlEscape(dirname)..'/')..'</tr>\n')
     for i,v in ipairs(ff) do
       v.mtime.sec=0
       ct:Append('<tr><td>'..FormatTimeAndDuration(v.mtime)
         ..'<td>'..(v.isdir and '' or math.floor(v.size/1048576)..'M')
-        ..'<td><a href="library.html?i='..index..(dirhash and '&amp;d='..dirhash or '')
-        ..'&amp;'..(v.isdir and 'd=' or 'h=')..mg.md5(v.name)..'">'
-        ..EdcbHtmlEscape(dirname..'/'..v.name..(v.isdir and '/' or ''))..'</a></tr>\n')
+        ..'<td><a href="library.html?d='..table.concat(dirhash,',')..(v.isdir and ',' or '&amp;h=')..mg.md5(dirname..'/'..v.name)
+        ..(#sort>0 and '&amp;s='..table.concat(sort,',') or '')..'">'
+        ..EdcbHtmlEscape(v.name..(v.isdir and '/' or ''))..'</a>'..((v.isdir or v.ists) and '' or
+            '<a class="transit-inplace" href="library.html?d='..table.concat(dirhash,',')..'&amp;h='..mg.md5(dirname..'/'..v.name)
+              ..(#sort>0 and '&amp;s='..table.concat(sort,',') or '')..'&amp;vtag=3">&nbsp;▶</a>')
+        ..'</tr>\n')
     end
     ct:Append('</table></div>\n')
   else
@@ -99,7 +148,7 @@ else
     info=nil
     for i,v in ipairs(xlist) do
       for j,w in ipairs(edcb.FindFile(PathAppend(dir,'*'..v),0) or {}) do
-        if not w.isdir and mg.md5(w.name)==hash then
+        if not w.isdir and mg.md5(dirname..'/'..w.name)==hash then
           info=w
           info.ists=v==tsx
           break
@@ -112,59 +161,81 @@ else
     edcb.htmlEscape=15
     if info then
       ref=dirname..'/'..info.name
-      queryParent='?i='..index..(dirhash and '&amp;d='..dirhash or '')
-
-      if vtag==1 then
+      queryParent='?d='..table.concat(dirhash,',')..(#sort>0 and '&amp;s='..table.concat(sort,',') or '')
+      vttKind=info.ists and 'metadata' or TestVttKind(PathAppend(dir,info.name):gsub('%.[0-9A-Za-z]+$','')..'.vtt')
+      if vtag==2 or vtag==3 then
+        if vtag%2==0 then
+          ct:Append('<div><input id="input-file" type="file" accept="video/*">'..(info.ists and '(filename:'..mg.md5(ref:upper()):sub(27)..')' or '')..'</div>')
+        end
         ct:Append(VideoWrapperBegin()
-          ..'<video id="video" autoplay playsinline controls src="'..PathToRoot()..mg.url_encode(ref):gsub('%%2f','/')..'">/'..EdcbHtmlEscape(ref)
-          ..'<track id="vid-meta" kind="metadata" src="'..PathToRoot()..mg.url_encode(ref):gsub('%%2f','/'):gsub('%.[0-9A-Za-z]+$','')
-          ..'.vtt" type="text/vtt" default></video>'..VideoWrapperEnd()..'\n'..VideoScriptTemplate())
+          ..'<video id="video" autoplay playsinline controls '..(vtag%2==0 and 'data-' or '')..'src="'..PathToRoot()..mg.url_encode(ref):gsub('%%2f','/')..'">/'..EdcbHtmlEscape(ref)
+          ..(vttKind and '<track id="vid-track" kind="'..vttKind..'" '..(vttKind=='metadata' and 'default' or 'mode="disabled"')
+               ..(info.ists and '' or ' src="'..PathToRoot()..mg.url_encode(ref):gsub('%%2f','/'):gsub('%.[0-9A-Za-z]+$','')..'.vtt"')..' type="text/vtt">' or '')
+          ..'</video>'..VideoWrapperEnd(JKRDLOG_PATH and GetChatStreamNameList(),true)..'\n'..VideoScriptTemplate(info.ists,LoadAttachedChapters(PathAppend(dir,info.name))))
       else
-        ct:Append('<a href="library.html?i='..index..(dirhash and '&amp;d='..dirhash or '')..'&amp;h='..hash..'&amp;vtag=1">/'..EdcbHtmlEscape(ref)
-          ..'</a>\n[<a href="'..PathToRoot()..mg.url_encode(ref):gsub('%%2f','/')..'">DL</a>]')
+        ct:Append((info.ists and '' or '<a class="transit-inplace" href="library.html?d='..table.concat(dirhash,',')..'&amp;h='..hash..(#sort>0 and '&amp;s='..table.concat(sort,',') or '')..'&amp;vtag=3">')
+          ..'/'..EdcbHtmlEscape(ref)..(info.ists and '' or '</a>')
+          ..'\n[<a href="library.html?d='..table.concat(dirhash,',')..'&amp;h='..hash..(#sort>0 and '&amp;s='..table.concat(sort,',') or '')..'&amp;vtag=2">OpenFile</a>]'
+          ..'\n[<a href="'..PathToRoot()..mg.url_encode(ref):gsub('%%2f','/')..'" download>DL</a>]')
       end
       if info.ists then
         fsec,fsize=0,0
-        thumbs={}
+        shiftable=false
         f=edcb.io.open(PathAppend(dir,info.name),'rb')
         if f then
           fsec,fsize=GetDurationSec(f)
           if vtag<=0 then
-            thumbs=ThumbnailTemplate(f,fsec,fsize)
+            thumbs=ThumbnailTemplate(f,fsec,fsize,EdcbHtmlEscape(ref))
+          end
+          if JKRDLOG_PATH and vtag==1 then
+            --終端が現在時刻よりも昔ならば実況を逐次取得する必要はないのでshiftableにする
+            tot=GetTotAndServiceID(f)
+            shiftable=tot and tot+fsec+60<os.time()
           end
           f:close()
         end
         ct:Append(' ('..('%dm%02ds|'):format(math.floor(fsec/60),fsec%60)..math.floor(fsize/1048576)..'M)<br>\n'
-          ..'<form id="vid-form" action="'..(vtag==0 and 'xcode.lua' or 'library.html')..'"><div>\n'
+          ..'<form id="vid-form"'..(vtag<0 and ' class="transit-inplace"' or '')..' action="'..(vtag==0 and 'xcode.lua' or 'library.html')..'"><div>\n'
           ..(vtag==0 and '<input type="hidden" name="fname" value="'..EdcbHtmlEscape(ref)..'">\n'
-               or '<input type="hidden" name="i" value="'..index..'">\n'
-                 ..(dirhash and '<input type="hidden" name="d" value="'..dirhash..'">\n' or '')
-                 ..'<input type="hidden" name="h" value="'..hash..'">\n<input type="hidden" name="vtag" value="10">\n'
-                 ..'<input type="hidden" name="'..(vtag==10 and 're' or '')..'load" value="'..(xq.loadKey or edcb.CreateRandom and edcb.CreateRandom(8) or os.time()%86400)..'">\n')
+               or '<input type="hidden" name="d" value="'..table.concat(dirhash,',')..'">\n'
+                 ..'<input type="hidden" name="h" value="'..hash..'">\n'
+                 ..(#sort>0 and '<input type="hidden" name="s" value="'..table.concat(sort,',')..'">\n' or '')
+                 ..'<input type="hidden" name="vtag" value="1">\n'
+                 ..'<input type="hidden" name="'..(vtag==1 and 're' or '')..'load" value="'..(xq.loadKey or edcb.CreateRandom and edcb.CreateRandom(8) or os.time()%86400)..'">\n')
           ..'<button type="submit">xcode</button>\n'
-          ..'→<a href="library.html?i='..index..(dirhash and '&amp;d='..dirhash or '')
-          ..'&amp;h='..hash..ConstructTranscodeQueries(xq)
+          ..'→<a href="library.html?d='..table.concat(dirhash,',')..'&amp;h='..hash
+          ..(#sort>0 and '&amp;s='..table.concat(sort,',') or '')..ConstructTranscodeQueries(xq)
           ..'&amp;vtag='..(vtag==0 and '-1">Video' or '0">DL')..'</a>\n'
-          ..TranscodeSettingTemplate(xq,fsec)
-          ..'</div></form>')
-        for i,v in ipairs(thumbs) do ct:Append(v) end
-        if vtag==10 then
+          ..TranscodeSettingTemplate(xq,vtag==0,fsec,fsec>0 and LoadAttachedChapters(PathAppend(dir,info.name)))
+          ..(vtag==0 and '<br>※OpenFile用のファイルを作成するときは[TS-Live!以外][0m00s][x1.0]を選択してxcodeしてください\n' or '')
+          ..'</div></form>'..thumbs[1])
+        if vtag==1 then
           src='xcode.lua?fname='..mg.url_encode(ref)..ConstructTranscodeQueries(xq)
           ct:Append('\n'..VideoWrapperBegin()
-            ..(xq.tslive and '<canvas id="video"></canvas>' or
-                 '<video id="video" autoplay playsinline controls'..(ALLOW_HLS and '' or ' src="'..src..'"')..'>xcode</video>')
-            ..VideoWrapperEnd()..'\n'
-            ..'<div id="vidsrc" style="display:none">'..src..'</div>\n'..TranscodeScriptTemplate(false,xq.caption,xq.jikkyo,{ofssec=fsec*(xq.offset or 0)/100,fast=xq.fast}))
-          if xq.tslive then
-            ct:Append(TsliveScriptTemplate())
-          elseif ALLOW_HLS then
-            ct:Append(HlsScriptTemplate('xcode.lua'))
-          end
+            ..(xq.tslive and '<canvas id="video" data-pausable="1" data-src="'..src..'"'..(xq.autoCinema and ' data-initial-auto-cinema="1"' or '')
+                               ..(xq.deinterlace and ' data-deinterlace="'..xq.deinterlace..'"' or '')
+                               ..(xq.maxRateForDoubling and ' data-max-rate-for-doubling="'..xq.maxRateForDoubling..'"' or '')..'></canvas>' or
+                 '<video id="video" autoplay playsinline controls'..(xq.poster and ' data-poster="'..EdcbHtmlEscape(xq.poster)..'"' or '')
+                   ..(ALLOW_HLS and (ALWAYS_USE_HLS and ' data-always-use-hls="1"' or '')
+                        ..' data-ctok="'..CsrfToken('xcode.lua')..'"'
+                        ..' data-hls="'..(edcb.CreateRandom and edcb.CreateRandom(8) or os.time()%86400)..'"'
+                        ..' data-' or ' ')..'src="'..src..'">xcode</video>')
+            ..VideoWrapperEnd(JKRDLOG_PATH and GetChatStreamNameList(),shiftable)..'\n'..TranscodeScriptTemplate(false,xq,{fsec=fsec}))
         end
       else
-        ct:Append((vtag~=1 and '\n[<a href="mux_to_ts.lua?fname='..mg.url_encode(ref)..'">Mux-to-TS</a>]' or '')
+        ct:Append((vtag~=2 and vtag~=3 and '\n[<a href="mux_to_ts.lua?fname='..mg.url_encode(ref)..'" download>Mux-to-TS</a>]' or '')
           ..' ('..math.floor(info.size/1048576)..'M)<br>\n')
       end
+      ct:Append([=[
+<div style="display:none"><label><input type="checkbox" id="cb-pginfo">番組情報</label>
+<div id="pginfo-desc" style="display:none" data-fname="]=]..EdcbHtmlEscape(ref)..[=["></div></div>
+]=]..(vttKind and [=[
+<div style="display:none"><label><input type="checkbox" id="cb-ccinfo">字幕リスト</label>
+<div id="ccinfo-desc" style="display:none"]=]
+  ..(info.ists and ' data-fname="'..EdcbHtmlEscape(ref)..'"'..((vtag==2 or vtag==3) and ' data-set-src="vid-track"' or '')
+       or ' data-vtt="'..PathToRoot()..EdcbHtmlEscape(ref):gsub('%.[0-9A-Za-z]+$','')..'.vtt" data-vtt-kind="'..vttKind..'"')
+  ..(vtag>=1 and vtag<=3 and ' data-seek-target="vid-wrap"' or info.ists and ' data-seek-target="vid-form"' or '')..[=[></div></div>
+]=] or ''))
     end
     ct:Append('</div>\n')
   end
@@ -172,9 +243,12 @@ end
 
 ct:Append([=[
 <div id="footer">
-  <a href="]=]..(index and 'library.html">ライブラリリスト' or 'index.html">メニュー')..[=[</a>
+  <a href="]=]..(#LIBRARY_LIST~=1 and index and 'library.html">ライブラリリスト' or 'index.html">メニュー')..[=[</a>
 ]=]..(queryParent~='' and '  <a href="library.html'..queryParent..'">Parent_directory..</a>\n' or '')..[=[
 </div>
+]=])
+for i=2,#thumbs do ct:Append(thumbs[i]) end
+ct:Append([=[
 </body>
 </html>
 ]=])

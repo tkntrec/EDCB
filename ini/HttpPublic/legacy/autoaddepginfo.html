@@ -1,14 +1,14 @@
 -- vim:set ft=lua:
 dofile(mg.script_name:gsub('[^\\/]*$','')..'util.lua')
 
-function AddOrChange(dataID,post)
+function AddOrChange(dataID,presetDataID,post)
   local aa={dataID=dataID}
   local found=nil
   local presetID=GetVarInt(post,'presetID',0,65534)
   if presetID then
     found=BinarySearch(edcb.EnumRecPresetInfo(),{id=presetID},CompareFields('id'))
-  elseif dataID~=0 then
-    found=BinarySearch(edcb.EnumAutoAdd(),aa,CompareFields('dataID'))
+  elseif presetDataID~=0 then
+    found=BinarySearch(edcb.EnumAutoAdd(),{dataID=presetDataID},CompareFields('dataID'))
   end
   if found then
     local useMargin=GetVarInt(post,'useDefMarginFlag')~=1 or nil
@@ -103,21 +103,19 @@ ct=CreateContentBuilder(GZIP_THRESHOLD_BYTE)
 ct:Append(DOCTYPE_HTML4_STRICT..[=[
 <html lang="ja">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<meta name="viewport" content="initial-scale=1">
-<link rel="stylesheet" type="text/css" href="default.css">
+]=]..DefaultHeadContents()..[=[
 <title>EPG予約 - EDCB</title>
 </head>
 <body>
 ]=])
 
 aa={dataID=GetVarInt(mg.request_info.query_string,'id') or 0}
-if aa.dataID==0 then
+post=AssertPost()
+if aa.dataID==0 or (post and mg.get_var(post,'add')) then
   ct:Append('<h1>EPG予約 新規条件追加</h1>\n<div id="main">\n')
-  post=AssertPost()
   if post then
-    if mg.get_var(post,'addchg') then
-      ct:Append('  <div id="result">'..(AddOrChange(0,post) and '追加しました' or '入力値不正')..'</div>\n')
+    if mg.get_var(post,'add') then
+      ct:Append('  <div id="result">'..(AddOrChange(0,aa.dataID,post) and '追加しました' or '入力値不正')..'</div>\n')
     end
   else
     aa.searchInfo={
@@ -142,10 +140,9 @@ if aa.dataID==0 then
   edcb.htmlEscape=15
 else
   ct:Append('<h1>EPG予約 条件変更</h1>\n<div id="main">\n')
-  post=AssertPost()
   if post then
-    if mg.get_var(post,'addchg') then
-      ct:Append('  <div id="result">'..(AddOrChange(aa.dataID,post) and '変更しました' or '入力値不正')..'</div>\n')
+    if mg.get_var(post,'chg') then
+      ct:Append('  <div id="result">'..(AddOrChange(aa.dataID,aa.dataID,post) and '変更しました' or '入力値不正')..'</div>\n')
     end
   end
   edcb.htmlEscape=15
@@ -189,8 +186,7 @@ if aa.searchInfo then
     ..'    <dt>条件</dt><dd>\n'
     ..'<form method="POST" action="autoaddepginfo.html?id='..aa.dataID..'">\n'
     ..'<div><input type="hidden" name="presetID" value="'..(preset and presetID or 65535)..'">\n'
-    ..'<input type="hidden" name="ctok" value="'..CsrfToken()..'">\n'
-    ..'<input type="hidden" name="addchg" value="y"></div>\n'
+    ..'<input type="hidden" name="ctok" value="'..CsrfToken()..'"></div>\n'
     ..'<div class="section"><h2>検索条件</h2>\n'
     ..'検索キーワード<br><input type="text" name="andKey" value="'..(caseAndKey or disAndKey or si.andKey)..'" style="width:95%"><br>\n'
     ..'NOTキーワード<br><input type="text" name="notKey" value="'..notKey..'" style="width:95%"><br>\n'
@@ -231,7 +227,7 @@ if aa.searchInfo then
       end
     end
   end
-  ct:Append('</select>\n<span id="content-note">'..table.concat(selList,'; ',1,math.min(#selList,10))
+  ct:Append('</select>\n<span id="content-note" data-other="ほか%項目">'..table.concat(selList,'; ',1,math.min(#selList,10))
     ..(#selList>10 and '; ほか'..(#selList-10)..'項目' or '')..'</span><br></div><br>\n'
     ..'サービス絞り込み（Ctrl+複数選択）<div class="select-with-note"><select name="serviceList" multiple size="5">\n')
   selList={}
@@ -246,7 +242,7 @@ if aa.searchInfo then
     end
     ct:Append('>('..NetworkType(v.onid)..') '..v.serviceName..'\n')
   end
-  ct:Append('</select>\n<span id="service-note">'..table.concat(selList,'; ',1,math.min(#selList,10))
+  ct:Append('</select>\n<span id="service-note" data-other="ほか%項目">'..table.concat(selList,'; ',1,math.min(#selList,10))
     ..(#selList>10 and '; ほか'..(#selList-10)..'項目' or '')..'</span><br></div><br>\n'
     ..'時間絞り込み <label><input name="notDateFlag"'..Checkbox(si.notDateFlag)..'>NOT扱い</label><br>\n'
     ..'<input type="text" name="dateList" value="')
@@ -282,7 +278,8 @@ if aa.searchInfo then
     ..'確認対象期間 <input type="text" name="chkRecDay" value="'..si.chkRecDay..'" size="5">日前まで<br>\n'
     ..'</div>\n'
     ..'</div><div class="section"><h2>録画設定</h2>\n'..RecSettingTemplate(rs)..'</div>\n'
-    ..'<div><button type="submit">'..(aa.dataID==0 and '追加' or '変更')..'</button></div></form></dd>\n')
+    ..'<div><button type="submit" name="add" value="y">追加</button>'
+    ..(aa.dataID~=0 and '\n<button type="submit" name="chg" value="y">&ensp;変更&ensp;</button>' or '')..'</div></form></dd>\n')
 
   if aa.dataID~=0 then
     ct:Append('    <dt>-</dt><dd>\n'
@@ -290,6 +287,58 @@ if aa.searchInfo then
       ..'<input type="hidden" name="ctok" value="'..CsrfToken('autoaddepg.html')..'">\n'
       ..'<input type="hidden" name="del" value="'..aa.dataID..'">\n'
       ..'<button type="submit">削除</button></div></form></dd>\n')
+    edcb.htmlEscape=0
+    aaForSearch=BinarySearch(edcb.EnumAutoAdd(),aa,CompareFields('dataID'))
+    edcb.htmlEscape=15
+    if aaForSearch then
+      now=os.time()
+      rt=edcb.GetReserveData()
+      --安定ソートのためreserveIDをつける
+      table.sort(rt,CompareFields('onid',false,'tsid',false,'sid',false,'eid',false,'reserveID'))
+      rtComp=CompareFields('onid',false,'tsid',false,'sid',false,'eid')
+      st=edcb.GetServiceList() or {}
+      stComp=CompareFields('onid',false,'tsid',false,'sid')
+      et={}
+      aaForSearch.searchInfo.andKey=aaForSearch.searchInfo.andKey:gsub('^^!{999}','')
+      for i,v in ipairs(edcb.SearchEpg(aaForSearch.searchInfo)) do
+        if v.startTime and TimeWithZone(v.startTime,9*3600)+(v.durationSecond or 0)>now then
+          et[#et+1]=v
+        end
+      end
+      table.sort(et,function(a,b) return CompareTime(a.startTime,b.startTime) end)
+      pageCount=AUTOADDEPGINFO_PAGE_COUNT
+      page=GetVarInt(mg.request_info.query_string,'page',0,(#et-1)/pageCount) or 0
+      pageNav=''
+      if #et>pageCount then
+        for i=math.max(page-1,1),math.min(math.max(page-1,1)+6,(#et+pageCount-1)/pageCount) do
+          pageNav=pageNav..(i-1==page and ((i-1)*pageCount+1)..'～ ' or '<a href="autoaddepginfo.html?id='..aa.dataID..'&amp;page='..(i-1)..'#search">'..((i-1)*pageCount+1)..'～</a> ')
+        end
+        pageNav='\n<div class="page-nav">'..(page==0 and '|&lt;&lt; ' or '<a href="autoaddepginfo.html?id='..aa.dataID..'#search">|&lt;&lt;</a> ')..pageNav
+          ..(page==math.floor((#et-1)/pageCount) and '&gt;&gt;|' or '<a href="autoaddepginfo.html?id='..aa.dataID..'&amp;page='..math.floor((#et-1)/pageCount)..'#search">&gt;&gt;|</a></div>')
+      end
+      ct:Append('    <br>\n    <dt id="search">検索結果</dt><dd>'..pageNav..'\n<table>\n')
+      for i=page*pageCount+1,math.min(#et,(page+1)*pageCount) do
+        v=et[i]
+        cont=v.contentInfoList and #v.contentInfoList>0 and math.floor(v.contentInfoList[1].content_nibble/256)%16 or 16
+        reservedIndex=BinarySearchBound(rt,v,rtComp)
+        reservedEndIndex=BinarySearchBound(rt,v,rtComp,true)
+        r=reservedIndex<reservedEndIndex and rt[reservedEndIndex-1]
+        cl=r and (r.recSetting.recMode==5 and ' class="disabled"' or r.overlapMode==1 and ' class="partially"' or r.overlapMode==2 and ' class="shortage"') or ''
+        ct:Append('<tr><td><a href="'..(r and 'reserveinfo.html?id='..r.reserveID or 'epginfo.html?id='..v.onid..'-'..v.tsid..'-'..v.sid..'-'..v.eid)..'&amp;fromepg='..(aa.dataID+1)..'">'
+          ..FormatTimeAndDuration(v.startTime,v.durationSecond)..'</a>'
+          ..'<td'..cl..'>'..(BinarySearch(st,v,stComp) or {service_name='不明'}).service_name
+          ..'<td class="cont-'..cont..'">')
+        --最後以外は「重予」(重複予約)
+        while reservedIndex+1<reservedEndIndex do
+          ct:Append('<span class="lavel-'..(rt[reservedIndex].recSetting.recMode==5 and 'disabled' or rt[reservedIndex].recSetting.recMode==4 and 'view' or 'reserved')
+            ..'"><a href="reserveinfo.html?id='..rt[reservedIndex].reserveID..'&amp;fromepg='..(aa.dataID+1)..'">重予</a></span> ')
+          reservedIndex=reservedIndex+1
+        end
+        ct:Append((r and '<span class="lavel-'..(r.recSetting.recMode==5 and 'disabled' or r.recSetting.recMode==4 and 'view' or 'reserved')..'">予</span> ' or '')
+          ..(v.shortInfo and v.shortInfo.event_name or '')..'</tr>\n')
+      end
+      ct:Append('</table>'..pageNav..'</dd>\n')
+    end
   end
   ct:Append('  </dl>\n')
 end
@@ -299,66 +348,6 @@ ct:Append([=[
 <div id="footer">
   <a href="autoaddepg.html]=]..(aa.dataID~=0 and '?id='..aa.dataID or '')..[=[">EPG予約一覧</a>
 </div>
-<script type="text/javascript">
-document.querySelector("select[name=contentList]").onchange=function(){
-  var selList=[];
-  var options=document.querySelectorAll("select[name=contentList] option");
-  var nibble1="";
-  for(var i=0;i<options.length;i++){
-    var s=options[i].textContent;
-    nibble1=s[0]=="　"?nibble1:s;
-    if(options[i].selected){
-      selList.push((s==nibble1?"":"("+nibble1.trim()+")")+s.trim());
-    }
-  }
-  document.getElementById("content-note").textContent=selList.slice(0,10).join("; ")+(selList.length>10?"; ほか"+(selList.length-10)+"項目":"");
-};
-document.querySelector("select[name=serviceList]").onchange=function(){
-  var selList=[];
-  var options=document.querySelectorAll("select[name=serviceList] option");
-  for(var i=0;i<options.length;i++){
-    if(options[i].selected){
-      selList.push(options[i].textContent.trim());
-    }
-  }
-  document.getElementById("service-note").textContent=selList.slice(0,10).join("; ")+(selList.length>10?"; ほか"+(selList.length-10)+"項目":"");
-};
-var timeOrWeek=document.querySelectorAll("input[name=timeOrWeek]");
-var timePeriod;
-function onchangeTimeOrWeek(){
-  timePeriod=timeOrWeek[0].checked==(timeOrWeek[0].value=="1");
-  document.getElementById("check-week").style=timePeriod?"display:none":"";
-  document.querySelector("select[name=startDayOfWeek]").style=timePeriod?"":"display:none";
-  document.querySelector("select[name=endDayOfWeek]").style=timePeriod?"":"display:none";
-}
-timeOrWeek[0].onchange=onchangeTimeOrWeek;
-timeOrWeek[1].onchange=onchangeTimeOrWeek;
-onchangeTimeOrWeek();
-document.querySelector("#add-time-or-week button").onclick=function(){
-  var st=document.querySelector("input[name=startTime]").value.match(/(\d+):(\d+)/);
-  var et=document.querySelector("input[name=endTime]").value.match(/(\d+):(\d+)/);
-  if(!st||!et)return;
-  st=Math.min(+st[2]+st[1]*60,24*60-1);
-  et=Math.min(+et[2]+et[1]*60,24*60-1);
-  var s="";
-  if(timePeriod){
-    s=document.querySelector("select[name=startDayOfWeek]").value+Math.floor(st/60)+":"+(st%60)+"-"+
-      document.querySelector("select[name=endDayOfWeek]").value+Math.floor(et/60)+":"+(et%60);
-  }else{
-    //For each day of week
-    for(var i=0;i<7;i++){
-      if(document.querySelector("input[name=checkDayOfWeek"+i+"]").checked){
-        s+=(s==""?"":", ")+(["sun","mon","tue","wed","thu","fri","sat"])[i]+Math.floor(st/60)+":"+(st%60)+"-"+
-           (["sun","mon","tue","wed","thu","fri","sat"])[st>et?(i+1)%7:i]+Math.floor(et/60)+":"+(et%60);
-      }
-    }
-  }
-  if(s=="")return;
-  var dateList=document.querySelector("input[name=dateList]");
-  dateList.value+=(dateList.value==""?"":", ")+s;
-};
-document.getElementById("add-time-or-week").style="";
-</script>
 </body>
 </html>
 ]=])

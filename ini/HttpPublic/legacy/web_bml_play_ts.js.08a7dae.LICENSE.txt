@@ -1,0 +1,78 @@
+The attached "web_bml_play_ts.js" ( https://github.com/xtne6f/web-bml ) can be
+built with the following command:
+
+$ npm i && npm -w @chinachu/aribts run build && npm -w play-ts run build
+
+The attached "KosugiMaru-Bold.woff2", "KosugiMaru-Regular.woff2" and
+"Kosugi-Regular.woff2" were copied from
+https://github.com/otya128/web-bml/tree/169561da14356dbee4080ddef2577681a0f4a174
+. Kosugi and Kosugi Maru are designed by MOTOYA ( https://www.motoyafont.jp ),
+and licensed under the Apache License, Version 2.0.
+"KosugiMaru-Bold.woff2" is derived by otya128 from "KosugiMaru-Regular.woff2".
+
+web-bml ( https://github.com/otya128/web-bml ) is licensed under the following
+license:
+
+MIT License
+
+Copyright (c) 2022 otya
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+/*!
+ * ECMAScript 2nd Edition Interpreter
+ * <https://github.com/otya128/es2>
+ *
+ * SPDX-FileCopyrightText: 2025 otya
+ * SPDX-License-Identifier: MIT
+ */
+
+/*!
+ * The buffer module from node.js, for the browser.
+ *
+ * @author   Feross Aboukhadijeh <feross@feross.org> <http://feross.org>
+ * @license  MIT
+ */
+
+/*!
+ * The buffer module from node.js, for the browser.
+ *
+ * @author   Feross Aboukhadijeh <https://feross.org>
+ * @license  MIT
+ */
+
+/*! crc32.js (C) 2014-present SheetJS -- http://sheetjs.com */
+
+/*! ieee754. BSD-3-Clause License. Feross Aboukhadijeh <https://feross.org/opensource> */
+
+/*! safe-buffer. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
+
+/**
+ * JS-Interpreter
+ * @license
+ * Copyright 2013 Google LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+//!! Deliberately using an API that's deprecated in node.js because
+
+//!! Discussion: github.com/node-browser-compat/atob/pull/9
+
+//!! this file is for browsers and we expect them to cope with it.
