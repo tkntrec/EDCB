@@ -4,6 +4,7 @@
 #include "stdafx.h"
 #include "EpgDataCap_Bon.h"
 #include "SettingDlg.h"
+#include "../../Common/SendCtrlCmd.h"
 
 
 // CSettingDlg ダイアログ
@@ -86,6 +87,10 @@ void CSettingDlg::OnBnClickedOk()
 	networkDlg.SaveIni();
 	appBtnDlg.SaveIni();
 	serviceDlg.SaveIni();
+
+	//設定更新をEpgTimerに通知する
+	CSendCtrlCmd ctrlCmd;
+	ctrlCmd.SendProfileUpdate(L"EpgDataCap_Bon");
 }
 
 
