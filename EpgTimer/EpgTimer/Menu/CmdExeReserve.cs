@@ -246,7 +246,7 @@ namespace EpgTimer
             else
             {
                 if (headDataRec == null) return;
-                CommonManager.Instance.FilePlay(headDataRec.RecFilePath);
+                CommonManager.Instance.FilePlay(headDataRec);
             }
             IsCommandExecuted = true;
         }

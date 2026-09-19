@@ -43,7 +43,7 @@ namespace EpgTimer
                 mc.SetFuncGetDataList(isAll => recInfo.IntoList());
 
                 //コマンド集に無いもの,変更するもの
-                mc.AddReplaceCommand(EpgCmds.Play, (sender, e) => CommonManager.Instance.FilePlay(recInfo.RecFilePath), (sender, e) => e.CanExecute = recInfo.ID != 0);
+                mc.AddReplaceCommand(EpgCmds.Play, (sender, e) => CommonManager.Instance.FilePlay(recInfo), (sender, e) => e.CanExecute = recInfo.ID != 0);
                 mc.AddReplaceCommand(EpgCmds.Cancel, (sender, e) => this.Close());
                 mc.AddReplaceCommand(EpgCmds.BackItem, (sender, e) => MoveViewNextItem(-1));
                 mc.AddReplaceCommand(EpgCmds.NextItem, (sender, e) => MoveViewNextItem(1));
