@@ -178,22 +178,20 @@
                                     <TextBox Name="textBox_chkDurationMax" Text="0" Width="40" />
                                     <TextBlock Text=" 分以下(0で無制限)" />
                                 </StackPanel>
-                                <GroupBox Header="自動予約登録専用" >
-                                    <StackPanel Margin="6,6,6,0">
-                                        <CheckBox Content="同一番組名の録画結果があれば無効で登録する" Margin="0,0,0,4" Name="checkBox_chkRecEnd" ToolTip="番組名を比較する際に無視する文字([再]など)の設定は、&#10;設定画面から[設定]-[動作設定]-[予約情報管理]を参照。" />
-                                        <StackPanel Margin="20,0,0,0" IsEnabled="{Binding Path=IsChecked, ElementName=checkBox_chkRecEnd}" >
-                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,4" >
-                                                <Label Content="確認対象期間 " Padding="0"/>
-                                                <TextBox Name="textBox_chkRecDay" Text="0" Width="40" />
-                                                <Label Content=" 日前まで" Padding="0" />
-                                            </StackPanel>
-                                            <WrapPanel>
-                                                <RadioButton Content="同一サービスのみ無効" Name="radioButton_chkRecNoService1" Margin="0,0,12,0" />
-                                                <RadioButton Content="全てのサービスで無効" Name="radioButton_chkRecNoService2" />
-                                            </WrapPanel>
+                                <StackPanel Margin="0,0,0,4">
+                                    <CheckBox Content="同一番組名の録画結果があれば無効で登録する" Margin="0,0,0,4" Name="checkBox_chkRecEnd" ToolTip="番組名を比較する際に無視する文字([再]など)の設定は、&#10;設定画面から[設定]-[動作設定]-[予約情報管理]を参照。" />
+                                    <StackPanel Margin="20,0,0,0" IsEnabled="{Binding Path=IsChecked, ElementName=checkBox_chkRecEnd}" >
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4" >
+                                            <Label Content="確認対象期間 " Padding="0"/>
+                                            <TextBox Name="textBox_chkRecDay" Text="0" Width="40" />
+                                            <Label Content=" 日前まで" Padding="0" />
                                         </StackPanel>
+                                        <WrapPanel>
+                                            <RadioButton Content="同一サービスのみ無効" Name="radioButton_chkRecNoService1" Margin="0,0,12,0" />
+                                            <RadioButton Content="全てのサービスで無効" Name="radioButton_chkRecNoService2" />
+                                        </WrapPanel>
                                     </StackPanel>
-                                </GroupBox>
+                                </StackPanel>
                             </StackPanel>
                             <StackPanel Grid.Row="1" Grid.RowSpan="2" HorizontalAlignment="Right" Width="84">
                                 <Button Click="button_all_on_Click" Content="全チェック" Margin="0,0,0,4" />
