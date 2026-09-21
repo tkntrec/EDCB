@@ -596,7 +596,7 @@ INT_PTR CEpgTimerSrvSetting::OnInitDialog()
 	SetDlgButtonCheck(hwnd, IDC_CHECK_SET_BALLOON_TIP_REALTIME, setting.noBalloonTip == 2);
 	SetDlgButtonCheck(hwnd, IDC_CHECK_SET_SAVE_NOTIFY_LOG, setting.saveNotifyLog);
 	SetDlgButtonCheck(hwnd, IDC_CHECK_SET_SAVE_DEBUG_LOG, setting.saveDebugLog);
-	SetDlgButtonCheck(hwnd, IDC_CHECK_SET_COMPAT_TKNTREC, GetPrivateProfileInt(L"SET", L"CompatFlags", 0, iniPath.c_str()) % 4096 == 4095);
+	ShowWindow(GetDlgItem(hwnd, IDC_CHECK_SET_COMPAT_TKNTREC), SW_HIDE);
 	SetDlgItemText(hwnd, IDC_EDIT_SET_TS_EXT, setting.tsExt.c_str());
 
 	for( size_t i = 0; i < setting.viewBonList.size(); i++ ){
@@ -899,11 +899,7 @@ void CEpgTimerSrvSetting::OnBnClickedOk()
 	                       GetDlgButtonCheck(hwnd, IDC_CHECK_SET_BALLOON_TIP_REALTIME) ? 2 : 0, iniPath.c_str());
 	WritePrivateProfileInt(L"SET", L"SaveNotifyLog", GetDlgButtonCheck(hwnd, IDC_CHECK_SET_SAVE_NOTIFY_LOG), iniPath.c_str());
 	WritePrivateProfileInt(L"SET", L"SaveDebugLog", GetDlgButtonCheck(hwnd, IDC_CHECK_SET_SAVE_DEBUG_LOG), iniPath.c_str());
-	//チェックを操作したときだけ変化させる
-	int compatFlags = GetPrivateProfileInt(L"SET", L"CompatFlags", 0, iniPath.c_str());
-	compatFlags = GetDlgButtonCheck(hwnd, IDC_CHECK_SET_COMPAT_TKNTREC) ?
-	                  (compatFlags % 4096 == 4095 ? compatFlags : 4095) : (compatFlags % 4096 == 4095 ? 0 : compatFlags);
-	WritePrivateProfileInt(L"SET", L"CompatFlags", compatFlags, iniPath.c_str());
+	int compatFlags = 4095;
 	GetWindowTextBuffer(GetDlgItem(hwnd, IDC_EDIT_SET_TS_EXT), buff);
 	WritePrivateProfileString(L"SET", L"TSExt", CheckTSExtension(buff.data()).c_str(), iniPath.c_str());
 	num = 0;
