@@ -1334,13 +1334,26 @@ namespace EpgTimer
             }
         }
 
+        private static Dictionary<char, List<KeyValuePair<string, string>>> replaceRecFilePathDictionary = null;
+        public static Dictionary<char, List<KeyValuePair<string, string>>> ReplaceRecFilePathDictionary
+        {
+            set { replaceRecFilePathDictionary = value; }
+            get
+            {
+                if (replaceRecFilePathDictionary == null)
+                    replaceRecFilePathDictionary = CreateReplaceDictionary(Settings.Instance.FilePathReplacePattern);
+
+                return replaceRecFilePathDictionary;
+            }
+        }
+        public static string ReplaceRecFilePath(string path) { return ReplaceText(path, ReplaceRecFilePathDictionary); }
         public static string GetRecPath(string path, bool recFile)
         {
             if (!string.IsNullOrWhiteSpace(path))
             {
                 if (Settings.Instance.FilePathReplaceRecFile && recFile)
                 {
-                    path = ReplaceText(path, CreateReplaceDictionary(Settings.Instance.FilePathReplacePattern));
+                    path = ReplaceRecFilePath(path);
                 }
                 else if (Instance.NWMode && !path.StartsWith("\\\\", StringComparison.Ordinal))
                 {
@@ -1351,7 +1364,7 @@ namespace EpgTimer
             return path;
         }
 
-    public static void OpenRecFolder(string folderPath, bool recFile = true)
+        public static void OpenRecFolder(string folderPath, bool recFile = true)
         {
             try
             {

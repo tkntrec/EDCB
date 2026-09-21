@@ -8,14 +8,9 @@ namespace EpgTimer
     public class RecInfoItem : DataListItemBase
     {
         public RecInfoItem() { }
-        public RecInfoItem(RecFileInfo info, Dictionary<char, List<KeyValuePair<string, string>>> replaceRecFilePathDictionary = null)
-        {
-            RecInfo = info;
-            ReplaceRecFilePathDictionary = replaceRecFilePathDictionary ?? new Dictionary<char, List<KeyValuePair<string, string>>>();
-        }
+        public RecInfoItem(RecFileInfo info) { RecInfo = info; }
 
         public RecFileInfo RecInfo { get; private set; }
-        public Dictionary<char, List<KeyValuePair<string, string>>> ReplaceRecFilePathDictionary { get; private set; }
         public override ulong KeyID { get { return RecInfo == null ? 0 : RecInfo.ID; } }
         public override object DataObj { get { return RecInfo; } }
 
@@ -82,7 +77,7 @@ namespace EpgTimer
         }
         public string ReplacedRecFilePath
         {
-            get { return CommonManager.ReplaceText(RecInfo.RecFilePath, ReplaceRecFilePathDictionary); }
+            get { return CommonManager.ReplaceRecFilePath(RecInfo.RecFilePath); }
         }
         public override Brush BackColor
         {

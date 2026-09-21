@@ -128,6 +128,7 @@ namespace EpgTimer
                 }
                 if (Settings.Instance.WakeUpHdd == false) CommonManager.WakeUpHDDLogClear();
                 ItemFontCache.Clear();
+                CommonManager.ReplaceRecFilePathDictionary = null;
 
                 CommonManager.MainWindow.SaveData(true);
                 CommonManager.MainWindow.RefreshSetting(this);
