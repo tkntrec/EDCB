@@ -62,10 +62,7 @@ if fpath and fpath:find('%.[Mm][Pp]4$') then
 end
 
 if not f then
-  ct=CreateContentBuilder()
-  ct:Append(DOCTYPE_HTML4_STRICT..'<title>mux_to_ts.lua</title><p><a href="index.html">メニュー</a></p>')
-  ct:Finish()
-  mg.write(ct:Pop(Response(404,'text/html','utf-8',ct.len)..'\r\n'))
+  mg.write(Response(404,nil,nil,0)..'\r\n')
 else
   fname='mux_to_ts'..edcb.GetPrivateProfile('SET','TSExt','.ts','EpgTimerSrv.ini')
   if fpos>=fsize then

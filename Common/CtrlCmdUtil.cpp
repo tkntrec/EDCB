@@ -3,12 +3,6 @@
 #include <math.h>
 #include <limits>
 
-#if defined(_MSC_VER) && _MSC_VER < 1900
-#include <float.h>
-#define isnan _isnan
-#define isfinite _finite
-#endif
-
 namespace CtrlCmdUtilImpl_
 {
 

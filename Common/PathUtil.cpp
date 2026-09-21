@@ -839,12 +839,13 @@ wstring GetPrivateProfileToString(LPCWSTR appName, LPCWSTR keyName, LPCWSTR lpDe
 	WCHAR szBuff[512];
 	DWORD n = GetPrivateProfileString(appName, keyName, lpDefault, szBuff, 512, fileName);
 	if( n >= 510 ){
-		vector<WCHAR> buff(512);
+		wstring buff;
 		do{
-			buff.resize(buff.size() * 2);
+			buff.resize(buff.empty() ? 1024 : buff.size() * 2);
 			n = GetPrivateProfileString(appName, keyName, lpDefault, &buff.front(), (DWORD)buff.size(), fileName);
 		}while( n >= buff.size() - 2 && buff.size() < 1024 * 1024 );
-		return wstring(buff.begin(), buff.begin() + n);
+		buff.resize(n);
+		return buff;
 	}
 	return wstring(szBuff, szBuff + n);
 #else
@@ -917,6 +918,9 @@ void EnumFindFile(const fs_path& pattern, const std::function<bool(UTIL_FIND_DAT
 			UTIL_FIND_DATA ufd;
 			do{
 				ufd.isDir = (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+				ufd.readonly = (findData.dwFileAttributes & FILE_ATTRIBUTE_READONLY) != 0;
+				ufd.hidden = (findData.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN) != 0;
+				ufd.system = (findData.dwFileAttributes & FILE_ATTRIBUTE_SYSTEM) != 0;
 				ufd.lastWriteTime = (LONGLONG)findData.ftLastWriteTime.dwHighDateTime << 32 | findData.ftLastWriteTime.dwLowDateTime;
 				ufd.fileSize = (LONGLONG)findData.nFileSizeHigh << 32 | findData.nFileSizeLow;
 				ufd.fileName = findData.cFileName;
@@ -936,6 +940,7 @@ void EnumFindFile(const fs_path& pattern, const std::function<bool(UTIL_FIND_DAT
 		struct stat st;
 		if( stat(strPath.c_str(), &st) == 0 ){
 			UTIL_FIND_DATA ufd;
+
 			ufd.isDir = S_ISDIR(st.st_mode) != 0;
 			ufd.lastWriteTime = (LONGLONG)st.st_mtime * 10000000 + 116444736000000000;
 			ufd.fileSize = (LONGLONG)st.st_size;

@@ -102,8 +102,8 @@ bool CHttpServer::StartServer(const SERVER_OPTIONS& op, const std::function<void
 	CParseContentTypeText contentType;
 	contentType.ParseText(GetCommonIniPath().replace_filename(L"ContentTypeText.txt").c_str());
 	wstring extraMimeW;
-	for( map<wstring, wstring>::const_iterator itr = contentType.GetMap().begin(); itr != contentType.GetMap().end(); itr++ ){
-		extraMimeW += itr->first + L'=' + itr->second + L',';
+	for( const auto& item : contentType.GetMap() ){
+		extraMimeW += item.first + L'=' + item.second + L',';
 	}
 	string extraMime;
 	WtoUTF8(extraMimeW, extraMime);

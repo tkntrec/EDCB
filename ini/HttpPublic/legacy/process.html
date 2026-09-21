@@ -5,9 +5,7 @@ ct=CreateContentBuilder(GZIP_THRESHOLD_BYTE)
 ct:Append(DOCTYPE_HTML4_STRICT..[=[
 <html lang="ja">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<meta name="viewport" content="initial-scale=1">
-<link rel="stylesheet" type="text/css" href="default.css">
+]=]..DefaultHeadContents()..[=[
 <title>プロセス管理 - EDCB</title>
 </head>
 <body>
@@ -24,22 +22,39 @@ for i=1,20 do
   ps={}
   killIndex=0
   if PROCESS_MANAGEMENT_LIST and #PROCESS_MANAGEMENT_LIST>0 then
-    f=edcb.io.popen('ps -C "'..table.concat(PROCESS_MANAGEMENT_LIST,',')..'" -o pid=,%cpu=,%mem=,s=,command=')
-    if f then
-      for pid,cpu,mem,st,cmd in f:read('*a'):gmatch(' *([0-9]+) +([0-9.]+) +([0-9.]+) +([A-Za-z]+) +([^\n]+)\n') do
-        ps[#ps+1]={pid=pid,cpu=cpu,mem=mem,st=st,cmd=cmd}
-        if kill and kill:find('^'..pid..'!?$') then
-          killIndex=#ps
-          killForce=kill:find('!$')
+    if WIN32 then
+      f=edcb.io.popen('powershell -NoProfile -c "gwmi win32_process -filter \\"name=\''..table.concat(PROCESS_MANAGEMENT_LIST,".exe' or name='")
+        ..'.exe\'\\"|format-table processid,usermodetime,kernelmodetime,privatepagecount,name,commandline -hidetableheaders|out-string -width 999"')
+      if f then
+        for pid,ucpu,kcpu,mem,name,cmd in f:read('*a'):gmatch(' *([0-9]+) *([0-9]+) *([0-9]+) *([0-9]+) +([^\n ]+) +([^\n]*)\n') do
+          --第0引数(通常はコマンド名)を除去
+          cmd=cmd:gsub(cmd:find('^"') and '^"[^"]*"? *' or '^[^ ]* *',''):gsub(' +$','')
+          ps[#ps+1]={pid=pid,cpu=math.floor((ucpu+kcpu)/1000000)/10,mem=math.floor(mem/1024),name=name,cmd=cmd}
+          if kill and kill:find('^'..pid..'!?$') then
+            killIndex=#ps
+            killForce=kill:find('!$')
+          end
         end
+        f:close()
       end
-      f:close()
+    else
+      f=edcb.io.popen('ps -C "'..table.concat(PROCESS_MANAGEMENT_LIST,',')..'" -o pid=,%cpu=,%mem=,s=,command=')
+      if f then
+        for pid,cpu,mem,st,cmd in f:read('*a'):gmatch(' *([0-9]+) +([0-9.]+) +([0-9.]+) +([A-Za-z]+) +([^\n]+)\n') do
+          ps[#ps+1]={pid=pid,cpu=cpu,mem=mem,st=st,cmd=cmd}
+          if kill and kill:find('^'..pid..'!?$') then
+            killIndex=#ps
+            killForce=kill:find('!$')
+          end
+        end
+        f:close()
+      end
     end
   end
   if killIndex==0 then
     break
   elseif i==1 then
-    cmd='kill '..(killForce and '-9 ' or '')..ps[killIndex].pid
+    cmd=(WIN32 and 'taskkill '..(killForce and '/f ' or '')..'/pid ' or 'kill '..(killForce and '-9 ' or ''))..ps[killIndex].pid
     edcb.os.execute(cmd)
     ct:Append('<div id="result">`'..cmd..'`を実行しました</div>\n')
   end
@@ -50,7 +65,7 @@ tuners=#ps>0 and edcb.GetTunerProcessStatusAll and edcb.GetTunerProcessStatusAll
 
 ct:Append([=[
   <table>
-    <tr><th>PID<th>CPU<th>MEM<th>ST<th>COMMAND<th>TUNER</tr>
+    <tr><th>PID<th>CPU]=]..(WIN32 and 'Time' or '')..[=[<th>MEM<th>]=]..(WIN32 and 'NAME' or 'ST')..[=[<th>COMMAND<th>TUNER</tr>
 ]=])
 
 edcb.htmlEscape=15
@@ -62,7 +77,7 @@ for i,v in ipairs(ps) do
       break
     end
   end
-  ct:Append('    <tr><td>'..v.pid..'<td>'..v.cpu..'<td>'..v.mem..'<td>'..v.st..'<td>'..EdcbHtmlEscape(v.cmd)..'<td>'..EdcbHtmlEscape(tunerStatus)..'</tr>\n')
+  ct:Append('    <tr><td>'..v.pid..'<td>'..v.cpu..'<td>'..v.mem..'<td>'..(WIN32 and EdcbHtmlEscape(v.name) or v.st)..'<td>'..EdcbHtmlEscape(v.cmd)..'<td>'..EdcbHtmlEscape(tunerStatus)..'</tr>\n')
 end
 
 ct:Append([=[
@@ -75,7 +90,7 @@ for i,v in ipairs(ps) do
 end
 ct:Append([=[</select>
     を<button type="submit">KILL</button>
-    する ([hang-up]の注記があるものは`kill -9`します)
+    する ([hang-up]の注記があるものは`]=]..(WIN32 and 'taskkill /f' or 'kill -9')..[=[`します)
   </div></form>
 </div>
 <div id="footer">

@@ -3,6 +3,7 @@
 
 #include "StructDef.h"
 #include "EpgDataCap3Def.h"
+#include <functional>
 
 //チャンネルをLONGLONGとしてキーにする
 static inline LONGLONG Create64Key(WORD onid, WORD tsid, WORD sid) { return sid | (DWORD)tsid << 16 | (LONGLONG)onid << 32; }
@@ -17,8 +18,8 @@ LONGLONG MJDtoI64Time(DWORD mjd, DWORD bcdTime);
 DWORD GetBitrateFromIni(WORD onid, WORD tsid, WORD sid);
 
 //EPG情報をTextに変換
-wstring ConvertEpgInfoText(const EPGDB_EVENT_INFO& info, const wstring* serviceName = NULL, const wstring* extraText = NULL);
-wstring ConvertProgramText(const EPGDB_EVENT_INFO& info, const wstring& serviceName);
+wstring ConvertEpgInfoText(const EPGDB_EVENT_INFO& info, LPCWSTR serviceName = NULL, LPCWSTR extraText = NULL);
+wstring ConvertProgramText(const EPGDB_EVENT_INFO& info, const std::function<LPCWSTR(WORD, WORD, WORD)>& resolveServiceID);
 void AppendEpgContentInfoText(wstring& text, const EPGDB_EVENT_INFO& info);
 void AppendEpgComponentInfoText(wstring& text, const EPGDB_EVENT_INFO& info);
 void AppendEpgAudioComponentInfoText(wstring& text, const EPGDB_EVENT_INFO& info);

@@ -64,7 +64,7 @@ void CServiceFilter::FilterPacket(vector<BYTE>& outData, const BYTE* data, const
 					vector<pair<WORD, CPMTUtil>>::iterator itr =
 						lower_bound_first(this->pmtUtilMap.begin(), this->pmtUtilMap.end(), packet.PID);
 					if( itr == this->pmtUtilMap.end() || itr->first != packet.PID ){
-						itr = this->pmtUtilMap.insert(itr, std::make_pair(packet.PID, CPMTUtil()));
+						itr = this->pmtUtilMap.emplace(itr, packet.PID, CPMTUtil());
 					}
 					if( itr->second.AddPacket(packet) ){
 						this->catOrPmtUpdated = true;
@@ -210,39 +210,39 @@ void CServiceFilter::CheckNeedPID()
 	//PAT作成用のPMTリスト
 	vector<pair<WORD, WORD>> pidList;
 	//NITのPID追加しておく
-	pidList.push_back(std::make_pair((WORD)0x10, (WORD)0));
+	pidList.emplace_back((WORD)0x10, (WORD)0);
 
 	//EMMのPID
-	for( auto itr = this->catUtil.GetPIDList().cbegin(); itr != this->catUtil.GetPIDList().end(); itr++ ){
-		InsertPIDInfo(this->pidInfoMap, *itr).neededByCatOrPmt = true;
+	for( WORD pid : this->catUtil.GetPIDList() ){
+		InsertPIDInfo(this->pidInfoMap, pid).neededByCatOrPmt = true;
 	}
 
-	for( auto itr = this->pmtUtilMap.cbegin(); itr != this->pmtUtilMap.end(); itr++ ){
-		WORD programNumber = itr->second.GetProgramNumber();
+	for( const auto& pmtUtil : this->pmtUtilMap ){
+		WORD programNumber = pmtUtil.second.GetProgramNumber();
 		if( programNumber != 0 &&
 		    (this->allServicesFlag ||
 		     std::find(this->serviceIDList.begin(), this->serviceIDList.end(), programNumber) != this->serviceIDList.end()) ){
 			//PAT作成用のPMTリスト作成
-			pidList.push_back(std::make_pair(itr->first, programNumber));
+			pidList.emplace_back(pmtUtil.first, programNumber);
 			//PMT記載のPIDを登録
-			InsertPIDInfo(this->pidInfoMap, itr->first).neededByCatOrPmt = true;
-			WORD pcrPID = itr->second.GetPcrPID();
+			InsertPIDInfo(this->pidInfoMap, pmtUtil.first).neededByCatOrPmt = true;
+			WORD pcrPID = pmtUtil.second.GetPcrPID();
 			if( pcrPID != 0x1FFF ){
 				InsertPIDInfo(this->pidInfoMap, pcrPID).neededByCatOrPmt = true;
 			}
 			if( this->createPmtFlag &&
 			    this->allServicesFlag == false &&
 			    this->serviceIDList[0] == programNumber ){
-				this->pmt.SetSectionData(itr->second.GetSectionData().data(), (DWORD)itr->second.GetSectionData().size());
+				this->pmt.SetSectionData(pmtUtil.second.GetSectionData().data(), (DWORD)pmtUtil.second.GetSectionData().size());
 			}
-			for( auto itrPID = itr->second.GetPIDTypeList().cbegin(); itrPID != itr->second.GetPIDTypeList().end(); itrPID++ ){
+			for( pair<WORD, BYTE> pidType : pmtUtil.second.GetPIDTypeList() ){
 				//PMT改変が有効なときは改変後に含まれるPIDのみ登録
 				if( this->createPmtFlag == false ||
 				    this->allServicesFlag ||
 				    this->serviceIDList[0] != programNumber ||
-				    this->pmt.IsEcmPID(itrPID->first) ||
-				    this->pmt.IsElementaryPID(itrPID->first) ){
-					InsertPIDInfo(this->pidInfoMap, itrPID->first).neededByCatOrPmt = true;
+				    this->pmt.IsEcmPID(pidType.first) ||
+				    this->pmt.IsElementaryPID(pidType.first) ){
+					InsertPIDInfo(this->pidInfoMap, pidType.first).neededByCatOrPmt = true;
 				}
 			}
 		}

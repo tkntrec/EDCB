@@ -49,8 +49,10 @@ ifeq ($(OS),Windows_NT)
   LDFLAGS2 = -municode -mwindows -Wl,-s,--dynamicbase,--nxcompat -static-libgcc -static-libstdc++ $(LDFLAGS)
   LDLIBS := -lws2_32 -lole32 -lcomctl32 -lwinhttp -loleaut32 -lcrypt32 -liphlpapi -luuid -lnetapi32 -ldbghelp $(LDLIBS)
 
+  CCMAJOR := $(firstword $(subst ., ,$(shell $(CC) -dumpversion)))
   # Lazy loading fails with segfault if LUA_BUILD_AS_DLL defined.
-  LDLIBS := -L. -llua52-mingw-lazy-$(or $(MSYSTEM_CARCH),$(findstring x86_64,$(MAKE_HOST)),i686) $(LDLIBS)
+  # Import libraries before and after GCC15 are incompatible.
+  LDLIBS := -L. -llua52-mingw-lazy-$(or $(MSYSTEM_CARCH),$(findstring x86_64,$(MAKE_HOST)),i686)$(if $(findstring _$(CCMAJOR)_,_8_9_10_11_12_13_14_),,-gcc15) $(LDLIBS)
 
   ifndef MSYSTEM
     # Assume non-pthread threading model

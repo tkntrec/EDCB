@@ -57,9 +57,7 @@ ct=CreateContentBuilder(GZIP_THRESHOLD_BYTE)
 ct:Append(DOCTYPE_HTML4_STRICT..[=[
 <html lang="ja">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<meta name="viewport" content="initial-scale=1">
-<link rel="stylesheet" type="text/css" href="default.css">
+]=]..DefaultHeadContents()..[=[
 <title>番組詳細 - EDCB</title>
 </head>
 <body>
@@ -69,6 +67,7 @@ ct:Append(DOCTYPE_HTML4_STRICT..[=[
 
 onid,tsid,sid,eid=GetVarEventID(mg.request_info.query_string,'id')
 presetID=GetVarInt(mg.request_info.query_string,'presetID') or 65535
+fromepg=GetVarInt(mg.request_info.query_string,'fromepg',2) or 1
 
 post=AssertPost()
 if post then
@@ -89,12 +88,19 @@ if not r and presetID==65535 then
   presetID=0
 end
 
+epgDate=0
+ev=edcb.SearchEpg(onid,tsid,sid,eid)
+if ev and ev.startTime then
+  --番組表のdateクエリは今日(深夜4時区切り)を基準(=0)とする
+  epgDate=math.floor((TimeWithZone(ev.startTime)-4*3600)/(24*3600))-math.floor((os.time()+(9-4)*3600)/(24*3600))
+end
+
 ct:Append('  <dl>\n'
-  ..'    <dt>番組情報</dt><dd>\n'..ConvertProgramText(edcb.SearchEpg(onid,tsid,sid,eid)):gsub('\r?\n','<br>\n')..'</dd>\n')
+  ..'    <dt id="pginfo-term">番組情報</dt><dd id="pginfo-desc">'..DecorateProgramText(ConvertProgramText(ev))..'</dd>\n')
 if r then
   dur=r.startTime.hour*3600+r.startTime.min*60+r.startTime.sec+r.durationSecond
   ct:Append('    <dt>プログラム予約化（プログラム予約化は元に戻せません。番組を特定できなくなるため追従もできません。）</dt><dd>\n'
-    ..'<form method="POST" action="reserveinfo.html?id='..r.reserveID..'&amp;fromepg=1'
+    ..'<form method="POST" action="reserveinfo.html?id='..r.reserveID..'&amp;fromepg='..fromepg
     ..'"><div><input type="hidden" name="ctok" value="'..CsrfToken('reserveinfo.html')..'">\n'
     ..'<input type="hidden" name="addchg" value="y">\n'
     ..'予約日時: <input type="text" size="4" name="start-y" value="'..r.startTime.year
@@ -110,8 +116,10 @@ if r then
     ..'<button type="submit">変更</button></div></form></dd>\n')
 end
 ct:Append('    <dt>プリセット<dt><dd>\n'
-  ..'<form action="epginfo.html"><div>'
-  ..'<input type="hidden" name="id" value="'..onid..'-'..tsid..'-'..sid..'-'..eid..'"><select name="presetID">\n')
+  ..'<form action="epginfo.html"><div>\n'
+  ..'<input type="hidden" name="id" value="'..onid..'-'..tsid..'-'..sid..'-'..eid..'">\n'
+  ..(fromepg>1 and '<input type="hidden" name="fromepg" value="'..fromepg..'">\n' or '')
+  ..'<select name="presetID">\n')
 preset=false
 rs=r and r.recSetting or nil
 for i,v in ipairs(edcb.EnumRecPresetInfo()) do
@@ -130,14 +138,14 @@ end
 ct:Append('</select> <button type="submit">録画設定にロード</button></div></form></dd>\n'
   ..'    <dt>録画設定<dt><dd>\n'
   ..'<form method="POST" action="'
-  ..(r and 'reserveinfo.html?id='..r.reserveID..'&amp;fromepg=1' or 'epginfo.html?id='..onid..'-'..tsid..'-'..sid..'-'..eid)
+  ..(r and 'reserveinfo.html?id='..r.reserveID..'&amp;fromepg='..fromepg or 'epginfo.html?id='..onid..'-'..tsid..'-'..sid..'-'..eid)..(fromepg>1 and '&amp;fromepg='..fromepg or '')
   ..'"><div><input type="hidden" name="presetID" value="'..(preset and presetID or 65535)..'">\n'
   ..'<input type="hidden" name="ctok" value="'..CsrfToken(r and 'reserveinfo.html')..'">\n'
   ..'<input type="hidden" name="addchg" value="y">\n'
   ..RecSettingTemplate(rs)..'<button type="submit">'..(r and '変更' or '追加')..'</button></div></form></dd>\n')
 if r then
   ct:Append('    <dt>-</dt><dd>\n'
-    ..'<form method="POST" action="reserveinfo.html?id='..r.reserveID..'"><div>\n'
+    ..'<form method="POST" action="reserveinfo.html?id='..r.reserveID..'&amp;fromepg='..fromepg..'"><div>\n'
     ..'<input type="hidden" name="ctok" value="'..CsrfToken('reserveinfo.html')..'">\n'
     ..'<input type="hidden" name="del" value="y">\n'
     ..'<button type="submit">削除</button></div></form></dd>\n')
@@ -147,7 +155,10 @@ ct:Append([=[
   </dl>
 </div>
 <div id="footer">
-  <a href="epg.html">番組表</a> <a href="epglist.html?id=]=]..onid..'-'..tsid..'-'..sid..[=[#now">リスト番組表</a>
+  ]=]..(fromepg>1 and '<a href="autoaddepginfo.html?id='..(fromepg-1)..'#search">EPG予約</a> ' or '')..[=[
+<a href="epg.html?tab=]=]
+  ..(({['地デジ']=0,['BS']=1,['CS3']=3,['その他']=4})[NetworkType(onid)] or 2)..'&amp;date='..epgDate..[=[">番組表</a> <a href="epglist.html?id=]=]
+  ..onid..'-'..tsid..'-'..sid..[=[#now">リスト番組表</a>
 </div>
 </body>
 </html>

@@ -253,7 +253,7 @@ void CBonCtrl::RecvCallback(BYTE* data, DWORD size, DWORD remain, DWORD tsBuffMa
 					for( auto itr = this->tsBuffList.begin(); itr != this->tsBuffList.end(); (itr++)->clear() );
 					this->tsFreeList.splice(this->tsFreeList.end(), this->tsBuffList);
 				}else{
-					this->tsFreeList.push_back(vector<BYTE>());
+					this->tsFreeList.emplace_back();
 					this->tsFreeList.back().reserve(48128);
 				}
 			}

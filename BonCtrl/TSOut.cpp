@@ -88,8 +88,8 @@ void CTSOut::OnChChanged(WORD onid, WORD tsid)
 		}
 		this->decodeUtil.SetEmm(this->emmEnableFlag);
 	}
-	for( auto itr = this->serviceUtilMap.begin(); itr != this->serviceUtilMap.end(); itr++ ){
-		itr->second->Clear(tsid);
+	for( const auto& item : this->serviceUtilMap ){
+		item.second->Clear(tsid);
 	}
 	this->serviceFilter.Clear(tsid);
 }
@@ -232,14 +232,12 @@ void CTSOut::AddTSBuff(BYTE* data, DWORD dataSize)
 	}
 
 	//各サービス処理にデータ渡す
-	{
-		for( auto itrService = serviceUtilMap.begin(); itrService != serviceUtilMap.end(); itrService++ ){
-			itrService->second->AddTSBuff(decodeData, decodeSize, [this](WORD onid, WORD tsid, WORD sid) -> int {
-				lock_recursive_mutex lock2(this->epgUtilLock);
-				EPG_EVENT_INFO* epgInfo;
-				return this->epgUtil.GetEpgInfo(onid, tsid, sid, FALSE, &epgInfo) == NO_ERR ? epgInfo->event_id : -1;
-			});
-		}
+	for( const auto& item : this->serviceUtilMap ){
+		item.second->AddTSBuff(decodeData, decodeSize, [this](WORD onid, WORD tsid, WORD sid) -> int {
+			lock_recursive_mutex lock2(this->epgUtilLock);
+			EPG_EVENT_INFO* epgInfo;
+			return this->epgUtil.GetEpgInfo(onid, tsid, sid, FALSE, &epgInfo) == NO_ERR ? epgInfo->event_id : -1;
+		});
 	}
 }
 
@@ -279,8 +277,8 @@ void CTSOut::UpdateFilterServiceID()
 {
 	vector<WORD> filterSIDList;
 
-	for( auto itr = this->serviceUtilMap.begin(); itr != this->serviceUtilMap.end(); itr++ ){
-		filterSIDList.push_back(itr->second->GetSID());
+	for( const auto& item : this->serviceUtilMap ){
+		filterSIDList.push_back(item.second->GetSID());
 		if( filterSIDList.back() == 0xFFFF ){
 			//下流の処理対象が全サービスなのでフィルタしない
 			this->serviceFilter.SetServiceID(true, vector<WORD>());
@@ -318,7 +316,7 @@ BOOL CALLBACK CTSOut::EnumLogoListProc(DWORD logoListSize, const LOGO_INFO* logo
 			vector<pair<LONGLONG, DWORD>>::iterator itr = lower_bound_first(serviceListSizeMap.begin(), serviceListSizeMap.end(), key);
 			try{
 				if( itr == serviceListSizeMap.end() || itr->first != key ){
-					serviceListSizeMap.insert(itr, pair<LONGLONG, DWORD>(key, 0));
+					serviceListSizeMap.emplace(itr, key, 0);
 					result.onid = logoList->onid;
 					result.id = logoList->id;
 					result.type = logoList->type;
@@ -553,8 +551,7 @@ DWORD CTSOut::CreateServiceCtrl(
 {
 	lock_recursive_mutex lock(this->objLock);
 
-	auto itr = this->serviceUtilMap.insert(
-		std::make_pair(GetNextID(), std::unique_ptr<COneServiceUtil>(new COneServiceUtil(sendUdpTcp)))).first;
+	auto itr = this->serviceUtilMap.emplace(GetNextID(), std::unique_ptr<COneServiceUtil>(new COneServiceUtil(sendUdpTcp))).first;
 	itr->second->SetBonDriver(bonFile);
 	itr->second->SetNoLogScramble(noLogScramble);
 	if( this->chChangeState == CH_ST_DONE ){
@@ -738,8 +735,8 @@ BOOL CTSOut::IsRec()
 {
 	lock_recursive_mutex lock(this->objLock);
 
-	for( auto itr = this->serviceUtilMap.begin(); itr != this->serviceUtilMap.end(); itr++ ){
-		if( itr->second->IsRec() == TRUE ){
+	for( const auto& item : this->serviceUtilMap ){
+		if( item.second->IsRec() == TRUE ){
 			return TRUE;
 		}
 	}
@@ -803,18 +800,18 @@ BOOL CTSOut::UpdateEnableDecodeFlag()
 {
 	BOOL sendUdpTcpOnly = TRUE;
 	BOOL enable = FALSE;
-	for( auto itr = this->serviceUtilMap.begin(); itr != this->serviceUtilMap.end(); itr++ ){
-		if( itr->second->GetScramble() >= 0 ){
-			if( itr->second->GetSendUdpTcp() ){
+	for( const auto& item : this->serviceUtilMap ){
+		if( item.second->GetScramble() >= 0 ){
+			if( item.second->GetSendUdpTcp() ){
 				//UDP/TCP送信用だけのときはその設定値に従う
-				if( sendUdpTcpOnly && itr->second->GetScramble() ){
+				if( sendUdpTcpOnly && item.second->GetScramble() ){
 					enable = TRUE;
 				}
 			}else{
 				//録画用のものがあるときはその設定値に従う
 				sendUdpTcpOnly = FALSE;
 				enable = FALSE;
-				if( itr->second->GetScramble() ){
+				if( item.second->GetScramble() ){
 					enable = TRUE;
 					break;
 				}
@@ -949,8 +946,8 @@ void CTSOut::SetSignalLevel(
 {
 	lock_recursive_mutex lock(this->objLock);
 
-	for( auto itr = serviceUtilMap.begin(); itr != serviceUtilMap.end(); itr++ ){
-		itr->second->SetSignalLevel(signalLv);
+	for( const auto& item : this->serviceUtilMap ){
+		item.second->SetSignalLevel(signalLv);
 	}
 }
 
@@ -961,8 +958,8 @@ void CTSOut::SetBonDriver(
 {
 	lock_recursive_mutex lock(this->objLock);
 
-	for( auto itr = serviceUtilMap.begin(); itr != serviceUtilMap.end(); itr++ ){
-		itr->second->SetBonDriver(bonDriver);
+	for( const auto& item : this->serviceUtilMap ){
+		item.second->SetBonDriver(bonDriver);
 	}
 	bonFile = bonDriver;
 }
@@ -973,8 +970,8 @@ void CTSOut::SetNoLogScramble(
 {
 	lock_recursive_mutex lock(this->objLock);
 
-	for( auto itr = serviceUtilMap.begin(); itr != serviceUtilMap.end(); itr++ ){
-		itr->second->SetNoLogScramble(noLog);
+	for( const auto& item : this->serviceUtilMap ){
+		item.second->SetNoLogScramble(noLog);
 	}
 	noLogScramble = noLog;
 }

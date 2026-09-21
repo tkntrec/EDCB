@@ -95,7 +95,7 @@ BOOL CSetDlgService::OnInitDialog()
 				FindBonFileName(findData.fileName, bonFileName);
 				bonFileName += L".dll";
 
-				if( chList.insert(std::make_pair(bonFileName, std::make_pair(CParseChText4(), false))).second ){
+				if( chList.emplace(bonFileName, std::make_pair(CParseChText4(), false)).second ){
 					chList[bonFileName].first.ParseText(fs_path(path).append(findData.fileName).c_str());
 					ComboBox_AddString(this->GetDlgItem(IDC_COMBO_BON), bonFileName.c_str());
 				}

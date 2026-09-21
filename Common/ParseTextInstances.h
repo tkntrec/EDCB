@@ -5,7 +5,7 @@
 
 //チャンネル情報ファイル「ChSet4.txt」の読み込みと保存処理を行う
 //キーは読み込み順番号
-class CParseChText4 : CParseText<DWORD, CH_DATA4>
+class CParseChText4 : CParseText<map<DWORD, CH_DATA4>>
 {
 public:
 	using Base::ParseText;
@@ -21,14 +21,14 @@ public:
 	//useViewFlagを設定する
 	void SetUseViewFlag(DWORD key, BOOL useViewFlag);
 private:
-	bool ParseLine(LPCWSTR parseLine, pair<DWORD, CH_DATA4>& item);
-	bool SaveLine(const pair<DWORD, CH_DATA4>& item, wstring& saveLine) const;
+	void ParseLine(LPCWSTR parseLine);
+	bool SaveLine(map<DWORD, CH_DATA4>::const_reference item, wstring& saveLine) const;
 };
 
 //チャンネル情報ファイル「ChSet5.txt」の読み込みと保存処理を行う
 //キーはONID<<32|TSID<<16|SID
 //リモコンIDはChSet4と重複するため拡張フィールドとして扱い、原則保存はしない
-class CParseChText5 : CParseText<LONGLONG, CH_DATA5>
+class CParseChText5 : CParseText<map<LONGLONG, CH_DATA5>>
 {
 public:
 	CParseChText5() : saveWithExtraFields(false) {}
@@ -45,15 +45,15 @@ public:
 	//拡張フィールド付きで保存する
 	bool SaveTextWithExtraFields(string* saveToStr = NULL) const;
 private:
-	bool ParseLine(LPCWSTR parseLine, pair<LONGLONG, CH_DATA5>& item);
-	bool SaveLine(const pair<LONGLONG, CH_DATA5>& item, wstring& saveLine) const;
+	void ParseLine(LPCWSTR parseLine);
+	bool SaveLine(map<LONGLONG, CH_DATA5>::const_reference item, wstring& saveLine) const;
 	bool SelectItemToSave(vector<map<LONGLONG, CH_DATA5>::const_iterator>& itemList) const;
 	vector<LONGLONG> parsedOrder;
 	mutable bool saveWithExtraFields;
 };
 
 //拡張子とContent-Typeの対応ファイル「ContentTypeText.txt」の読み込みを行う
-class CParseContentTypeText : CParseText<wstring, wstring>
+class CParseContentTypeText : CParseText<map<wstring, wstring>>
 {
 public:
 	using Base::ParseText;
@@ -61,11 +61,11 @@ public:
 	using Base::GetFilePath;
 	void GetMimeType(wstring ext, wstring& mimeType) const;
 private:
-	bool ParseLine(LPCWSTR parseLine, pair<wstring, wstring>& item);
+	void ParseLine(LPCWSTR parseLine);
 };
 
 //サービス名としょぼいカレンダー放送局名の対応ファイル「SyoboiCh.txt」の読み込みを行う
-class CParseServiceChgText : CParseText<wstring, wstring>
+class CParseServiceChgText : CParseText<map<wstring, wstring>>
 {
 public:
 	using Base::ParseText;
@@ -73,12 +73,12 @@ public:
 	using Base::GetFilePath;
 	void ChgText(wstring& chgText) const;
 private:
-	bool ParseLine(LPCWSTR parseLine, pair<wstring, wstring>& item);
+	void ParseLine(LPCWSTR parseLine);
 };
 
 //録画済み情報ファイル「RecInfo.txt」の読み込みと保存処理を行う
 //キーはREC_FILE_INFO_BASIC::id(非0,永続的)
-class CParseRecInfoText : CParseText<DWORD, REC_FILE_INFO_BASIC>
+class CParseRecInfoText : CParseText<map<DWORD, REC_FILE_INFO_BASIC>>
 {
 public:
 	CParseRecInfoText() : nextID(1), saveNextID(1), keepCount(UINT_MAX), recInfoDelFile(false), customizeDelExt(false) {}
@@ -104,8 +104,8 @@ public:
 	//補足の録画情報を取得する
 	static wstring GetExtraInfo(LPCWSTR recFilePath, LPCWSTR extension, const wstring& resultOfGetRecInfoFolder, bool recInfoFolderOnly);
 private:
-	bool ParseLine(LPCWSTR parseLine, pair<DWORD, REC_FILE_INFO_BASIC>& item);
-	bool SaveLine(const pair<DWORD, REC_FILE_INFO_BASIC>& item, wstring& saveLine) const;
+	void ParseLine(LPCWSTR parseLine);
+	bool SaveLine(map<DWORD, REC_FILE_INFO_BASIC>::const_reference item, wstring& saveLine) const;
 	bool SaveFooterLine(wstring& saveLine) const;
 	bool SelectItemToSave(vector<map<DWORD, REC_FILE_INFO_BASIC>::const_iterator>& itemList) const;
 	//情報が削除される直前の補足作業
@@ -130,8 +130,8 @@ struct PARSE_REC_INFO2_ITEM
 };
 
 //録画済みイベント情報ファイル「RecInfo2.txt」の読み込みと保存処理を行う
-//キーは読み込み順番号
-class CParseRecInfo2Text : CParseText<DWORD, PARSE_REC_INFO2_ITEM>
+//キーは読み込み順番号。追記のみなので GetMap().at({キー}-1) でアイテムにアクセスできる
+class CParseRecInfo2Text : CParseText<vector<pair<DWORD, PARSE_REC_INFO2_ITEM>>>
 {
 public:
 	CParseRecInfo2Text() : keepCount(UINT_MAX) {}
@@ -142,15 +142,15 @@ public:
 	DWORD Add(const PARSE_REC_INFO2_ITEM& item);
 	void SetKeepCount(DWORD n = UINT_MAX) { this->keepCount = n; }
 private:
-	bool ParseLine(LPCWSTR parseLine, pair<DWORD, PARSE_REC_INFO2_ITEM>& item);
+	void ParseLine(LPCWSTR parseLine);
 	bool SaveLine(const pair<DWORD, PARSE_REC_INFO2_ITEM>& item, wstring& saveLine) const;
-	bool SelectItemToSave(vector<map<DWORD, PARSE_REC_INFO2_ITEM>::const_iterator>& itemList) const;
+	bool SelectItemToSave(vector<vector<pair<DWORD, PARSE_REC_INFO2_ITEM>>::const_iterator>& itemList) const;
 	DWORD keepCount;
 };
 
 //予約情報ファイル「Reserve.txt」の読み込みと保存処理を行う
 //キーはreserveID(非0,永続的)
-class CParseReserveText : CParseText<DWORD, RESERVE_DATA>
+class CParseReserveText : CParseText<map<DWORD, RESERVE_DATA>>
 {
 public:
 	CParseReserveText() : nextID(1), saveNextID(1) {}
@@ -175,8 +175,8 @@ public:
 	//ONID<<48|TSID<<32|SID<<16|EID,予約IDでソートされた予約一覧を取得する。戻り値は次の非const操作まで有効
 	const vector<pair<ULONGLONG, DWORD>>& GetSortByEventList() const;
 private:
-	bool ParseLine(LPCWSTR parseLine, pair<DWORD, RESERVE_DATA>& item);
-	bool SaveLine(const pair<DWORD, RESERVE_DATA>& item, wstring& saveLine) const;
+	void ParseLine(LPCWSTR parseLine);
+	bool SaveLine(map<DWORD, RESERVE_DATA>::const_reference item, wstring& saveLine) const;
 	bool SaveFooterLine(wstring& saveLine) const;
 	bool SelectItemToSave(vector<map<DWORD, RESERVE_DATA>::const_iterator>& itemList) const;
 	DWORD nextID;
@@ -186,7 +186,7 @@ private:
 
 //予約情報ファイル「EpgAutoAdd.txt」の読み込みと保存処理を行う
 //キーはdataID(非0,永続的)
-class CParseEpgAutoAddText : CParseText<DWORD, EPG_AUTO_ADD_DATA>
+class CParseEpgAutoAddText : CParseText<map<DWORD, EPG_AUTO_ADD_DATA>>
 {
 public:
 	CParseEpgAutoAddText() : nextID(1), saveNextID(1) {}
@@ -200,8 +200,8 @@ public:
 	bool SetAddCount(DWORD id, DWORD addCount);
 	bool DelData(DWORD id);
 private:
-	bool ParseLine(LPCWSTR parseLine, pair<DWORD, EPG_AUTO_ADD_DATA>& item);
-	bool SaveLine(const pair<DWORD, EPG_AUTO_ADD_DATA>& item, wstring& saveLine) const;
+	void ParseLine(LPCWSTR parseLine);
+	bool SaveLine(map<DWORD, EPG_AUTO_ADD_DATA>::const_reference item, wstring& saveLine) const;
 	bool SaveFooterLine(wstring& saveLine) const;
 	bool SelectItemToSave(vector<map<DWORD, EPG_AUTO_ADD_DATA>::const_iterator>& itemList) const;
 	DWORD nextID;
@@ -210,7 +210,7 @@ private:
 
 //予約情報ファイル「ManualAutoAdd.txt」の読み込みと保存処理を行う
 //キーはdataID(非0,永続的)
-class CParseManualAutoAddText : CParseText<DWORD, MANUAL_AUTO_ADD_DATA>
+class CParseManualAutoAddText : CParseText<map<DWORD, MANUAL_AUTO_ADD_DATA>>
 {
 public:
 	CParseManualAutoAddText() : nextID(1), saveNextID(1) {}
@@ -222,8 +222,8 @@ public:
 	bool ChgData(const MANUAL_AUTO_ADD_DATA& item);
 	bool DelData(DWORD id);
 private:
-	bool ParseLine(LPCWSTR parseLine, pair<DWORD, MANUAL_AUTO_ADD_DATA>& item);
-	bool SaveLine(const pair<DWORD, MANUAL_AUTO_ADD_DATA>& item, wstring& saveLine) const;
+	void ParseLine(LPCWSTR parseLine);
+	bool SaveLine(map<DWORD, MANUAL_AUTO_ADD_DATA>::const_reference item, wstring& saveLine) const;
 	bool SaveFooterLine(wstring& saveLine) const;
 	bool SelectItemToSave(vector<map<DWORD, MANUAL_AUTO_ADD_DATA>::const_iterator>& itemList) const;
 	DWORD nextID;

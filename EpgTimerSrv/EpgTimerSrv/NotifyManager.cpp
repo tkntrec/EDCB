@@ -40,7 +40,7 @@ void CNotifyManager::RegistTCP(LPCWSTR ip, DWORD port)
 	lock_recursive_mutex lock(this->managerLock);
 
 	UnRegistTCP(ip, port);
-	this->registTCPList.push_back(std::make_pair(wstring(ip), port));
+	this->registTCPList.emplace_back(ip, port);
 	SetNotifySrvStatus(0xFFFFFFFF);
 }
 

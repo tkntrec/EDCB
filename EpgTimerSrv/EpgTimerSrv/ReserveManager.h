@@ -196,6 +196,8 @@ private:
 	int epgCapBasicOnlyFlags;
 	int shutdownModePending;
 	bool reserveModified;
+	mutable vector<pair<wstring, DWORD>> recInfo2SearchCache;
+	mutable LONGLONG recInfo2SearchStartTime;
 
 	CAutoResetEvent watchdogStopEvent;
 	thread_ watchdogThread;

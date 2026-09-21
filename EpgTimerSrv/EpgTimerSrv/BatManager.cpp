@@ -192,9 +192,8 @@ void CBatManager::BatWorkThread(CBatManager* sys)
 					if( exDirect == false && sys->notifyManager.IsGUI() == false ){
 						//表示できないのでGUI経由で起動してみる
 						CSendCtrlCmd ctrlCmd;
-						vector<DWORD> registGUI = sys->notifyManager.GetRegistGUI();
-						for( size_t i = 0; i < registGUI.size(); i++ ){
-							ctrlCmd.SetPipeSetting(CMD2_GUI_CTRL_PIPE, registGUI[i]);
+						for( DWORD guiProcessID : sys->notifyManager.GetRegistGUI() ){
+							ctrlCmd.SetPipeSetting(CMD2_GUI_CTRL_PIPE, guiProcessID);
 							DWORD pid;
 							if( ctrlCmd.SendGUIExecute(L'"' + work.batFilePath + L'"', &pid) == CMD_SUCCESS ){
 								//ハンドル開く前に終了するかもしれない
@@ -233,10 +232,11 @@ void CBatManager::BatWorkThread(CBatManager* sys)
 								exePath = szComSpec;
 							}
 						}
-						vector<WCHAR> strBuff(strParam.c_str(), strParam.c_str() + strParam.size() + 1);
+						//CreateProcess()のlpCommandLineはconstでないため
+						strParam += L'\0';
 						//ここで短絡評価するとC4701(piが未初期化)になる。おそらく偽陽性
 						if( exePath.empty() == false ){
-							if( CreateProcess(exePath.c_str(), strBuff.data(), NULL, NULL, FALSE,
+							if( CreateProcess(exePath.c_str(), &strParam.front(), NULL, NULL, FALSE,
 							                  BELOW_NORMAL_PRIORITY_CLASS | (exDirect ? CREATE_UNICODE_ENVIRONMENT : 0),
 							                  exDirect ? const_cast<LPWSTR>(CreateEnvironment(work).c_str()) : NULL,
 							                  exDirect ? fs_path(work.batFilePath).parent_path().c_str() : NULL, &si, &pi) ){
@@ -268,7 +268,7 @@ void CBatManager::BatWorkThread(CBatManager* sys)
 						//シグナルマスクを初期化
 						sigset_t sset;
 						sigemptyset(&sset);
-						if( sigprocmask(SIG_SETMASK, &sset, NULL) == 0 && chdir(execDir.c_str()) == 0 ){
+						if( pthread_sigmask(SIG_SETMASK, &sset, NULL) == 0 && chdir(execDir.c_str()) == 0 ){
 							for( size_t i = 0; i < macroValList.size(); i++ ){
 								setenv(work.macroList[i].first.c_str(), macroValList[i].c_str(), 0);
 							}

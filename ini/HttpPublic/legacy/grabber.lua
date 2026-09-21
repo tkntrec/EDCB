@@ -5,8 +5,8 @@ fpath=mg.get_var(mg.request_info.query_string,'fname')
 if fpath then
   fpath=DocumentToNativePath(fpath)
 end
-offset=GetVarInt(mg.request_info.query_string,'offset',0,100) or 0
-ofssec=GetVarInt(mg.request_info.query_string,'ofssec',0,100000)
+offset=GetVarInt(mg.request_info.query_string,'offset',-100000,100) or 0
+ofssec=GetVarInt(mg.request_info.query_string,'ofssec',0,100000) or offset<0 and -offset
 
 stream=nil
 if fpath then

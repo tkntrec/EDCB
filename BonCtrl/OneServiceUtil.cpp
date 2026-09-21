@@ -123,30 +123,30 @@ void COneServiceUtil::AddTSBuff(
 			this->serviceFilter.FilterPacket(this->buff, data + i, packet);
 			if( this->serviceFilter.CatOrPmtUpdated() ){
 				//各PIDに名前をつける
-				for( auto itr = this->serviceFilter.CatUtil().GetPIDList().cbegin(); itr != this->serviceFilter.CatUtil().GetPIDList().end(); itr++ ){
-					this->dropCount.SetPIDName(*itr, L"EMM");
+				for( WORD pid : this->serviceFilter.CatUtil().GetPIDList() ){
+					this->dropCount.SetPIDName(pid, L"EMM");
 				}
-				for( auto itr = this->serviceFilter.PmtUtilMap().cbegin(); itr != this->serviceFilter.PmtUtilMap().end(); itr++ ){
-					WORD programNumber = itr->second.GetProgramNumber();
+				for( const auto& pmtUtil : this->serviceFilter.PmtUtilMap() ){
+					WORD programNumber = pmtUtil.second.GetProgramNumber();
 					if( programNumber != 0 ){
-						this->dropCount.SetPIDName(itr->second.GetPcrPID(), L"PCR");
+						this->dropCount.SetPIDName(pmtUtil.second.GetPcrPID(), L"PCR");
 						wstring name;
-						for( auto itrPID = itr->second.GetPIDTypeList().cbegin(); itrPID != itr->second.GetPIDTypeList().end(); itrPID++ ){
-							name = itrPID->second == 0x00 ? L"ECM" :
-							       itrPID->second == 0x02 ? L"MPEG2 VIDEO" :
-							       itrPID->second == 0x0F ? L"MPEG2 AAC" :
-							       itrPID->second == 0x1B ? L"MPEG4 VIDEO" :
-							       itrPID->second == 0x04 ? L"MPEG2 AUDIO" :
-							       itrPID->second == 0x24 ? L"HEVC VIDEO" :
-							       itrPID->second == 0x06 ? L"字幕" :
-							       itrPID->second == 0x0D ? L"データカルーセル" : L"";
+						for( pair<WORD, BYTE> pidType : pmtUtil.second.GetPIDTypeList() ){
+							name = pidType.second == 0x00 ? L"ECM" :
+							       pidType.second == 0x02 ? L"MPEG2 VIDEO" :
+							       pidType.second == 0x0F ? L"MPEG2 AAC" :
+							       pidType.second == 0x1B ? L"MPEG4 VIDEO" :
+							       pidType.second == 0x04 ? L"MPEG2 AUDIO" :
+							       pidType.second == 0x24 ? L"HEVC VIDEO" :
+							       pidType.second == 0x06 ? L"字幕" :
+							       pidType.second == 0x0D ? L"データカルーセル" : L"";
 							if( name.empty() ){
-								Format(name, L"stream_type 0x%0X", itrPID->second);
+								Format(name, L"stream_type 0x%0X", pidType.second);
 							}
-							this->dropCount.SetPIDName(itrPID->first, name);
+							this->dropCount.SetPIDName(pidType.first, name);
 						}
 						Format(name, L"PMT(ServiceID 0x%04X)", programNumber);
-						this->dropCount.SetPIDName(itr->first, name);
+						this->dropCount.SetPIDName(pmtUtil.first, name);
 					}
 				}
 			}
@@ -164,10 +164,10 @@ void COneServiceUtil::AddTSBuff(
 
 	if( this->pittariState == PITTARI_START ){
 		WORD pmtVersion = 0xFFFF;
-		for( auto itr = this->serviceFilter.PmtUtilMap().cbegin(); itr != this->serviceFilter.PmtUtilMap().end(); itr++ ){
-			WORD programNumber = itr->second.GetProgramNumber();
+		for( const auto& pmtUtil : this->serviceFilter.PmtUtilMap() ){
+			WORD programNumber = pmtUtil.second.GetProgramNumber();
 			if( programNumber != 0 && programNumber == this->pittariRecParam.pittariSID ){
-				pmtVersion = itr->second.GetVersion();
+				pmtVersion = pmtUtil.second.GetVersion();
 				break;
 			}
 		}

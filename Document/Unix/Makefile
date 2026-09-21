@@ -17,21 +17,32 @@ install_u: install_tools $(subst EpgDataCap3.install, EpgDataCap3.install_u, $(a
 	$(MAKE) -C ../../$*/$* install
 %.install_u:
 	$(MAKE) -C ../../$*/$* install_u
-asyncbuf: ../../ini/Tools/asyncbuf.c
+asyncbuf: ../../Tools/asyncbuf.c
 	$(CC) -Wl,-s -Os -o $@ $< -pthread
-relayread: ../../ini/Tools/relayread.c
+relayread: ../../Tools/relayread.c
 	$(CC) -Wl,-s -Os -o $@ $<
 tsidmove-edcb: ../../Common/ParseTextInstances.cpp \
                ../../Common/PathUtil.cpp \
                ../../Common/StringUtil.cpp \
                ../../Common/TimeUtil.cpp \
-               ../../ini/Tools/tsidmove/tsidmove.cpp
-	$(CXX) -Wl,-s -I../../ini/Tools/tsidmove -std=c++17 -pedantic-errors -Os -o $@ $+
-tools: asyncbuf relayread tsidmove-edcb
+               ../../Tools/tsidmove/tsidmove.cpp
+	$(CXX) -Wl,-s -I../../Tools/tsidmove -std=c++17 -pedantic-errors -Os -o $@ $+
+tspgtxt: ../../BonCtrl/PacketInit.cpp \
+         ../../BonCtrl/PATUtil.cpp \
+         ../../Common/EpgDataCap3Util.cpp \
+         ../../Common/EpgTimerUtil.cpp \
+         ../../Common/PathUtil.cpp \
+         ../../Common/StringUtil.cpp \
+         ../../Common/TimeUtil.cpp \
+         ../../Common/TSBuffUtil.cpp \
+         ../../Common/TSPacketUtil.cpp \
+         ../../Tools/tspgtxt/tspgtxt.cpp
+	$(CXX) -Wl,-s -I../../Tools/tspgtxt -std=c++17 -pedantic-errors -Os -o $@ $+
+tools: asyncbuf relayread tsidmove-edcb tspgtxt
 clean_tools:
-	$(RM) asyncbuf relayread tsidmove-edcb
+	$(RM) asyncbuf relayread tsidmove-edcb tspgtxt
 install_tools: tools
-	install asyncbuf relayread tsidmove-edcb /usr/local/bin
+	install asyncbuf relayread tsidmove-edcb tspgtxt /usr/local/bin
 
 b24tovtt.tar.gz:
 	curl -Lo $@ https://github.com/xtne6f/b24tovtt/archive/refs/tags/master-220402.tar.gz
@@ -40,14 +51,14 @@ psisiarc.tar.gz:
 	curl -Lo $@ https://github.com/xtne6f/psisiarc/archive/refs/tags/master-230324.tar.gz
 	sha256sum $@ | grep -q 54d1ab482dc0d1caed80db7858e5c4616f74986f527aabb69d443ec045ad2a02 || $(RM) $@; [ -f $@ ]
 psisimux.tar.gz:
-	curl -Lo $@ https://github.com/xtne6f/psisimux/archive/refs/tags/master-240131.tar.gz
-	sha256sum $@ | grep -q cf93b8048841ccb7df9b9d2592f5e115bd2b5eed824ddf92103b1f325bf004cc || $(RM) $@; [ -f $@ ]
+	curl -Lo $@ https://github.com/xtne6f/psisimux/archive/refs/tags/master-260422.tar.gz
+	sha256sum $@ | grep -q cc6996370123042ba6a1757d912a52de0cd97b3645fa32b5799f112365fa7b25 || $(RM) $@; [ -f $@ ]
 tsmemseg.tar.gz:
-	curl -Lo $@ https://github.com/xtne6f/tsmemseg/archive/refs/tags/master-with-d-240608.tar.gz
-	sha256sum $@ | grep -q 99bccc04636b0a7de835666a1e7365b48072d0874a489e138ae76589a8661f3a || $(RM) $@; [ -f $@ ]
+	curl -Lo $@ https://github.com/xtne6f/tsmemseg/archive/refs/tags/master-with-d-260611.tar.gz
+	sha256sum $@ | grep -q b0fff07fc7858aafdeac249ef628769feaffd73c3d8f4ba1d2a1996d52bf2dd2 || $(RM) $@; [ -f $@ ]
 tsreadex.tar.gz:
-	curl -Lo $@ https://github.com/xtne6f/tsreadex/archive/refs/tags/master-240517.tar.gz
-	sha256sum $@ | grep -q 1ec21917aa9c1f363d50469d54cef2c121c5086f1bb4eb27efa5297fe1139c44 || $(RM) $@; [ -f $@ ]
+	curl -Lo $@ https://github.com/xtne6f/tsreadex/archive/refs/tags/master-260428.tar.gz
+	sha256sum $@ | grep -q a60fb7aa220b4dff15b384ca28e76181de59148e8be487a728a39165dee50520 || $(RM) $@; [ -f $@ ]
 b24tovtt psisiarc psisimux tsmemseg tsreadex: b24tovtt.tar.gz psisiarc.tar.gz psisimux.tar.gz tsmemseg.tar.gz tsreadex.tar.gz
 	$(RM) -r $@-*
 	tar xf $@.tar.gz
