@@ -120,12 +120,13 @@
                     </Grid.ColumnDefinitions>
                     <DockPanel Grid.ColumnSpan="3" >
                         <Label Content="表示サービス"/>
-                        <CheckBox Margin="12,0,0,0" Content="同一TSIDでSIDを逆順にすると結合"  IsChecked="{Binding CombineProgramByReverseSID}" ToolTip="複数のサービスをサブチャンネルとして1サービスの幅で表示出来ます。&#10;ただし、CSでは同一TSIDに複数のサービスが存在するため、&#10;意図せず結合されてしまうことがあるので注意してください。&#10;(その場合は並び順を適当に調整する)&#10;なお、リストボックスでは並び変え補助の右クリックメニューが使用出来ます。"/>
+                        <CheckBox Margin="12,0,0,0" Content="同一TSIDでSIDを逆順にすると結合" Name="chkBox_CombineProgram" IsChecked="{Binding CombineProgramByReverseSID}" ToolTip="複数のサービスをサブチャンネルとして1サービスの幅で表示出来ます。&#10;ただし、CSでは同一TSIDに複数のサービスが存在するため、&#10;意図せず結合されてしまうことがあるので注意してください。&#10;(その場合は並び順を適当に調整する)&#10;なお、リストボックスでは並び変え補助の右クリックメニューが使用出来ます。"/>
                     </DockPanel>
                     <my:ListSearchView x:Name="searchService" Grid.Row="2" TargetListBox="{Binding ElementName=listBox_serviceView}" />
                     <ListView Grid.Row="4" Name="listBox_serviceView" VerticalAlignment="Stretch" SelectionChanged="listBox_serviceView_SelectionChanged" >
                         <ListView.View>
                             <GridView>
+                                <GridViewColumn Header="" DisplayMemberBinding="{Binding CombineMark}" Width="25" />
                                 <GridViewColumn Header="ネット" DisplayMemberBinding="{Binding NetworkName}" />
                                 <GridViewColumn Header="サービス名" DisplayMemberBinding="{Binding ServiceName}" />
                                 <GridViewColumn Header="映像" DisplayMemberBinding="{Binding IsVideo}" />

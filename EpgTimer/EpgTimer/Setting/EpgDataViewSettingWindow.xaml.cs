@@ -81,6 +81,7 @@ namespace EpgTimer
 
             listBox_serviceView.Items.AddItems(setInfo.ViewServiceList.Select(id => new ServiceViewItem(id)));
             listBox_jyanruView.Items.AddItems(setInfo.ViewContentList.Select(data => CommonManager.ContentKindInfoForDisplay(data)));
+            UpdateServiceViewItemMarks();
         }
         /// <summary>設定値の取得</summary>
         public CustomEpgTabInfo GetSetting()
@@ -132,6 +133,10 @@ namespace EpgTimer
         {
             bxs = new BoxExchangeEditor(null, this.listBox_serviceView, true, true, true, true);
             bxs.ItemComparer = ServiceViewItem.Comparator;
+            bxs.ItemsChanged += UpdateServiceViewItemMarks;
+
+            chkBox_CombineProgram.Checked += (sender, e) => UpdateServiceViewItemMarks();
+            chkBox_CombineProgram.Unchecked += (sender, e) => UpdateServiceViewItemMarks();
 
             //サービス選択関係はソースの ListView が複数あるので、全ての ListViewItem にイベントを追加する。
             foreach (TabItem tab in tab_ServiceList.Items)
@@ -313,6 +318,34 @@ namespace EpgTimer
 
             //選択状態を復元
             listKeeper.RestoreListViewSelected();
+
+            //連結表示を更新
+            UpdateServiceViewItemMarks();
+        }
+
+        private void UpdateServiceViewItemMarks()
+        {
+            foreach (ServiceViewItem item in listBox_serviceView.Items) item.CombineMark = "";
+
+            if (info.CombineProgramByReverseSID)
+            {
+                var pMark = false;
+                for (int idx = 0; idx < listBox_serviceView.Items.Count - 1; idx++)
+                {
+                    // 同一TSIDが連続する部分を選択中の中から探す
+                    var a = listBox_serviceView.Items[idx] as ServiceViewItem;
+                    var b = listBox_serviceView.Items[idx + 1] as ServiceViewItem;
+                    var isMark = a.ServiceInfo.ONID == b.ServiceInfo.ONID && a.ServiceInfo.TSID == b.ServiceInfo.TSID && a.ServiceInfo.SID > b.ServiceInfo.SID;
+                    if (isMark)
+                    {
+                        a.CombineMark = pMark ? "│" : "┌";
+                        b.CombineMark = "└";
+                    }
+                    pMark = isMark;
+                }
+            }
+
+            listBox_serviceView.Items.Refresh();
         }
 
         private void Display_ServiceView(ListBox srclistBox, TextBox targetBox)

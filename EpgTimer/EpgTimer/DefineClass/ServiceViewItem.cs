@@ -35,6 +35,7 @@ namespace EpgTimer
         {
             get { return ServiceInfo.PartialFlag == true ? "○" : ""; }
         }
+        public string CombineMark { get; set; }
         public TextBlock ToolTipView
         {
             get

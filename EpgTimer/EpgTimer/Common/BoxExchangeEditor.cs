@@ -13,6 +13,8 @@ namespace EpgTimer.BoxExchangeEdit
 
     class BoxExchangeEditor
     {
+        public event Action ItemsChanged;
+
         //ListBox同士でアイテムを交換する。
         //・ItemsSource使用中のTargetBoxでもItemsSourceがIListなら動かせるが、ItemsSourceのメリットは全く享受出来ない。
         //・重複処理が必要な場合はそれなりに準備が必要。文字列の重複処理がうまく出来ないのはListBoxと同様。
@@ -387,6 +389,7 @@ namespace EpgTimer.BoxExchangeEdit
 
         private void TargetBoxItemsRefresh(ListBox box)
         {
+            if (ItemsChanged != null) ItemsChanged();
             if (back_font != null || box.ItemsSource is IList)
             {
                 box.Items.Refresh();
