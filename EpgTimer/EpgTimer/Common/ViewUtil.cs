@@ -273,8 +273,9 @@ namespace EpgTimer
         //リストボックスの巡回移動
         public static int GetNextIdx(int oldIdx, int nowIdx, int count, int direction)
         {
-            if (oldIdx >= count) oldIdx = count - (direction >= 0 ? 1 : 0);
-            if (nowIdx >= count) nowIdx = count - (direction >= 0 ? 1 : 0);
+            if (oldIdx >= 0 && nowIdx == -1 && direction == 1) direction = 0;//表示アイテムが削除された後に移動する場合の調整
+            if (oldIdx >= count) oldIdx = count - (direction > 0 ? 1 : 0);
+            if (nowIdx >= count) nowIdx = count - (direction > 0 ? 1 : 0);
             oldIdx = (oldIdx == -1 || nowIdx != -1) ? nowIdx : oldIdx;
             return oldIdx == -1 ? (direction >= 0 ? 0 : count - 1) : ((oldIdx + direction) % count + count) % count;
         }
