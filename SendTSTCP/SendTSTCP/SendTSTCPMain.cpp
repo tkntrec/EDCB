@@ -270,7 +270,7 @@ DWORD CSendTSTCPMain::AddSendData(
 				//大きすぎるときは均等に分ける
 				DWORD divCount = (dwSize + SEND_TS_TCP_BUFF_ITEM_SIZE_MAX - 1) / SEND_TS_TCP_BUFF_ITEM_SIZE_MAX;
 				DWORD itemSize = min((dwSize + 187) / divCount * 188, dwSize);
-				m_TSBuff.push_back(vector<BYTE>());
+				m_TSBuff.emplace_back();
 				m_TSBuff.back().reserve(sizeof(DWORD) * 2 + itemSize);
 				m_TSBuff.back().resize(sizeof(DWORD) * 2);
 				m_TSBuff.back().insert(m_TSBuff.back().end(), pbData, pbData + itemSize);
@@ -695,7 +695,7 @@ void CSendTSTCPMain::SendThread(CSendTSTCPMain* pSys)
 									}
 								}
 								//待機
-								pfdList.resize(pfdList.size() + 1);
+								pfdList.emplace_back();
 								pfdList.back().fd = itr->pipe[i];
 								pfdList.back().events = POLLOUT;
 								if( itr->writeAheadCount[i] == 0 ){
@@ -835,8 +835,16 @@ void CSendTSTCPMain::SendThread(CSendTSTCPMain* pSys)
 			}
 #else
 			if( itr->strPipe[i].empty() == false ){
-				remove(itr->strPipe[i].c_str());
-				itr->strPipe[i].clear();
+				string strPipe;
+				itr->strPipe[i].swap(strPipe);
+				if( itr->pipe[i] < 0 ){
+					//確実に切断させるため拡張子の末尾を"_"にリネームして接続できないようにしてから開いてみる
+					if( rename(strPipe.c_str(), string(strPipe).replace(strPipe.size() - 1, 1, "_").c_str()) == 0 ){
+						strPipe.back() = '_';
+					}
+					itr->pipe[i] = open(strPipe.c_str(), O_WRONLY | O_NONBLOCK | O_CLOEXEC);
+				}
+				remove(strPipe.c_str());
 			}
 			if( itr->pipe[i] >= 0 ){
 				close(itr->pipe[i]);

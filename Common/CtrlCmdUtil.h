@@ -263,7 +263,7 @@ bool CCUTIL_ReadVectorVALUE_( WORD ver, const BYTE** buff, const BYTE* buffEnd, 
 	val->reserve(val->size() + valCount);
 
 	for( DWORD i=0; i < valCount; i++ ){
-		val->resize(val->size() + 1);
+		val->emplace_back();
 		if( !ReadVALUE(ver, &rb, buffEnd, &val->back()) ){
 			val->pop_back();
 			return false;

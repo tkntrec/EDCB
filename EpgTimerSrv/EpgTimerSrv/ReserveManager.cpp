@@ -13,6 +13,7 @@ CReserveManager::CReserveManager(CNotifyManager& notifyManager_, CEpgDBManager& 
 	, epgCapWork(false)
 	, shutdownModePending(-1)
 	, reserveModified(false)
+	, recInfo2SearchStartTime(LLONG_MAX)
 {
 }
 
@@ -42,8 +43,8 @@ void CReserveManager::Initialize(const CEpgTimerSrvSetting::SETTING& s)
 				CParseChText4 chText4;
 				chText4.ParseText(fs_path(settingPath).append(nameList[i].second).c_str());
 				for( WORD j = 0; j < count; j++, tunerID++ ){
-					this->tunerBankMap.insert(std::make_pair(tunerID, std::unique_ptr<CTunerBankCtrl>(new CTunerBankCtrl(
-						tunerID, nameList[i].first.c_str(), min(epgCount, count), chText4.GetMap(), this->notifyManager, this->epgDBManager))));
+					this->tunerBankMap.emplace(tunerID, std::unique_ptr<CTunerBankCtrl>(new CTunerBankCtrl(
+						tunerID, nameList[i].first.c_str(), min(epgCount, count), chText4.GetMap(), this->notifyManager, this->epgDBManager)));
 				}
 			}
 		}
@@ -109,9 +110,11 @@ void CReserveManager::ReloadSetting(const CEpgTimerSrvSetting::SETTING& s)
 	this->recInfoText.SetCustomDelExt(s.delExtList);
 
 	this->recInfo2Text.SetKeepCount(s.recInfo2Max);
+	//検索用リストを再構築するため
+	this->recInfo2SearchStartTime = LLONG_MAX;
 
-	for( auto itr = this->tunerBankMap.cbegin(); itr != this->tunerBankMap.end(); itr++ ){
-		itr->second->ReloadSetting(s);
+	for( const auto& tunerBank : this->tunerBankMap ){
+		tunerBank.second->ReloadSetting(s);
 	}
 	ReloadBankMap();
 }
@@ -123,9 +126,9 @@ vector<RESERVE_DATA> CReserveManager::GetReserveDataAll(bool getRecFileName) con
 	vector<RESERVE_DATA> list;
 	list.reserve(this->reserveText.GetMap().size());
 	CReNamePlugInUtil utilCache;
-	for( map<DWORD, RESERVE_DATA>::const_iterator itr = this->reserveText.GetMap().begin(); itr != this->reserveText.GetMap().end(); itr++ ){
-		list.resize(list.size() + 1);
-		GetReserveData(itr->first, &list.back(), getRecFileName, &utilCache);
+	for( const auto& item : this->reserveText.GetMap() ){
+		list.emplace_back();
+		GetReserveData(item.first, &list.back(), getRecFileName, &utilCache);
 	}
 	return list;
 }
@@ -136,13 +139,13 @@ vector<TUNER_RESERVE_INFO> CReserveManager::GetTunerReserveAll() const
 
 	vector<TUNER_RESERVE_INFO> list;
 	list.reserve(this->tunerBankMap.size() + 1);
-	for( auto itr = this->tunerBankMap.cbegin(); itr != this->tunerBankMap.end(); itr++ ){
-		list.resize(list.size() + 1);
-		list.back().tunerID = itr->first;
-		list.back().tunerName = itr->second->GetBonFileName();
-		list.back().reserveList = itr->second->GetReserveIDList();
+	for( const auto& tunerBank : this->tunerBankMap ){
+		list.emplace_back();
+		list.back().tunerID = tunerBank.first;
+		list.back().tunerName = tunerBank.second->GetBonFileName();
+		list.back().reserveList = tunerBank.second->GetReserveIDList();
 	}
-	list.resize(list.size() + 1);
+	list.emplace_back();
 	list.back().tunerID = 0xFFFFFFFF;
 	list.back().tunerName = L"チューナー不足";
 	vector<DWORD> &ngList = list.back().reserveList = GetNoTunerReserveAll();
@@ -162,9 +165,9 @@ vector<TUNER_PROCESS_STATUS_INFO> CReserveManager::GetTunerProcessStatusAll() co
 	lock_recursive_mutex lock(this->managerLock);
 
 	vector<TUNER_PROCESS_STATUS_INFO> list;
-	for( auto itr = this->tunerBankMap.cbegin(); itr != this->tunerBankMap.end(); itr++ ){
-		if( itr->second->GetState() != CTunerBankCtrl::TR_IDLE ){
-			list.push_back(itr->second->GetProcessStatusInfo());
+	for( const auto& tunerBank : this->tunerBankMap ){
+		if( tunerBank.second->GetState() != CTunerBankCtrl::TR_IDLE ){
+			list.push_back(tunerBank.second->GetProcessStatusInfo());
 		}
 	}
 	return list;
@@ -176,12 +179,12 @@ vector<DWORD> CReserveManager::GetNoTunerReserveAll() const
 
 	vector<DWORD> list;
 	list.reserve(this->reserveText.GetMap().size());
-	for( map<DWORD, RESERVE_DATA>::const_iterator itr = this->reserveText.GetMap().begin(); itr != this->reserveText.GetMap().end(); itr++ ){
-		list.push_back(itr->first);
+	for( const auto& item : this->reserveText.GetMap() ){
+		list.push_back(item.first);
 	}
 	//全予約からバンクに存在する予約を引く
-	for( auto itr = this->tunerBankMap.cbegin(); itr != this->tunerBankMap.end(); itr++ ){
-		vector<DWORD> diffList = itr->second->GetReserveIDList();
+	for( const auto& tunerBank : this->tunerBankMap ){
+		vector<DWORD> diffList = tunerBank.second->GetReserveIDList();
 		size_t k = 0;
 		for( size_t i = 0, j = 0; i < list.size(); ){
 			if( j >= diffList.size() || list[i] < diffList[j] ){
@@ -259,7 +262,7 @@ bool CReserveManager::AddReserveData(const vector<RESERVE_DATA>& reserveList, bo
 				LONGLONG startTime;
 				CalcEntireReserveTime(&startTime, NULL, r);
 				minStartTime = min(startTime, minStartTime);
-				batWorkList.resize(batWorkList.size() + 1);
+				batWorkList.emplace_back();
 				AddReserveDataMacro(batWorkList.back().macroList, r, "");
 			}
 		}
@@ -301,8 +304,8 @@ bool CReserveManager::ChgReserveData(const vector<RESERVE_DATA>& reserveList, bo
 			if( r.recSetting.IsNoRec() ){
 				if( itr->second.recSetting.IsNoRec() == false ){
 					//バンクから削除
-					for( auto jtr = this->tunerBankMap.cbegin(); jtr != this->tunerBankMap.end(); jtr++ ){
-						if( jtr->second->DelReserve(r.reserveID) ){
+					for( const auto& tunerBank : this->tunerBankMap ){
+						if( tunerBank.second->DelReserve(r.reserveID) ){
 							break;
 						}
 					}
@@ -378,9 +381,9 @@ bool CReserveManager::ChgReserveData(const vector<RESERVE_DATA>& reserveList, bo
 				}
 				if( jtr == this->tunerBankMap.end() ){
 					//この予約は待機状態ではないので単純に削除と追加で更新できる
-					for( jtr = this->tunerBankMap.begin(); jtr != this->tunerBankMap.end(); jtr++ ){
-						if( jtr->second->DelReserve(tr.reserveID) ){
-							jtr->second->AddReserve(tr);
+					for( const auto& tunerBank : this->tunerBankMap ){
+						if( tunerBank.second->DelReserve(tr.reserveID) ){
+							tunerBank.second->AddReserve(tr);
 							break;
 						}
 					}
@@ -405,7 +408,7 @@ bool CReserveManager::ChgReserveData(const vector<RESERVE_DATA>& reserveList, bo
 					CalcEntireReserveTime(&startTimeNext, NULL, r);
 					minStartTime = min(min(startTime, startTimeNext), minStartTime);
 				}
-				batWorkList.resize(batWorkList.size() + 1);
+				batWorkList.emplace_back();
 				AddReserveDataMacro(batWorkList.back().macroList, itr->second, "OLD");
 				AddReserveDataMacro(batWorkList.back().macroList, r, "");
 			}
@@ -431,13 +434,13 @@ void CReserveManager::DelReserveData(const vector<DWORD>& idList)
 
 	vector<CTunerBankCtrl::CHECK_RESULT> retList;
 	LONGLONG minStartTime = LLONG_MAX;
-	for( size_t i = 0; i < idList.size(); i++ ){
-		map<DWORD, RESERVE_DATA>::const_iterator itr = this->reserveText.GetMap().find(idList[i]);
+	for( DWORD id : idList ){
+		map<DWORD, RESERVE_DATA>::const_iterator itr = this->reserveText.GetMap().find(id);
 		if( itr != this->reserveText.GetMap().end() ){
 			if( itr->second.recSetting.IsNoRec() == false ){
 				//バンクから削除
-				for( auto jtr = this->tunerBankMap.cbegin(); jtr != this->tunerBankMap.end(); jtr++ ){
-					if( jtr->second->DelReserve(idList[i], this->setting.delReserveMode == 0 ? NULL : &retList) ){
+				for( const auto& tunerBank : this->tunerBankMap ){
+					if( tunerBank.second->DelReserve(id, this->setting.delReserveMode == 0 ? NULL : &retList) ){
 						break;
 					}
 				}
@@ -455,8 +458,8 @@ void CReserveManager::DelReserveData(const vector<DWORD>& idList)
 	}
 	ProcessRecEnd(retList);
 	bool modified = false;
-	for( size_t i = 0; i < idList.size(); i++ ){
-		if( this->reserveText.DelReserve(idList[i]) ){
+	for( DWORD id : idList ){
+		if( this->reserveText.DelReserve(id) ){
 			this->reserveModified = true;
 			modified = true;
 		}
@@ -476,18 +479,18 @@ vector<REC_FILE_INFO> CReserveManager::GetRecFileInfoList(const vector<DWORD>* i
 	{
 		lock_recursive_mutex lock(this->managerLock);
 		if( idList ){
-			for( size_t i = 0; i < idList->size(); i++ ){
-				map<DWORD, REC_FILE_INFO_BASIC>::const_iterator itr = this->recInfoText.GetMap().find((*idList)[i]);
+			for( DWORD id : *idList ){
+				map<DWORD, REC_FILE_INFO_BASIC>::const_iterator itr = this->recInfoText.GetMap().find(id);
 				if( itr != this->recInfoText.GetMap().end() ){
-					infoList.resize(infoList.size() + 1);
+					infoList.emplace_back();
 					static_cast<REC_FILE_INFO_BASIC&>(infoList.back()) = itr->second;
 				}
 			}
 		}else{
 			infoList.reserve(this->recInfoText.GetMap().size());
-			for( map<DWORD, REC_FILE_INFO_BASIC>::const_iterator itr = this->recInfoText.GetMap().begin(); itr != this->recInfoText.GetMap().end(); itr++ ){
-				infoList.resize(infoList.size() + 1);
-				static_cast<REC_FILE_INFO_BASIC&>(infoList.back()) = itr->second;
+			for( const auto& item : this->recInfoText.GetMap() ){
+				infoList.emplace_back();
+				static_cast<REC_FILE_INFO_BASIC&>(infoList.back()) = item.second;
 			}
 		}
 		if( getExtraInfo ){
@@ -496,9 +499,9 @@ vector<REC_FILE_INFO> CReserveManager::GetRecFileInfoList(const vector<DWORD>* i
 		folderOnly = this->setting.recInfoFolderOnly;
 	}
 	if( getExtraInfo ){
-		for( size_t i = 0; i < infoList.size(); i++ ){
-			infoList[i].programInfo = CParseRecInfoText::GetExtraInfo(infoList[i].recFilePath.c_str(), L".program.txt", folder, folderOnly);
-			infoList[i].errInfo = CParseRecInfoText::GetExtraInfo(infoList[i].recFilePath.c_str(), L".err", folder, folderOnly);
+		for( REC_FILE_INFO& item : infoList ){
+			item.programInfo = CParseRecInfoText::GetExtraInfo(item.recFilePath.c_str(), L".program.txt", folder, folderOnly);
+			item.errInfo = CParseRecInfoText::GetExtraInfo(item.recFilePath.c_str(), L".err", folder, folderOnly);
 		}
 	}
 	return infoList;
@@ -533,8 +536,8 @@ void CReserveManager::DelRecFileInfo(const vector<DWORD>& idList)
 {
 	lock_recursive_mutex lock(this->managerLock);
 
-	for( size_t i = 0; i < idList.size(); i++ ){
-		this->recInfoText.DelRecInfo(idList[i]);
+	for( DWORD id : idList ){
+		this->recInfoText.DelRecInfo(id);
 	}
 	this->recInfoText.SaveText();
 	AddNotifyAndPostBat(NOTIFY_UPDATE_REC_INFO);
@@ -544,8 +547,8 @@ void CReserveManager::ChgPathRecFileInfo(const vector<REC_FILE_INFO>& infoList)
 {
 	lock_recursive_mutex lock(this->managerLock);
 
-	for( size_t i = 0; i < infoList.size(); i++ ){
-		this->recInfoText.ChgPathRecInfo(infoList[i].id, infoList[i].recFilePath.c_str());
+	for( const REC_FILE_INFO& item : infoList ){
+		this->recInfoText.ChgPathRecInfo(item.id, item.recFilePath.c_str());
 	}
 	this->recInfoText.SaveText();
 	AddNotifyAndPostBat(NOTIFY_UPDATE_REC_INFO);
@@ -555,8 +558,8 @@ void CReserveManager::ChgProtectRecFileInfo(const vector<REC_FILE_INFO>& infoLis
 {
 	lock_recursive_mutex lock(this->managerLock);
 
-	for( size_t i = 0; i < infoList.size(); i++ ){
-		this->recInfoText.ChgProtectRecInfo(infoList[i].id, infoList[i].protectFlag);
+	for( const REC_FILE_INFO& item : infoList ){
+		this->recInfoText.ChgProtectRecInfo(item.id, item.protectFlag);
 	}
 	this->recInfoText.SaveText();
 	AddNotifyAndPostBat(NOTIFY_UPDATE_REC_INFO);
@@ -576,13 +579,13 @@ void CReserveManager::ReloadBankMap(LONGLONG reloadTime)
 
 	//reloadTimeより前の予約を開始時間順にソート
 	vector<pair<LONGLONG, const RESERVE_DATA*>> sortTimeMap;
-	sortTimeMap.push_back(std::make_pair(reloadTime, (RESERVE_DATA*)NULL));
-	for( map<DWORD, RESERVE_DATA>::const_iterator itr = this->reserveText.GetMap().begin(); itr != this->reserveText.GetMap().end(); itr++ ){
-		if( itr->second.recSetting.IsNoRec() == false ){
+	sortTimeMap.emplace_back(reloadTime, (RESERVE_DATA*)NULL);
+	for( const auto& item : this->reserveText.GetMap() ){
+		if( item.second.recSetting.IsNoRec() == false ){
 			LONGLONG startTime;
-			CalcEntireReserveTime(&startTime, NULL, itr->second);
+			CalcEntireReserveTime(&startTime, NULL, item.second);
 			if( startTime < reloadTime ){
-				sortTimeMap.push_back(std::make_pair(startTime, &itr->second));
+				sortTimeMap.emplace_back(startTime, &item.second);
 			}
 		}
 	}
@@ -606,22 +609,22 @@ void CReserveManager::ReloadBankMap(LONGLONG reloadTime)
 
 	//開始済み予約リストとバンク決定した予約リストのマップ
 	vector<pair<DWORD, CHK_BANK_DATA>> bankResMap;
-	for( auto itr = this->tunerBankMap.cbegin(); itr != this->tunerBankMap.end(); itr++ ){
+	for( const auto& tunerBank : this->tunerBankMap ){
 		//待機状態に入っているもの以外クリア
-		itr->second->ClearNoCtrl(boundaryReloadTime);
-		bankResMap.push_back(std::make_pair(itr->first, CHK_BANK_DATA()));
-		bankResMap.back().second.startedResList = itr->second->GetReserveIDList();
+		tunerBank.second->ClearNoCtrl(boundaryReloadTime);
+		bankResMap.emplace_back(tunerBank.first, CHK_BANK_DATA());
+		bankResMap.back().second.startedResList = tunerBank.second->GetReserveIDList();
 	}
 
 	//boundaryReloadTimeより後の予約を開始時間順にソート
 	sortTimeMap.clear();
-	for( map<DWORD, RESERVE_DATA>::const_iterator itr = this->reserveText.GetMap().begin(); itr != this->reserveText.GetMap().end(); itr++ ){
-		if( itr->second.recSetting.IsNoRec() == false ){
+	for( const auto& item : this->reserveText.GetMap() ){
+		if( item.second.recSetting.IsNoRec() == false ){
 			LONGLONG startTime;
-			CalcEntireReserveTime(&startTime, NULL, itr->second);
+			CalcEntireReserveTime(&startTime, NULL, item.second);
 			if( startTime >= boundaryReloadTime ){
-				this->reserveText.SetOverlapMode(itr->first, RESERVE_NO_EXECUTE);
-				sortTimeMap.push_back(std::make_pair(startTime, &itr->second));
+				this->reserveText.SetOverlapMode(item.first, RESERVE_NO_EXECUTE);
+				sortTimeMap.emplace_back(startTime, &item.second);
 			}
 		}
 	}
@@ -648,7 +651,7 @@ void CReserveManager::ReloadBankMap(LONGLONG reloadTime)
 				LONGLONG startOrder = itrRes->first / I64_1SEC << 16 | (itrRes->second->reserveID & 0xFFFF);
 				LONGLONG priority = (this->setting.backPriority ? itrRes->second->recSetting.priority : ~itrRes->second->recSetting.priority) & 7;
 				LONGLONG fixedBit = (this->setting.fixedTunerPriority && itrRes->second->recSetting.tunerID != 0) ? this->setting.backPriority : !this->setting.backPriority;
-				sortResMap.push_back(std::make_pair((this->setting.backPriority ? -1 : 1) * (priority << 60 | fixedBit << 59 | startOrder), itrRes->second));
+				sortResMap.emplace_back((this->setting.backPriority ? -1 : 1) * (priority << 60 | fixedBit << 59 | startOrder), itrRes->second);
 			}
 			std::sort(sortResMap.begin(), sortResMap.end());
 			sortTimeMap.erase(itrTime.base(), sortTimeMap.end());
@@ -897,19 +900,19 @@ void CReserveManager::CheckTuijyu()
 	lock_recursive_mutex lock(this->managerLock);
 
 	vector<RESERVE_DATA> chgList;
-	for( map<DWORD, RESERVE_DATA>::const_iterator itr = this->reserveText.GetMap().begin(); itr != this->reserveText.GetMap().end(); itr++ ){
-		if( itr->second.eventID == 0xFFFF || itr->second.reserveStatus != ADD_RESERVE_NORMAL ){
+	for( const auto& item : this->reserveText.GetMap() ){
+		if( item.second.eventID == 0xFFFF || item.second.reserveStatus != ADD_RESERVE_NORMAL ){
 			//プログラム予約、および最新EPG(チューナからの情報)で変更済みの予約は対象外
 			continue;
 		}
 		//原作と異なりrecMode==RECMODE_NOも扱う。またtuijyuuFlagは意味が変化しているので注意
 		EPGDB_EVENT_INFO info;
-		if( this->epgDBManager.SearchEpg(itr->second.originalNetworkID, itr->second.transportStreamID, itr->second.serviceID, itr->second.eventID, &info) ){
+		if( this->epgDBManager.SearchEpg(item.second.originalNetworkID, item.second.transportStreamID, item.second.serviceID, item.second.eventID, &info) ){
 			//マージの都合でEIT[p/f]由来の未定時刻のイベントが混じるかもしれないがここでは無視する
 			//EventIDの再使用と区別するため終了した番組は無視する
 			if( info.StartTimeFlag != 0 && info.DurationFlag != 0 &&
 			    GetNowI64Time() < ConvertI64Time(info.start_time) + info.durationSec * I64_1SEC ){
-				RESERVE_DATA r = itr->second;
+				RESERVE_DATA r = item.second;
 				bool chgRes = false;
 				if( info.hasShortInfo && r.title != info.shortInfo.event_name ){
 					r.title = info.shortInfo.event_name;
@@ -925,7 +928,7 @@ void CReserveManager::CheckTuijyu()
 				}
 				if( chgRes ){
 					chgList.push_back(r);
-					wstring msg = GetNotifyChgReserveMessage(itr->second, r);
+					wstring msg = GetNotifyChgReserveMessage(item.second, r);
 					this->notifyManager.AddNotifyMsg(NOTIFY_UPDATE_CHG_TUIJYU, msg);
 					Replace(msg, L"\r\n", L" ");
 					AddDebugLogFormat(L"●予約(ID=%d)を追従 %ls", r.reserveID, msg.c_str());
@@ -942,11 +945,11 @@ void CReserveManager::CheckTuijyuTuner()
 {
 	vector<DWORD> chkChList;
 	//tunerBankMapそのものは排他制御の対象外
-	for( auto itrBank = this->tunerBankMap.cbegin(); itrBank != this->tunerBankMap.end(); itrBank++ ){
+	for( const auto& tunerBank : this->tunerBankMap ){
 		lock_recursive_mutex lock(this->managerLock);
 
 		WORD onid, tsid;
-		if( itrBank->second->GetCurrentChID(&onid, &tsid) == false ){
+		if( tunerBank.second->GetCurrentChID(&onid, &tsid) == false ){
 			//このチューナは起動していない
 			continue;
 		}
@@ -964,8 +967,8 @@ void CReserveManager::CheckTuijyuTuner()
 			//起動中のチャンネルに一致する予約をEIT[p/f]と照合する
 			WORD sid = itrCache->first >> 16 & 0xFFFF;
 			EPGDB_EVENT_INFO resPfVal[2];
-			int nowSuccess = itrBank->second->GetEventPF(sid, false, &resPfVal[0]);
-			int nextSuccess = itrBank->second->GetEventPF(sid, true, &resPfVal[1]);
+			int nowSuccess = tunerBank.second->GetEventPF(sid, false, &resPfVal[0]);
+			int nextSuccess = tunerBank.second->GetEventPF(sid, true, &resPfVal[1]);
 			for( ; itrCache != cacheList.end() && itrCache->first <= Create64PgKey(onid, tsid, sid, 0xFFFF); itrCache++ ){
 				map<DWORD, RESERVE_DATA>::const_iterator itrRes = this->reserveText.GetMap().find(itrCache->second);
 				if( itrRes->second.eventID == 0xFFFF ||
@@ -1134,7 +1137,7 @@ void CReserveManager::CheckTuijyuTuner()
 					if( nowSuccess != 2 && nextSuccess != 2 &&
 					    r.reserveStatus != ADD_RESERVE_CHG_PF &&
 					    r.reserveStatus != ADD_RESERVE_UNKNOWN_END &&
-					    itrBank->second->SearchEpgInfo(sid, r.eventID, &info) ){
+					    tunerBank.second->SearchEpgInfo(sid, r.eventID, &info) ){
 						//EventIDの再使用と区別するため終了した番組は無視する
 						if( info.StartTimeFlag != 0 && info.DurationFlag != 0 &&
 						    GetNowI64Time() < ConvertI64Time(info.start_time) + info.durationSec * I64_1SEC ){
@@ -1200,14 +1203,14 @@ void CReserveManager::CheckAutoDel() const
 		}
 		//直近で必要になりそうな空き領域を概算する
 		LONGLONG needSize = 0;
-		for( auto jtr = this->reserveText.GetMap().cbegin(); jtr != this->reserveText.GetMap().end(); jtr++ ){
+		for( const auto& item : this->reserveText.GetMap() ){
 			LONGLONG startTime, endTime;
-			CalcEntireReserveTime(&startTime, &endTime, jtr->second);
-			if( jtr->second.recSetting.IsNoRec() == false &&
-			    jtr->second.recSetting.GetRecMode() != RECMODE_VIEW &&
+			CalcEntireReserveTime(&startTime, &endTime, item.second);
+			if( item.second.recSetting.IsNoRec() == false &&
+			    item.second.recSetting.GetRecMode() != RECMODE_VIEW &&
 			    startTime < now + 2 * 60 * 60 * I64_1SEC ){
 				//録画開始2時間前までの予約
-				const vector<REC_FILE_SET_INFO>& recFolderList = jtr->second.recSetting.recFolderList;
+				const vector<REC_FILE_SET_INFO>& recFolderList = item.second.recSetting.recFolderList;
 				for( size_t i = 0; (i == 0 && recFolderList.empty()) || i < recFolderList.size(); i++ ){
 					wstring mountPath;
 					if( recFolderList.empty() || CompareNoCase(recFolderList[i].recFolder, L"!Default") == 0 ){
@@ -1224,7 +1227,7 @@ void CReserveManager::CheckAutoDel() const
 						//時計精度の関係で実際に録画が始まった後もしばらくこの条件を満たし、余分に確保されるかもしれない
 						//(厳密にやるのは簡単ではないので、従来通りゆるい実装にしておく)
 						if( now < startTime ){
-							DWORD bitrate = GetBitrateFromIni(jtr->second.originalNetworkID, jtr->second.transportStreamID, jtr->second.serviceID);
+							DWORD bitrate = GetBitrateFromIni(item.second.originalNetworkID, item.second.transportStreamID, item.second.serviceID);
 							needSize += (LONGLONG)(bitrate / 8 * 1000) * (endTime - startTime) / I64_1SEC;
 						}
 					}
@@ -1242,7 +1245,7 @@ void CReserveManager::CheckAutoDel() const
 					EnumFindFile(fs_path(this->setting.delChkList[i]).append(L'*' + this->setting.tsExt),
 					             [&](UTIL_FIND_DATA& findData) -> bool {
 						if( findData.isDir == false && UtilPathEndsWith(findData.fileName.c_str(), this->setting.tsExt.c_str()) ){
-							findList.push_back(std::make_pair(std::move(findData), i));
+							findList.emplace_back(std::move(findData), i);
 						}
 						return true;
 					});
@@ -1263,9 +1266,9 @@ void CReserveManager::CheckAutoDel() const
 					DeleteFile(delPath.c_str());
 					needFreeSize -= jtr->first.fileSize;
 					AddDebugLogFormat(L"★Auto Delete2 : %ls", delPath.c_str());
-					for( size_t i = 0 ; i < this->setting.delExtList.size(); i++ ){
-						DeleteFile(fs_path(delPath).replace_extension(this->setting.delExtList[i]).c_str());
-						AddDebugLogFormat(L"★Auto Delete2 : %ls", fs_path(delPath).replace_extension(this->setting.delExtList[i]).c_str());
+					for( const wstring& ext : this->setting.delExtList ){
+						DeleteFile(fs_path(delPath).replace_extension(ext).c_str());
+						AddDebugLogFormat(L"★Auto Delete2 : %ls", fs_path(delPath).replace_extension(ext).c_str());
 					}
 				}
 				findList.erase(jtr);
@@ -1337,6 +1340,8 @@ void CReserveManager::ProcessRecEnd(const vector<CTunerBankCtrl::CHECK_RESULT>& 
 				item.startTime = itrRet->epgStartTime;
 				item.eventName = itrRet->epgEventName;
 				this->recInfo2Text.Add(item);
+				//検索用リストを再構築するため
+				this->recInfo2SearchStartTime = LLONG_MAX;
 			}
 
 			REC_FILE_INFO_BASIC item;
@@ -1389,12 +1394,12 @@ void CReserveManager::ProcessRecEnd(const vector<CTunerBankCtrl::CHECK_RESULT>& 
 			//バッチ処理追加
 			CBatManager::BAT_WORK_INFO batInfo;
 			AddRecInfoMacro(batInfo.macroList, item);
-			batInfo.macroList.push_back(pair<string, wstring>("AddKey",
+			batInfo.macroList.emplace_back("AddKey",
 				itrRes->second.comment.compare(0, 8, L"EPG自動予約(") == 0 && itrRes->second.comment.find(L')') != wstring::npos ?
-				itrRes->second.comment.substr(8, itrRes->second.comment.find(L')') - 8) : wstring()));
-			batInfo.macroList.push_back(pair<string, wstring>("BatFileTag",
+				itrRes->second.comment.substr(8, itrRes->second.comment.find(L')') - 8) : wstring());
+			batInfo.macroList.emplace_back("BatFileTag",
 				itrRes->second.recSetting.batFilePath.find(L'*') != wstring::npos ?
-				itrRes->second.recSetting.batFilePath.substr(itrRes->second.recSetting.batFilePath.find(L'*') + 1) : wstring()));
+				itrRes->second.recSetting.batFilePath.substr(itrRes->second.recSetting.batFilePath.find(L'*') + 1) : wstring());
 			if( itrRet->type != CTunerBankCtrl::CHECK_ERR_PASS ){
 				batWorkList.push_back(batInfo);
 				if( shutdownMode ){
@@ -1445,25 +1450,25 @@ pair<CReserveManager::CHECK_STATUS, int> CReserveManager::Check()
 	bool isRec = false;
 	bool isEpgCap = false;
 	//tunerBankMapそのものは排他制御の対象外
-	for( auto itrBank = this->tunerBankMap.cbegin(); itrBank != this->tunerBankMap.end(); itrBank++ ){
+	for( const auto& tunerBank : this->tunerBankMap ){
 		lock_recursive_mutex lock(this->managerLock);
 
 		// チューナの予約状態遷移を行い、予約終了をチェックする
 		vector<DWORD> startedReserveIDList;
-		vector<CTunerBankCtrl::CHECK_RESULT> retList = itrBank->second->Check(&startedReserveIDList);
-		CTunerBankCtrl::TR_STATE state = itrBank->second->GetState();
+		vector<CTunerBankCtrl::CHECK_RESULT> retList = tunerBank.second->Check(&startedReserveIDList);
+		CTunerBankCtrl::TR_STATE state = tunerBank.second->GetState();
 		isRec = isRec || state == CTunerBankCtrl::TR_REC;
 		isEpgCap = isEpgCap || state == CTunerBankCtrl::TR_EPGCAP;
 		vector<CBatManager::BAT_WORK_INFO> batWorkList;
 		for( size_t i = 0; i < startedReserveIDList.size(); i++ ){
 			map<DWORD, RESERVE_DATA>::const_iterator itrRes = this->reserveText.GetMap().find(startedReserveIDList[i]);
 			if( itrRes != this->reserveText.GetMap().end() ){
-				batWorkList.resize(batWorkList.size() + 1);
+				batWorkList.emplace_back();
 				AddReserveDataMacro(batWorkList.back().macroList, itrRes->second, "");
 			}
 		}
 		AddPostBatWork(batWorkList, L"PostRecStart");
-		ProcessRecEnd(retList, itrBank->first, &this->shutdownModePending);
+		ProcessRecEnd(retList, tunerBank.first, &this->shutdownModePending);
 	}
 	if( this->checkCount % 30 == 0 ){
 		CheckAutoDel();
@@ -1585,20 +1590,20 @@ bool CReserveManager::CheckEpgCap(bool isEpgCap)
 						bool inONIDs[16] = {};
 						size_t listIndex = 0;
 						vector<vector<SET_CH_INFO>> epgCapChList(tunerList.size());
-						for( map<LONGLONG, CH_DATA5>::const_iterator itr = this->chUtil.GetMap().begin(); itr != this->chUtil.GetMap().end(); itr++ ){
-							if( itr->second.epgCapFlag == FALSE ||
-							    lastKey >= 0 && lastKey == itr->first >> 16 ||
-							    itr->second.originalNetworkID == 4 && (basicOnlyFlags & 1) && inONIDs[4] ||
-							    itr->second.originalNetworkID == 6 && (basicOnlyFlags & 2) && inONIDs[6] ||
-							    itr->second.originalNetworkID == 7 && (basicOnlyFlags & 4) && inONIDs[7] ||
-							    itr->second.originalNetworkID == 10 && (basicOnlyFlags & 8) && inONIDs[10] ){
+						for( const auto& ch5 : this->chUtil.GetMap() ){
+							if( ch5.second.epgCapFlag == FALSE ||
+							    lastKey >= 0 && lastKey == ch5.first >> 16 ||
+							    ch5.second.originalNetworkID == 4 && (basicOnlyFlags & 1) && inONIDs[4] ||
+							    ch5.second.originalNetworkID == 6 && (basicOnlyFlags & 2) && inONIDs[6] ||
+							    ch5.second.originalNetworkID == 7 && (basicOnlyFlags & 4) && inONIDs[7] ||
+							    ch5.second.originalNetworkID == 10 && (basicOnlyFlags & 8) && inONIDs[10] ){
 								continue;
 							}
-							lastKey = itr->first >> 16;
+							lastKey = ch5.first >> 16;
 							SET_CH_INFO addCh;
-							addCh.ONID = itr->second.originalNetworkID;
-							addCh.TSID = itr->second.transportStreamID;
-							addCh.SID = itr->second.serviceID;
+							addCh.ONID = ch5.second.originalNetworkID;
+							addCh.TSID = ch5.second.transportStreamID;
+							addCh.SID = ch5.second.serviceID;
 							addCh.useSID = TRUE;
 							addCh.useBonCh = FALSE;
 							for( size_t i = 0; i < tunerList.size(); i++ ){
@@ -1626,9 +1631,9 @@ bool CReserveManager::CheckEpgCap(bool isEpgCap)
 		//EPG取得中
 		if( this->setting.timeSync && this->epgCapSetTimeSync == false ){
 			DWORD tick = GetU32Tick();
-			for( auto itr = this->tunerBankMap.cbegin(); itr != this->tunerBankMap.end(); itr++ ){
-				if( itr->second->GetState() == CTunerBankCtrl::TR_EPGCAP ){
-					LONGLONG delay = itr->second->DelayTime();
+			for( const auto& tunerBank : this->tunerBankMap ){
+				if( tunerBank.second->GetState() == CTunerBankCtrl::TR_EPGCAP ){
+					LONGLONG delay = tunerBank.second->DelayTime();
 					if( this->epgCapTimeSyncBase < 0 ){
 						if( delay < -10 * I64_1SEC || 10 * I64_1SEC < delay ){
 							//時計合わせが必要かもしれない。遅延時間の観測開始
@@ -1717,8 +1722,8 @@ bool CReserveManager::IsActive() const
 	    this->batPostManager.IsWorkingWithoutNotification() ){
 		return true;
 	}
-	for( auto itr = this->tunerBankMap.cbegin(); itr != this->tunerBankMap.end(); itr++ ){
-		if( itr->second->GetState() != CTunerBankCtrl::TR_IDLE ){
+	for( const auto& tunerBank : this->tunerBankMap ){
+		if( tunerBank.second->GetState() != CTunerBankCtrl::TR_IDLE ){
 			return true;
 		}
 	}
@@ -1732,13 +1737,13 @@ LONGLONG CReserveManager::GetSleepReturnTime(LONGLONG baseTime, RESERVE_DATA* re
 	//最も近い予約開始時刻を得る
 	LONGLONG nextRec = LLONG_MAX;
 	const RESERVE_DATA* nextReserveData = NULL;
-	for( map<DWORD, RESERVE_DATA>::const_iterator itr = this->reserveText.GetMap().begin(); itr != this->reserveText.GetMap().end(); itr++ ){
-		if( itr->second.recSetting.IsNoRec() == false ){
+	for( const auto& item : this->reserveText.GetMap() ){
+		if( item.second.recSetting.IsNoRec() == false ){
 			LONGLONG startTime;
-			CalcEntireReserveTime(&startTime, NULL, itr->second);
+			CalcEntireReserveTime(&startTime, NULL, item.second);
 			if( startTime >= baseTime && startTime < nextRec ){
 				nextRec = startTime;
-				nextReserveData = &itr->second;
+				nextReserveData = &item.second;
 			}
 		}
 	}
@@ -1757,11 +1762,11 @@ LONGLONG CReserveManager::GetNearestRecReserveTime() const
 	lock_recursive_mutex lock(this->managerLock);
 
 	LONGLONG minTime = LLONG_MAX;
-	for( map<DWORD, RESERVE_DATA>::const_iterator itr = this->reserveText.GetMap().begin(); itr != this->reserveText.GetMap().end(); itr++ ){
-		if( itr->second.recSetting.GetRecMode() != RECMODE_VIEW &&
-		    itr->second.recSetting.IsNoRec() == false ){
+	for( const auto& item : this->reserveText.GetMap() ){
+		if( item.second.recSetting.GetRecMode() != RECMODE_VIEW &&
+		    item.second.recSetting.IsNoRec() == false ){
 			LONGLONG startTime;
-			CalcEntireReserveTime(&startTime, NULL, itr->second);
+			CalcEntireReserveTime(&startTime, NULL, item.second);
 			minTime = min(startTime, minTime);
 		}
 	}
@@ -1779,12 +1784,12 @@ LONGLONG CReserveManager::GetNextEpgCapTime(LONGLONG now, int* basicOnlyFlags) c
 	//baseTimeとの差が最小のEPG取得時刻を探す
 	int minDiff = INT_MAX;
 	int minVal = 0;
-	for( auto itr = this->setting.epgCapTimeList.cbegin(); itr != this->setting.epgCapTimeList.end(); itr++ ){
-		if( itr->first ){
-			int diff = (itr->second.first + 7 * 1440 - baseTime) % (itr->second.first < 1440 ? 1440 : 7 * 1440);
+	for( const auto& item : this->setting.epgCapTimeList ){
+		if( item.first ){
+			int diff = (item.second.first + 7 * 1440 - baseTime) % (item.second.first < 1440 ? 1440 : 7 * 1440);
 			if( minDiff > diff ){
 				minDiff = diff;
-				minVal = itr->second.second;
+				minVal = item.second.second;
 			}
 		}
 	}
@@ -1817,9 +1822,9 @@ vector<DWORD> CReserveManager::GetSupportServiceTuner(WORD onid, WORD tsid, WORD
 {
 	//tunerBankMapそのものは排他制御の対象外
 	vector<DWORD> idList;
-	for( auto itr = this->tunerBankMap.cbegin(); itr != this->tunerBankMap.end(); itr++ ){
-		if( itr->second->GetCh(onid, tsid, sid) ){
-			idList.push_back(itr->first);
+	for( const auto& tunerBank : this->tunerBankMap ){
+		if( tunerBank.second->GetCh(onid, tsid, sid) ){
+			idList.push_back(tunerBank.first);
 		}
 	}
 	return idList;
@@ -1867,17 +1872,17 @@ CReserveManager::OPEN_NWTV_RESULT CReserveManager::OpenNWTV(int id, bool nwUdp, 
 	chInfo.ONID = onid;
 	chInfo.TSID = tsid;
 	chInfo.SID = sid;
-	for( auto itr = this->tunerBankMap.cbegin(); itr != this->tunerBankMap.end(); itr++ ){
-		if( itr->second->GetState() == CTunerBankCtrl::TR_NWTV && itr->second->GetNWTVID() == id ){
+	for( const auto& tunerBank : this->tunerBankMap ){
+		if( tunerBank.second->GetState() == CTunerBankCtrl::TR_NWTV && tunerBank.second->GetNWTVID() == id ){
 			//すでに起動しているので使えたら使う
-			if( itr->second->GetCh(chInfo.ONID, chInfo.TSID, chInfo.SID) ){
-				itr->second->OpenNWTV(id, nwUdp, nwTcp, chInfo);
+			if( tunerBank.second->GetCh(chInfo.ONID, chInfo.TSID, chInfo.SID) ){
+				tunerBank.second->OpenNWTV(id, nwUdp, nwTcp, chInfo);
 				ret.succeeded = true;
-				ret.processID = itr->second->GetProcessID();
-				ret.openCount = itr->second->GetNWTVOpenCount();
+				ret.processID = tunerBank.second->GetProcessID();
+				ret.openCount = tunerBank.second->GetNWTVOpenCount();
 				return ret;
 			}
-			itr->second->CloseNWTV();
+			tunerBank.second->CloseNWTV();
 			break;
 		}
 	}
@@ -1902,11 +1907,11 @@ CReserveManager::OPEN_NWTV_RESULT CReserveManager::IsOpenNWTV(int id) const
 	lock_recursive_mutex lock(this->managerLock);
 
 	OPEN_NWTV_RESULT ret = {};
-	for( auto itr = this->tunerBankMap.cbegin(); itr != this->tunerBankMap.end(); itr++ ){
-		if( itr->second->GetState() == CTunerBankCtrl::TR_NWTV && itr->second->GetNWTVID() == id ){
+	for( const auto& tunerBank : this->tunerBankMap ){
+		if( tunerBank.second->GetState() == CTunerBankCtrl::TR_NWTV && tunerBank.second->GetNWTVID() == id ){
 			ret.succeeded = true;
-			ret.processID = itr->second->GetProcessID();
-			ret.openCount = itr->second->GetNWTVOpenCount();
+			ret.processID = tunerBank.second->GetProcessID();
+			ret.openCount = tunerBank.second->GetNWTVOpenCount();
 			break;
 		}
 	}
@@ -1917,9 +1922,9 @@ bool CReserveManager::CloseNWTV(int id)
 {
 	lock_recursive_mutex lock(this->managerLock);
 
-	for( auto itr = this->tunerBankMap.cbegin(); itr != this->tunerBankMap.end(); itr++ ){
-		if( itr->second->GetState() == CTunerBankCtrl::TR_NWTV && itr->second->GetNWTVID() == id ){
-			itr->second->CloseNWTV();
+	for( const auto& tunerBank : this->tunerBankMap ){
+		if( tunerBank.second->GetState() == CTunerBankCtrl::TR_NWTV && tunerBank.second->GetNWTVID() == id ){
+			tunerBank.second->CloseNWTV();
 			return true;
 		}
 	}
@@ -1931,9 +1936,9 @@ vector<pair<DWORD, int>> CReserveManager::GetNWTVIDAll() const
 	lock_recursive_mutex lock(this->managerLock);
 
 	vector<pair<DWORD, int>> idList;
-	for( auto itr = this->tunerBankMap.cbegin(); itr != this->tunerBankMap.end(); itr++ ){
-		if( itr->second->GetState() == CTunerBankCtrl::TR_NWTV ){
-			idList.push_back(std::make_pair(itr->first, itr->second->GetNWTVID()));
+	for( const auto& tunerBank : this->tunerBankMap ){
+		if( tunerBank.second->GetState() == CTunerBankCtrl::TR_NWTV ){
+			idList.emplace_back(tunerBank.first, tunerBank.second->GetNWTVID());
 		}
 	}
 	return idList;
@@ -1943,8 +1948,8 @@ bool CReserveManager::GetRecFilePath(DWORD reserveID, wstring& filePath) const
 {
 	lock_recursive_mutex lock(this->managerLock);
 
-	for( auto itr = this->tunerBankMap.cbegin(); itr != this->tunerBankMap.end(); itr++ ){
-		if( itr->second->GetRecFilePath(reserveID, filePath) ){
+	for( const auto& tunerBank : this->tunerBankMap ){
+		if( tunerBank.second->GetRecFilePath(reserveID, filePath) ){
 			return true;
 		}
 	}
@@ -1991,35 +1996,49 @@ bool CReserveManager::IsFindRecEventInfo(const EPGDB_EVENT_INFO& info, WORD chkD
 				}
 			}
 			if( infoEventName.empty() == false && info.StartTimeFlag != 0 ){
-				int chkDayActual = chkDay >= 20000 ? chkDay % 10000 : chkDay;
-				map<DWORD, PARSE_REC_INFO2_ITEM>::const_iterator itr;
-				for( itr = this->recInfo2Text.GetMap().begin(); itr != this->recInfo2Text.GetMap().end(); itr++ ){
-					if( (chkDay >= 40000 || itr->second.originalNetworkID == info.original_network_id) &&
-					    (chkDay >= 30000 || itr->second.transportStreamID == info.transport_stream_id) &&
-					    (chkDay >= 20000 || itr->second.serviceID == info.service_id) &&
-					    ConvertI64Time(itr->second.startTime) + chkDayActual*24*60*60*I64_1SEC > ConvertI64Time(info.start_time) ){
-						wstring eventName = itr->second.eventName;
-						if( this->setting.recInfo2RegExp.empty() == false ){
+				LONGLONG chkStartTime = ConvertI64Time(info.start_time) - (chkDay >= 20000 ? chkDay % 10000 : chkDay) * 24 * 60 * 60 * I64_1SEC;
+				if( chkStartTime <= this->recInfo2SearchStartTime ){
+					//検索用にイベント名でソートしたリストを構築する
+					this->recInfo2SearchCache.clear();
+					//時間的にマッチし得ないものは除外する
+					this->recInfo2SearchStartTime = chkStartTime - 10 * 24 * 60 * 60 * I64_1SEC;
+					for( const auto& item : this->recInfo2Text.GetMap() ){
+						if( ConvertI64Time(item.second.startTime) <= this->recInfo2SearchStartTime ){
+							continue;
+						}
+						if( this->setting.recInfo2RegExp.empty() ){
+							this->recInfo2SearchCache.emplace_back(item.second.eventName, item.first);
+						}else{
+							//イベント名を置換
 #if !defined(EPGDB_STD_WREGEX) && defined(_WIN32)
-							CEpgDBManager::OleCharPtr rplFrom(SysAllocString(eventName.c_str()), SysFreeString);
+							CEpgDBManager::OleCharPtr rplFrom(SysAllocString(item.second.eventName.c_str()), SysFreeString);
 							CEpgDBManager::OleCharPtr rplTo(SysAllocString(L""), SysFreeString);
 							BSTR rpl_;
 							if( rplFrom && rplTo && SUCCEEDED(regExp->Replace(rplFrom.get(), rplTo.get(), &rpl_)) ){
 								CEpgDBManager::OleCharPtr rpl(rpl_, SysFreeString);
-								eventName = SysStringLen(rpl.get()) ? rpl.get() : L"";
-							}else{
+								if( SysStringLen(rpl.get()) ){
+									this->recInfo2SearchCache.emplace_back(rpl.get(), item.first);
+								}
+							}
 #else
 							try{
-								eventName = std::regex_replace(eventName, re, wstring());
+								this->recInfo2SearchCache.emplace_back(std::regex_replace(item.second.eventName, re, wstring()), item.first);
 							}catch( std::regex_error& ){
-#endif
-								eventName = L"";
 							}
+#endif
 						}
-						if( infoEventName == eventName ){
-							ret = true;
-							break;
-						}
+					}
+					std::sort(this->recInfo2SearchCache.begin(), this->recInfo2SearchCache.end());
+				}
+				auto itr = lower_bound_first(this->recInfo2SearchCache.begin(), this->recInfo2SearchCache.end(), infoEventName);
+				for( ; itr != this->recInfo2SearchCache.end() && itr->first == infoEventName; itr++ ){
+					const auto& item = this->recInfo2Text.GetMap().at(itr->second - 1).second;
+					if( (chkDay >= 40000 || item.originalNetworkID == info.original_network_id) &&
+					    (chkDay >= 30000 || item.transportStreamID == info.transport_stream_id) &&
+					    (chkDay >= 20000 || item.serviceID == info.service_id) &&
+					    ConvertI64Time(item.startTime) > chkStartTime ){
+						ret = true;
+						break;
 					}
 				}
 			}
@@ -2072,8 +2091,8 @@ vector<CH_DATA5> CReserveManager::GetChDataList() const
 
 	vector<CH_DATA5> list;
 	list.reserve(this->chUtil.GetMap().size());
-	for( map<LONGLONG, CH_DATA5>::const_iterator itr = this->chUtil.GetMap().begin(); itr != this->chUtil.GetMap().end(); itr++ ){
-		list.push_back(itr->second);
+	for( const auto& ch5 : this->chUtil.GetMap() ){
+		list.push_back(ch5.second);
 	}
 	return list;
 }
@@ -2088,8 +2107,8 @@ bool CReserveManager::GetChDataListAsText(string& text) const
 void CReserveManager::WatchdogThread(CReserveManager* sys)
 {
 	while( sys->watchdogStopEvent.WaitOne(2000) == false ){
-		for( auto itr = sys->tunerBankMap.cbegin(); itr != sys->tunerBankMap.end(); itr++ ){
-			itr->second->Watch();
+		for( const auto& tunerBank : sys->tunerBankMap ){
+			tunerBank.second->Watch();
 		}
 	}
 }
@@ -2111,7 +2130,7 @@ void CReserveManager::AddNotifyAndPostBat(DWORD notifyID)
 {
 	this->notifyManager.AddNotify(notifyID);
 	vector<CBatManager::BAT_WORK_INFO> workList(1);
-	workList[0].macroList.push_back(pair<string, wstring>("NotifyID", L""));
+	workList[0].macroList.emplace_back("NotifyID", L"");
 	Format(workList[0].macroList.back().second, L"%d", notifyID);
 	AddPostBatWork(workList, L"PostNotify");
 }
@@ -2130,7 +2149,7 @@ void CReserveManager::AddTimeMacro(vector<pair<string, wstring>>& macroList, con
 	           (I64_UTIL_TIMEZONE < 0 ? L'-' : L'+'),
 	           (int)((I64_UTIL_TIMEZONE < 0 ? -I64_UTIL_TIMEZONE : I64_UTIL_TIMEZONE) / I64_1SEC) / 3600,
 	           (int)((I64_UTIL_TIMEZONE < 0 ? -I64_UTIL_TIMEZONE : I64_UTIL_TIMEZONE) / I64_1SEC) / 60 % 60);
-	macroList.push_back(pair<string, wstring>(string("StartTime") + suffix, v));
+	macroList.emplace_back(string("StartTime") + suffix, v);
 	for( string p = "S"; p != ""; p = (p == "S" ? "E" : "") ){
 		SYSTEMTIME t = startTime;
 		if( p == "E" ){
@@ -2138,65 +2157,65 @@ void CReserveManager::AddTimeMacro(vector<pair<string, wstring>>& macroList, con
 		}
 		for( int i = 0; GetTimeMacroName(i); i++ ){
 			//従来形式は#でコメントアウトしておく
-			macroList.push_back(std::make_pair('#' + p + GetTimeMacroName(i) + suffix, GetTimeMacroValue(i, t)));
+			macroList.emplace_back('#' + p + GetTimeMacroName(i) + suffix, GetTimeMacroValue(i, t));
 		}
 	}
-	swprintf_s(v, L"%u", durationSecond);				macroList.push_back(pair<string, wstring>(string("DurationSecond") + suffix, v));
-	swprintf_s(v, L"%02d", durationSecond / 3600);		macroList.push_back(pair<string, wstring>(string("#DUHH") + suffix, v));
-	swprintf_s(v, L"%d", durationSecond / 3600);		macroList.push_back(pair<string, wstring>(string("#DUH") + suffix, v));
-	swprintf_s(v, L"%02d", durationSecond % 3600 / 60);	macroList.push_back(pair<string, wstring>(string("#DUMM") + suffix, v));
-	swprintf_s(v, L"%d", durationSecond % 3600 / 60);	macroList.push_back(pair<string, wstring>(string("#DUM") + suffix, v));
-	swprintf_s(v, L"%02d", durationSecond % 60);		macroList.push_back(pair<string, wstring>(string("#DUSS") + suffix, v));
-	swprintf_s(v, L"%d", durationSecond % 60);			macroList.push_back(pair<string, wstring>(string("#DUS") + suffix, v));
+	swprintf_s(v, L"%u", durationSecond);				macroList.emplace_back(string("DurationSecond") + suffix, v);
+	swprintf_s(v, L"%02d", durationSecond / 3600);		macroList.emplace_back(string("#DUHH") + suffix, v);
+	swprintf_s(v, L"%d", durationSecond / 3600);		macroList.emplace_back(string("#DUH") + suffix, v);
+	swprintf_s(v, L"%02d", durationSecond % 3600 / 60);	macroList.emplace_back(string("#DUMM") + suffix, v);
+	swprintf_s(v, L"%d", durationSecond % 3600 / 60);	macroList.emplace_back(string("#DUM") + suffix, v);
+	swprintf_s(v, L"%02d", durationSecond % 60);		macroList.emplace_back(string("#DUSS") + suffix, v);
+	swprintf_s(v, L"%d", durationSecond % 60);			macroList.emplace_back(string("#DUS") + suffix, v);
 }
 
 void CReserveManager::AddReserveDataMacro(vector<pair<string, wstring>>& macroList, const RESERVE_DATA& data, LPCSTR suffix)
 {
 	WCHAR v[64];
 	AddTimeMacro(macroList, data.startTime, data.durationSecond, suffix);
-	swprintf_s(v, L"%d", data.originalNetworkID);	macroList.push_back(pair<string, wstring>(string("ONID10") + suffix, v));
-	swprintf_s(v, L"%d", data.transportStreamID);	macroList.push_back(pair<string, wstring>(string("TSID10") + suffix, v));
-	swprintf_s(v, L"%d", data.serviceID);			macroList.push_back(pair<string, wstring>(string("SID10") + suffix, v));
-	swprintf_s(v, L"%d", data.eventID);				macroList.push_back(pair<string, wstring>(string("EID10") + suffix, v));
-	swprintf_s(v, L"%04X", data.originalNetworkID);	macroList.push_back(pair<string, wstring>(string("ONID16") + suffix, v));
-	swprintf_s(v, L"%04X", data.transportStreamID);	macroList.push_back(pair<string, wstring>(string("TSID16") + suffix, v));
-	swprintf_s(v, L"%04X", data.serviceID);			macroList.push_back(pair<string, wstring>(string("SID16") + suffix, v));
-	swprintf_s(v, L"%04X", data.eventID);			macroList.push_back(pair<string, wstring>(string("EID16") + suffix, v));
-	swprintf_s(v, L"%d", data.reserveID);			macroList.push_back(pair<string, wstring>(string("ReserveID") + suffix, v));
-	swprintf_s(v, L"%d", data.recSetting.recMode);	macroList.push_back(pair<string, wstring>(string("RecMode") + suffix, v));
-	macroList.push_back(std::make_pair(string("Title") + suffix, data.title));
-	macroList.push_back(std::make_pair(string("ServiceName") + suffix, data.stationName));
-	macroList.push_back(std::make_pair(string("ReserveComment") + suffix, data.comment));
-	macroList.push_back(std::make_pair(string("BatFileTag") + suffix,
+	swprintf_s(v, L"%d", data.originalNetworkID);	macroList.emplace_back(string("ONID10") + suffix, v);
+	swprintf_s(v, L"%d", data.transportStreamID);	macroList.emplace_back(string("TSID10") + suffix, v);
+	swprintf_s(v, L"%d", data.serviceID);			macroList.emplace_back(string("SID10") + suffix, v);
+	swprintf_s(v, L"%d", data.eventID);				macroList.emplace_back(string("EID10") + suffix, v);
+	swprintf_s(v, L"%04X", data.originalNetworkID);	macroList.emplace_back(string("ONID16") + suffix, v);
+	swprintf_s(v, L"%04X", data.transportStreamID);	macroList.emplace_back(string("TSID16") + suffix, v);
+	swprintf_s(v, L"%04X", data.serviceID);			macroList.emplace_back(string("SID16") + suffix, v);
+	swprintf_s(v, L"%04X", data.eventID);			macroList.emplace_back(string("EID16") + suffix, v);
+	swprintf_s(v, L"%d", data.reserveID);			macroList.emplace_back(string("ReserveID") + suffix, v);
+	swprintf_s(v, L"%d", data.recSetting.recMode);	macroList.emplace_back(string("RecMode") + suffix, v);
+	macroList.emplace_back(string("Title") + suffix, data.title);
+	macroList.emplace_back(string("ServiceName") + suffix, data.stationName);
+	macroList.emplace_back(string("ReserveComment") + suffix, data.comment);
+	macroList.emplace_back(string("BatFileTag") + suffix,
 		data.recSetting.batFilePath.find(L'*') != wstring::npos ?
-		data.recSetting.batFilePath.substr(data.recSetting.batFilePath.find(L'*') + 1) : wstring()));
+		data.recSetting.batFilePath.substr(data.recSetting.batFilePath.find(L'*') + 1) : wstring());
 }
 
 void CReserveManager::AddRecInfoMacro(vector<pair<string, wstring>>& macroList, const REC_FILE_INFO_BASIC& recInfo)
 {
 	WCHAR v[64];
 	AddTimeMacro(macroList, recInfo.startTime, recInfo.durationSecond, "");
-	swprintf_s(v, L"%d", recInfo.id);					macroList.push_back(pair<string, wstring>("RecInfoID", v));
-	swprintf_s(v, L"%d", recInfo.originalNetworkID);	macroList.push_back(pair<string, wstring>("ONID10", v));
-	swprintf_s(v, L"%d", recInfo.transportStreamID);	macroList.push_back(pair<string, wstring>("TSID10", v));
-	swprintf_s(v, L"%d", recInfo.serviceID);			macroList.push_back(pair<string, wstring>("SID10", v));
-	swprintf_s(v, L"%d", recInfo.eventID);				macroList.push_back(pair<string, wstring>("EID10", v));
-	swprintf_s(v, L"%04X", recInfo.originalNetworkID);	macroList.push_back(pair<string, wstring>("ONID16", v));
-	swprintf_s(v, L"%04X", recInfo.transportStreamID);	macroList.push_back(pair<string, wstring>("TSID16", v));
-	swprintf_s(v, L"%04X", recInfo.serviceID);			macroList.push_back(pair<string, wstring>("SID16", v));
-	swprintf_s(v, L"%04X", recInfo.eventID);			macroList.push_back(pair<string, wstring>("EID16", v));
-	swprintf_s(v, L"%lld", recInfo.drops);				macroList.push_back(pair<string, wstring>("Drops", v));
-	swprintf_s(v, L"%lld", recInfo.scrambles);			macroList.push_back(pair<string, wstring>("Scrambles", v));
-	macroList.push_back(pair<string, wstring>("Title", recInfo.title));
-	macroList.push_back(pair<string, wstring>("ServiceName", recInfo.serviceName));
-	macroList.push_back(pair<string, wstring>("Result", recInfo.GetComment()));
-	macroList.push_back(pair<string, wstring>("FilePath", recInfo.recFilePath));
+	swprintf_s(v, L"%d", recInfo.id);					macroList.emplace_back("RecInfoID", v);
+	swprintf_s(v, L"%d", recInfo.originalNetworkID);	macroList.emplace_back("ONID10", v);
+	swprintf_s(v, L"%d", recInfo.transportStreamID);	macroList.emplace_back("TSID10", v);
+	swprintf_s(v, L"%d", recInfo.serviceID);			macroList.emplace_back("SID10", v);
+	swprintf_s(v, L"%d", recInfo.eventID);				macroList.emplace_back("EID10", v);
+	swprintf_s(v, L"%04X", recInfo.originalNetworkID);	macroList.emplace_back("ONID16", v);
+	swprintf_s(v, L"%04X", recInfo.transportStreamID);	macroList.emplace_back("TSID16", v);
+	swprintf_s(v, L"%04X", recInfo.serviceID);			macroList.emplace_back("SID16", v);
+	swprintf_s(v, L"%04X", recInfo.eventID);			macroList.emplace_back("EID16", v);
+	swprintf_s(v, L"%lld", recInfo.drops);				macroList.emplace_back("Drops", v);
+	swprintf_s(v, L"%lld", recInfo.scrambles);			macroList.emplace_back("Scrambles", v);
+	macroList.emplace_back("Title", recInfo.title);
+	macroList.emplace_back("ServiceName", recInfo.serviceName);
+	macroList.emplace_back("Result", recInfo.GetComment());
+	macroList.emplace_back("FilePath", recInfo.recFilePath);
 	fs_path path = recInfo.recFilePath;
-	macroList.push_back(pair<string, wstring>("FolderPath", path.parent_path().native()));
-	macroList.push_back(pair<string, wstring>("FileName", path.stem().native()));
-	macroList.push_back(pair<string, wstring>("TitleF", recInfo.title));
+	macroList.emplace_back("FolderPath", path.parent_path().native());
+	macroList.emplace_back("FileName", path.stem().native());
+	macroList.emplace_back("TitleF", recInfo.title);
 	CheckFileName(macroList.back().second);
-	macroList.push_back(pair<string, wstring>("Title2", recInfo.title));
+	macroList.emplace_back("Title2", recInfo.title);
 	while( macroList.back().second.find(L'[') != wstring::npos && macroList.back().second.find(L']') != wstring::npos ){
 		wstring strSep1;
 		wstring strSep2;
@@ -2204,6 +2223,6 @@ void CReserveManager::AddRecInfoMacro(vector<pair<string, wstring>>& macroList, 
 		Separate(strSep1, L"]", strSep2, strSep1);
 		macroList.back().second += strSep1;
 	}
-	macroList.push_back(pair<string, wstring>("Title2F", macroList.back().second));
+	macroList.emplace_back("Title2F", macroList.back().second);
 	CheckFileName(macroList.back().second);
 }

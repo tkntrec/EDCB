@@ -60,7 +60,7 @@ vector<SSDP_NIC_INFO> GetNICList()
 				if( (uni->Flags & IP_ADAPTER_ADDRESS_TRANSIENT) == 0 &&
 				    uni->Address.lpSockaddr->sa_family == AF_INET &&
 				    getnameinfo(uni->Address.lpSockaddr, uni->Address.iSockaddrLength, host, sizeof(host), NULL, 0, NI_NUMERICHOST) == 0 ){
-					nicList.resize(nicList.size() + 1);
+					nicList.emplace_back();
 					nicList.back().addr = *(sockaddr_in*)uni->Address.lpSockaddr;
 					nicList.back().name = host;
 				}
@@ -74,7 +74,7 @@ vector<SSDP_NIC_INFO> GetNICList()
 			char host[NI_MAXHOST];
 			if( p->ifa_addr->sa_family == AF_INET &&
 			    getnameinfo(p->ifa_addr, sizeof(sockaddr_in), host, sizeof(host), NULL, 0, NI_NUMERICHOST) == 0 ){
-				nicList.resize(nicList.size() + 1);
+				nicList.emplace_back();
 				nicList.back().addr = *(sockaddr_in*)p->ifa_addr;
 				nicList.back().name = host;
 			}
@@ -166,14 +166,14 @@ void CUpnpSsdpServer::SsdpThread(CUpnpSsdpServer* sys)
 		fd_set ready;
 		FD_ZERO(&ready);
 		int maxfd = -1;
-		for( size_t i = 0; i < nicList.size(); i++ ){
+		for( const SSDP_NIC_INFO& nic : nicList ){
 #ifdef _WIN32
 			maxfd++;
 #else
-			maxfd = max(maxfd, nicList[i].sock);
+			maxfd = max(maxfd, nic.sock);
 #endif
 			if( maxfd < FD_SETSIZE ){
-				FD_SET(nicList[i].sock, &ready);
+				FD_SET(nic.sock, &ready);
 			}
 		}
 		timeval to = {};
@@ -183,7 +183,7 @@ void CUpnpSsdpServer::SsdpThread(CUpnpSsdpServer* sys)
 		}
 		DWORD tick = GetU32Tick();
 		random = (random << 31 | random >> 1) ^ tick;
-		for( size_t i = 0; i < nicList.size(); i++ ){
+		for( const SSDP_NIC_INFO& nic : nicList ){
 			char recvData[RECV_BUFF_SIZE];
 			SSDP_REPLY_INFO info;
 #ifdef _WIN32
@@ -191,14 +191,14 @@ void CUpnpSsdpServer::SsdpThread(CUpnpSsdpServer* sys)
 #else
 			socklen_t fromLen = sizeof(info.addr);
 #endif
-			int recvLen = (int)recvfrom(nicList[i].sock, recvData, RECV_BUFF_SIZE - 1, 0, (sockaddr*)&info.addr, &fromLen);
+			int recvLen = (int)recvfrom(nic.sock, recvData, RECV_BUFF_SIZE - 1, 0, (sockaddr*)&info.addr, &fromLen);
 			if( recvLen >= 0 ){
 				if( fromLen != sizeof(info.addr) ){
 					AddDebugLog(L"SSDP recvfrom() failed.");
 				}else{
 					recvData[recvLen] = '\0';
 					if( strncmp(recvData, "M-SEARCH ", 9) == 0 && replyList.size() < 100 ){
-						info.msg = GetMSearchReply(recvData, nicList[i].name.c_str(), sys->targetList);
+						info.msg = GetMSearchReply(recvData, nic.name.c_str(), sys->targetList);
 						if( info.msg.empty() == false ){
 							//応答は1秒以内の揺らぎを入れる
 							info.jitter = tick - random % 1000;
@@ -277,17 +277,17 @@ string GetMSearchReply(const char* header, const char* host, const vector<CUpnpS
 			header = tail + 2;
 		}
 		if( CompareNoCase(man, "\"ssdp:discover\"") == 0 ){
-			for( vector<CUpnpSsdpServer::SSDP_TARGET_INFO>::const_iterator itr = targetList.begin(); itr != targetList.end(); itr++ ){
-				if( CompareNoCase(itr->target, st) == 0 ){
-					string location = "http://" + string(host) + itr->location;
+			for( const CUpnpSsdpServer::SSDP_TARGET_INFO& item : targetList ){
+				if( CompareNoCase(item.target, st) == 0 ){
+					string location = "http://" + string(host) + item.location;
 					resMsg =
 						"HTTP/1.1 200 OK\r\n"
 						"CACHE-CONTROL: max-age = 1800\r\n"
 						"EXT:\r\n"
 						"LOCATION: " + location + "\r\n"
 						"SERVER: UnknownOS/1.0 UPnP/1.1 EpgTimerSrv/0.10\r\n"
-						"ST: " + itr->target + "\r\n"
-						"USN: " + itr->usn + "\r\n\r\n";
+						"ST: " + item.target + "\r\n"
+						"USN: " + item.usn + "\r\n\r\n";
 					break;
 				}
 			}
@@ -302,7 +302,7 @@ void SendNotifyAliveOrByebye(bool byebyeFlag, const vector<SSDP_NIC_INFO>& nicLi
 	addr.sin_family = AF_INET;
 	addr.sin_addr.s_addr = htonl(0xEFFFFFFA); //239.255.255.250
 	addr.sin_port = htons(1900);
-	for( size_t i = 0; i < nicList.size(); i++ ){
+	for( const SSDP_NIC_INFO& nic : nicList ){
 		SOCKET sock = socket(AF_INET, SOCK_DGRAM
 #ifndef _WIN32
 		                         | SOCK_CLOEXEC
@@ -310,27 +310,27 @@ void SendNotifyAliveOrByebye(bool byebyeFlag, const vector<SSDP_NIC_INFO>& nicLi
 		                     , 0);
 		if( sock != INVALID_SOCKET ){
 			int ttl = 3;
-			if( setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF, (const char*)&nicList[i].addr.sin_addr, sizeof(nicList[i].addr.sin_addr)) == 0 &&
+			if( setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF, (const char*)&nic.addr.sin_addr, sizeof(nic.addr.sin_addr)) == 0 &&
 			    setsockopt(sock, IPPROTO_IP, IP_MULTICAST_TTL, (const char*)&ttl, sizeof(ttl)) == 0 ){
-				for( vector<CUpnpSsdpServer::SSDP_TARGET_INFO>::const_iterator itr = targetList.begin(); itr != targetList.end(); itr++ ){
-					if( itr->notifyFlag ){
+				for( const CUpnpSsdpServer::SSDP_TARGET_INFO& item : targetList ){
+					if( item.notifyFlag ){
 						string sendMsg =
 							"NOTIFY * HTTP/1.1\r\n"
 							"HOST: 239.255.255.250:1900\r\n";
 						if( byebyeFlag ){
 							sendMsg +=
-								"NT: " + itr->target + "\r\n"
+								"NT: " + item.target + "\r\n"
 								"NTS: ssdp:byebye\r\n"
-								"USN: " + itr->usn + "\r\n\r\n";
+								"USN: " + item.usn + "\r\n\r\n";
 						}else{
-							string location = "http://" + nicList[i].name + itr->location;
+							string location = "http://" + nic.name + item.location;
 							sendMsg +=
 								"CACHE-CONTROL: max-age = 1800\r\n"
 								"LOCATION: " + location + "\r\n"
-								"NT: " + itr->target + "\r\n"
+								"NT: " + item.target + "\r\n"
 								"NTS: ssdp:alive\r\n"
 								"SERVER: UnknownOS/1.0 UPnP/1.1 EpgTimerSrv/0.10\r\n"
-								"USN: " + itr->usn + "\r\n\r\n";
+								"USN: " + item.usn + "\r\n\r\n";
 						}
 						if( sendto(sock, sendMsg.c_str(), (int)sendMsg.size(), 0, (const sockaddr*)&addr, sizeof(addr)) != (int)sendMsg.size() ){
 							AddDebugLog(L"SSDP sendto() failed.");

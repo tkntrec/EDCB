@@ -176,9 +176,9 @@ void CDropCount::SaveLog(const wstring& filePath, BOOL asUtf8)
 		buff += this->log;
 
 		string strA;
-		for( vector<DROP_INFO>::const_iterator itr = this->infoList.begin(); itr != this->infoList.end(); itr++ ){
+		for( const DROP_INFO& item : this->infoList ){
 			LPCSTR desc = "";
-			switch( itr->first ){
+			switch( item.first ){
 			case 0x0000:
 				desc = "PAT";
 				break;
@@ -238,8 +238,8 @@ void CDropCount::SaveLog(const wstring& filePath, BOOL asUtf8)
 				break;
 			default:
 				vector<pair<WORD, wstring>>::const_iterator itrPID =
-					lower_bound_first(this->pidName.begin(), this->pidName.end(), itr->first);
-				if( itrPID != this->pidName.end() && itrPID->first == itr->first ){
+					lower_bound_first(this->pidName.begin(), this->pidName.end(), item.first);
+				if( itrPID != this->pidName.end() && itrPID->first == item.first ){
 					WtoA(itrPID->second, strA, asUtf8 ? UTIL_CONV_UTF8 : UTIL_CONV_DEFAULT);
 					desc = strA.c_str();
 				}
@@ -247,7 +247,7 @@ void CDropCount::SaveLog(const wstring& filePath, BOOL asUtf8)
 			}
 			char stats[256];
 			sprintf_s(stats, "%sPID: 0x%04X  Total:%9lld  Drop:%9lld  Scramble: %9lld  ",
-			          newLine, itr->first, itr->total, itr->drop, itr->scramble);
+			          newLine, item.first, item.total, item.drop, item.scramble);
 			buff += stats;
 			buff += desc;
 		}
@@ -266,7 +266,7 @@ void CDropCount::SetPIDName(WORD pid, const wstring& name)
 	vector<pair<WORD, wstring>>::iterator itr =
 		lower_bound_first(this->pidName.begin(), this->pidName.end(), pid);
 	if( itr == this->pidName.end() || itr->first != pid ){
-		itr = this->pidName.insert(itr, std::make_pair(pid, wstring()));
+		itr = this->pidName.emplace(itr, pid, wstring());
 	}
 	itr->second = name;
 }

@@ -1,13 +1,5 @@
 ﻿#pragma once
 
-#ifndef NOEXCEPT
-#if !defined(_MSC_VER) || _MSC_VER >= 1900
-#define NOEXCEPT noexcept
-#else
-#define NOEXCEPT
-#endif
-#endif
-
 namespace AribDescriptor
 {
 	enum {
@@ -28,10 +20,7 @@ namespace AribDescriptor
 		D_IMMEDIATE_MAX = 0x1FFF,
 	};
 
-	enum property_id
-#if !defined(_MSC_VER) || _MSC_VER >= 1900
-		: short
-#endif
+	enum property_id : short
 	{
 		d_invalid = 0,
 		reserved = D_IMMEDIATE_MAX + 1,
@@ -401,8 +390,8 @@ namespace AribDescriptor
 			DESCRIPTOR_PROPERTY() : id(d_invalid), type(TYPE_N) {}
 			~DESCRIPTOR_PROPERTY();
 			DESCRIPTOR_PROPERTY(const DESCRIPTOR_PROPERTY& o);
-			DESCRIPTOR_PROPERTY& operator=(DESCRIPTOR_PROPERTY&& o) NOEXCEPT;
-			DESCRIPTOR_PROPERTY(DESCRIPTOR_PROPERTY&& o) NOEXCEPT : type(TYPE_N) { *this = std::move(o); }
+			DESCRIPTOR_PROPERTY& operator=(DESCRIPTOR_PROPERTY&& o) noexcept;
+			DESCRIPTOR_PROPERTY(DESCRIPTOR_PROPERTY&& o) noexcept : type(TYPE_N) { *this = std::move(o); }
 			DESCRIPTOR_PROPERTY& operator=(const DESCRIPTOR_PROPERTY& o) { return *this = DESCRIPTOR_PROPERTY(o); }
 		};
 		struct LOCAL_PROPERTY {

@@ -220,13 +220,6 @@ RndIt upper_bound_first(RndIt first, RndIt last, const T& key)
 #pragma clang diagnostic ignored "-Wlogical-op-parentheses"
 #endif
 
-#ifdef _MSC_VER
-#if _MSC_VER < 1900
-// 'class': assignment operator was implicitly defined as deleted
-#pragma warning(disable : 4512)
-#endif
-#endif
-
 // 適切でないNULLの検出用
 //#undef NULL
 //#define NULL nullptr

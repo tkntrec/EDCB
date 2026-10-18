@@ -1457,7 +1457,7 @@ int CDescriptor::DecodeProperty(const BYTE* data, DWORD dataSize, const short** 
 				if( bitOffset != 0 ){
 					return -3;
 				}
-				pp->resize(pp->size() + 1);
+				pp->emplace_back();
 				DESCRIPTOR_PROPERTY& dp = pp->back();
 				dp.type = DESCRIPTOR_PROPERTY::TYPE_P;
 				dp.pl = new vector<vector<DESCRIPTOR_PROPERTY>>;
@@ -1470,7 +1470,7 @@ int CDescriptor::DecodeProperty(const BYTE* data, DWORD dataSize, const short** 
 				++*parser;
 
 				for( ; loopNum != 0; --loopNum ){
-					dp.pl->resize(dp.pl->size() + 1);
+					dp.pl->emplace_back();
 					const short* parserRollback = *parser;
 					DWORD localRollback = ppLocal->n;
 					int subReadSize = DecodeProperty(data + readSize, dataSize - readSize, parser, &dp.pl->back(), ppLocal, customParserList);
@@ -1505,7 +1505,7 @@ int CDescriptor::DecodeProperty(const BYTE* data, DWORD dataSize, const short** 
 				if( bitOffset != 0 ){
 					return -3;
 				}
-				pp->resize(pp->size() + 1);
+				pp->emplace_back();
 				DESCRIPTOR_PROPERTY& dp = pp->back();
 				dp.type = DESCRIPTOR_PROPERTY::TYPE_P;
 				dp.pl = new vector<vector<DESCRIPTOR_PROPERTY>>;
@@ -1521,7 +1521,7 @@ int CDescriptor::DecodeProperty(const BYTE* data, DWORD dataSize, const short** 
 						//記述子が異常。このエラーは回復できない
 						return -4;
 					}
-					dp.pl->resize(dp.pl->size() + 1);
+					dp.pl->emplace_back();
 					dp.pl->back().swap(desc.rootProperty);
 					readSize += subReadSize;
 				}
@@ -1575,7 +1575,7 @@ int CDescriptor::DecodeProperty(const BYTE* data, DWORD dataSize, const short** 
 						return -1;
 					}
 					DWORD copySize = min<DWORD>(byteSize, 0xFFF);
-					pp->resize(pp->size() + 1);
+					pp->emplace_back();
 					DESCRIPTOR_PROPERTY& dp = pp->back();
 					dp.id = dpID;
 					dp.type = (short)copySize;
@@ -1680,12 +1680,11 @@ bool CDescriptor::EnterLoop(CLoopPointer& lp, DWORD offset) const
 {
 	const vector<DESCRIPTOR_PROPERTY>* current = lp.pl != NULL ? &(*lp.pl)[lp.index] : &this->rootProperty;
 
-	vector<DESCRIPTOR_PROPERTY>::const_iterator itr;
-	for( itr = current->begin(); itr != current->end(); ++itr ){
-		if( itr->type == DESCRIPTOR_PROPERTY::TYPE_P && offset-- == 0 ){
+	for( const DESCRIPTOR_PROPERTY& dp : *current ){
+		if( dp.type == DESCRIPTOR_PROPERTY::TYPE_P && offset-- == 0 ){
 			//空のループには入らない
-			if( !itr->pl->empty() ){
-				lp.pl = itr->pl;
+			if( !dp.pl->empty() ){
+				lp.pl = dp.pl;
 				lp.index = 0;
 				return true;
 			}
@@ -1708,10 +1707,9 @@ const CDescriptor::DESCRIPTOR_PROPERTY* CDescriptor::FindProperty(property_id id
 {
 	const vector<DESCRIPTOR_PROPERTY>* current = lp.pl != NULL ? &(*lp.pl)[lp.index] : &this->rootProperty;
 
-	vector<DESCRIPTOR_PROPERTY>::const_iterator itr;
-	for( itr = current->begin(); itr != current->end(); ++itr ){
-		if( itr->id == id ){
-			return &*itr;
+	for( const DESCRIPTOR_PROPERTY& dp : *current ){
+		if( dp.id == id ){
+			return &dp;
 		}
 	}
 	return NULL;
@@ -1775,7 +1773,7 @@ CDescriptor::DESCRIPTOR_PROPERTY::DESCRIPTOR_PROPERTY(const DESCRIPTOR_PROPERTY&
 	}
 }
 
-CDescriptor::DESCRIPTOR_PROPERTY& CDescriptor::DESCRIPTOR_PROPERTY::operator=(DESCRIPTOR_PROPERTY&& o) NOEXCEPT
+CDescriptor::DESCRIPTOR_PROPERTY& CDescriptor::DESCRIPTOR_PROPERTY::operator=(DESCRIPTOR_PROPERTY&& o) noexcept
 {
 	if( this != &o ){
 		if( type == TYPE_P ){

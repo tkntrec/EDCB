@@ -406,7 +406,7 @@ void CTCPServer::ServerThread(CTCPServer* pSys)
 							if( hEventList.size() < WSA_MAXIMUM_WAIT_EVENTS && (hEvent = WSACreateEvent()) != WSA_INVALID_EVENT )
 #endif
 							{
-								waitList.resize(waitList.size() + 1);
+								waitList.emplace_back();
 								waitList.back().sock = sock;
 								std::swap(waitList.back().cmd, cmd);
 								waitList.back().tick = GetU32Tick();
@@ -434,7 +434,7 @@ void CTCPServer::ServerThread(CTCPServer* pSys)
 							break;
 						}
 						//応答用スレッドを追加
-						resThreadList.push_back(std::unique_ptr<RESPONSE_THREAD_INFO>(new RESPONSE_THREAD_INFO));
+						resThreadList.emplace_back(new RESPONSE_THREAD_INFO);
 						RESPONSE_THREAD_INFO& info = *resThreadList.back();
 						info.sock = sock;
 						std::swap(info.cmd, cmd);

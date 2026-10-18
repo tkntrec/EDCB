@@ -3,8 +3,15 @@
 
 #include <functional>
 
+#ifndef EDCB_WIN_LIB_EXT
+#define EDCB_WIN_LIB_EXT L".dll"
+#endif
+#ifndef EDCB_UNIX_LIB_EXT
+#define EDCB_UNIX_LIB_EXT L".so"
+#endif
+
 #ifdef _WIN32
-#define EDCB_LIB_EXT L".dll"
+#define EDCB_LIB_EXT EDCB_WIN_LIB_EXT
 #else
 #ifndef EDCB_INI_ROOT
 #define EDCB_INI_ROOT L"/var/local/edcb"
@@ -12,9 +19,7 @@
 #ifndef EDCB_LIB_ROOT
 #define EDCB_LIB_ROOT L"/usr/local/lib/edcb"
 #endif
-#ifndef EDCB_LIB_EXT
-#define EDCB_LIB_EXT L".so"
-#endif
+#define EDCB_LIB_EXT EDCB_UNIX_LIB_EXT
 #endif
 
 namespace filesystem_
@@ -172,6 +177,11 @@ BOOL WritePrivateProfileInt(LPCWSTR appName, LPCWSTR keyName, int value, LPCWSTR
 
 struct UTIL_FIND_DATA {
 	bool isDir;
+#ifdef _WIN32
+	bool readonly;
+	bool hidden;
+	bool system;
+#endif
 	LONGLONG lastWriteTime;
 	LONGLONG fileSize;
 	wstring fileName;

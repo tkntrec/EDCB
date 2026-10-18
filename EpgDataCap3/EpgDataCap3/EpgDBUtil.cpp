@@ -37,7 +37,7 @@ BOOL CEpgDBUtil::AddEIT(WORD PID, const Desc::CDescriptor& eit, LONGLONG streamT
 
 	itr = serviceEventMap.find(key);
 	if( itr == serviceEventMap.end() ){
-		serviceInfo = &serviceEventMap.insert(std::make_pair(key, SERVICE_EVENT_INFO())).first->second;
+		serviceInfo = &serviceEventMap.emplace(key, SERVICE_EVENT_INFO()).first->second;
 	}else{
 		serviceInfo = &itr->second;
 	}
@@ -728,7 +728,7 @@ BOOL CEpgDBUtil::AddServiceListNIT(const Desc::CDescriptor& nit)
 								map<ULONGLONG, BYTE>::iterator itrService;
 								itrService = this->serviceList.find(key);
 								if( itrService == this->serviceList.end() ){
-									this->serviceList.insert(pair<ULONGLONG, BYTE>(key, (BYTE)nit.GetNumber(Desc::service_type, lp3)));
+									this->serviceList.emplace(key, (BYTE)nit.GetNumber(Desc::service_type, lp3));
 								}
 							}while( nit.NextLoopIndex(lp3) );
 						}
@@ -816,10 +816,10 @@ BOOL CEpgDBUtil::AddServiceListSIT(WORD TSID, const Desc::CDescriptor& sit)
 						}
 					}while( sit.NextLoopIndex(lp2) );
 				}
-				info.serviceList.insert(std::make_pair(item.SID, item));
+				info.serviceList.emplace(item.SID, item);
 			}while( sit.NextLoopIndex(lp) );
 		}
-		this->serviceInfoList.insert(std::make_pair(key, info));
+		this->serviceInfoList.emplace(key, info);
 	}
 
 
@@ -834,7 +834,7 @@ BOOL CEpgDBUtil::AddSDT(const Desc::CDescriptor& sdt)
 	if( itrTS == this->serviceInfoList.end() ){
 		DB_TS_INFO info;
 		info.remote_control_key_id = 0;
-		itrTS = this->serviceInfoList.insert(std::make_pair(key, info)).first;
+		itrTS = this->serviceInfoList.emplace(key, info).first;
 	}
 
 	Desc::CDescriptor::CLoopPointer lp;
@@ -872,7 +872,7 @@ BOOL CEpgDBUtil::AddSDT(const Desc::CDescriptor& sdt)
 						item.service_type = (BYTE)sdt.GetNumber(Desc::service_type, lp2);
 					}while( sdt.NextLoopIndex(lp2) );
 				}
-				itrTS->second.serviceList.insert(std::make_pair(item.SID, item));
+				itrTS->second.serviceList.emplace(item.SID, item);
 			}
 		}while( sdt.NextLoopIndex(lp) );
 	}

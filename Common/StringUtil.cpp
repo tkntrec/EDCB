@@ -8,11 +8,11 @@ void Format(wstring& strBuff, PRINTF_FORMAT_SZ const WCHAR *format, ...)
 	va_start(params, format);
 
 	try{
-		vector<WCHAR> buff;
+		strBuff.clear();
 		WCHAR szSmall[256];
 		for(;;){
-			size_t s = buff.empty() ? 256 : buff.size();
-			WCHAR* p = buff.empty() ? szSmall : buff.data();
+			size_t s = strBuff.empty() ? 256 : strBuff.size();
+			WCHAR* p = strBuff.empty() ? szSmall : &strBuff.front();
 			va_list copyParams;
 #ifdef va_copy
 			va_copy(copyParams, params);
@@ -25,29 +25,34 @@ void Format(wstring& strBuff, PRINTF_FORMAT_SZ const WCHAR *format, ...)
 			//切り捨て以外のエラーでも-1が返る(無効なパラメーターハンドラはない)ので注意
 			int n = vswprintf(p, s, format, copyParams);
 			//切り捨てのみを区別できないので上限を設ける(微妙だがvswprintfの仕様上こうするしかない)
-			if( n < 0 && buff.size() >= 16 * 1024 * 1024 ){
+			if( n < 0 && strBuff.size() >= 16 * 1024 * 1024 ){
 				std::terminate();
 			}
 #endif
 			va_end(copyParams);
 			if( n >= 0 ){
 				//戻り値nを使うのでレアケース("%c"に'\0'など)では原作と結果が異なる
-				strBuff.assign(p, n);
+				if( strBuff.empty() ){
+					strBuff.assign(p, n);
+				}else{
+					strBuff.resize(n);
+				}
 				break;
 			}
-			buff.resize(s * 2);
+			strBuff.clear();
+			strBuff.resize(s * 2);
 		}
 	}catch(...){
 		va_end(params);
 		throw;
 	}
 
-    va_end(params);
+	va_end(params);
 }
 
 void Replace(wstring& strBuff, const wstring& strOld, const wstring& strNew)
 {
-	wstring::size_type Pos = 0;
+	size_t pos = 0;
 	wstring* strWork = &strBuff;
 	wstring strForAlias;
 
@@ -55,17 +60,19 @@ void Replace(wstring& strBuff, const wstring& strOld, const wstring& strNew)
 		strForAlias = strBuff;
 		strWork = &strForAlias;
 	}
-	while ((Pos = strWork->find(strOld,Pos)) != wstring::npos)
-	{
-		strWork->replace(Pos,strOld.size(),strNew);
-		Pos += strNew.size();
+	while( (pos = strWork->find(strOld, pos)) != wstring::npos ){
+		strWork->replace(pos, strOld.size(), strNew);
+		pos += strNew.size();
 	}
 	if( strWork == &strForAlias ){
 		strBuff = std::move(strForAlias);
 	}
 }
 
-size_t WtoA(const WCHAR* in, size_t inLen, vector<char>& out, UTIL_CONV_CODE code)
+namespace
+{
+template <class T>
+size_t ProcessWtoA(const WCHAR* in, size_t inLen, T& out, UTIL_CONV_CODE code)
 {
 #ifdef _WIN32
 	if( code != UTIL_CONV_UTF8 ){
@@ -74,10 +81,10 @@ size_t WtoA(const WCHAR* in, size_t inLen, vector<char>& out, UTIL_CONV_CODE cod
 			out.resize(n + 1);
 		}
 		if( n ){
-			n = WideCharToMultiByte((code == UTIL_CONV_DEFAULT ? 932 : CP_ACP), 0, in, (int)inLen, out.data(), (int)n, NULL, NULL);
+			n = WideCharToMultiByte((code == UTIL_CONV_DEFAULT ? 932 : CP_ACP), 0, in, (int)inLen, &out.front(), (int)n, NULL, NULL);
 		}
 		out[n] = '\0';
-		return strlen(out.data());
+		return strlen(&out.front());
 	}
 #else
 	//常にUTF-8
@@ -118,7 +125,8 @@ size_t WtoA(const WCHAR* in, size_t inLen, vector<char>& out, UTIL_CONV_CODE cod
 	return n;
 }
 
-size_t AtoW(const char* in, size_t inLen, vector<WCHAR>& out, UTIL_CONV_CODE code)
+template <class T>
+size_t ProcessAtoW(const char* in, size_t inLen, T& out, UTIL_CONV_CODE code)
 {
 #ifdef _WIN32
 	if( code != UTIL_CONV_UTF8 ){
@@ -127,10 +135,10 @@ size_t AtoW(const char* in, size_t inLen, vector<WCHAR>& out, UTIL_CONV_CODE cod
 			out.resize(n + 1);
 		}
 		if( n ){
-			n = MultiByteToWideChar((code == UTIL_CONV_DEFAULT ? 932 : CP_ACP), 0, in, (int)inLen, out.data(), (int)n);
+			n = MultiByteToWideChar((code == UTIL_CONV_DEFAULT ? 932 : CP_ACP), 0, in, (int)inLen, &out.front(), (int)n);
 		}
 		out[n] = L'\0';
-		return wcslen(out.data());
+		return wcslen(&out.front());
 	}
 #else
 	//常にUTF-8
@@ -191,19 +199,26 @@ size_t AtoW(const char* in, size_t inLen, vector<WCHAR>& out, UTIL_CONV_CODE cod
 	out[n] = L'\0';
 	return n;
 }
+}
+
+size_t WtoA(const WCHAR* in, size_t inLen, vector<char>& out, UTIL_CONV_CODE code)
+{
+	return ProcessWtoA(in, inLen, out, code);
+}
+
+size_t AtoW(const char* in, size_t inLen, vector<WCHAR>& out, UTIL_CONV_CODE code)
+{
+	return ProcessAtoW(in, inLen, out, code);
+}
 
 void WtoA(const wstring& strIn, string& strOut, UTIL_CONV_CODE code)
 {
-	vector<char> buff;
-	size_t len = WtoA(strIn.c_str(), strIn.size(), buff, code);
-	strOut.assign(&buff.front(), &buff.front() + len);
+	strOut.resize(ProcessWtoA(strIn.c_str(), strIn.size(), strOut, code));
 }
 
 void AtoW(const string& strIn, wstring& strOut, UTIL_CONV_CODE code)
 {
-	vector<WCHAR> buff;
-	size_t len = AtoW(strIn.c_str(), strIn.size(), buff, code);
-	strOut.assign(&buff.front(), &buff.front() + len);
+	strOut.resize(ProcessAtoW(strIn.c_str(), strIn.size(), strOut, code));
 }
 
 bool Separate(const wstring& strIn, const WCHAR* sep, wstring& strLeft, wstring& strRight)

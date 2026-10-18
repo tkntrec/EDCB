@@ -220,7 +220,7 @@ void CBonDriverUtil::DriverThread(CBonDriverUtil* sys)
 					if( spaceName == NULL ){
 						break;
 					}
-					sys->loadChList.push_back(std::make_pair(Bon16CharToWString(spaceName), vector<wstring>()));
+					sys->loadChList.emplace_back(Bon16CharToWString(spaceName), vector<wstring>());
 					for( DWORD countCh = 0; ; countCh++ ){
 						const IBonDriver2::BON16CHAR* chName = sys->bon2IF->EnumChannelName(countSpace, countCh);
 						if( chName == NULL ){

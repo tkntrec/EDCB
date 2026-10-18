@@ -5,9 +5,7 @@ ct=CreateContentBuilder(GZIP_THRESHOLD_BYTE)
 ct:Append(DOCTYPE_HTML4_STRICT..[=[
 <html lang="ja">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<meta name="viewport" content="initial-scale=1">
-<link rel="stylesheet" type="text/css" href="default.css">
+]=]..DefaultHeadContents()..[=[
 <title>番組詳細 - EDCB</title>
 </head>
 <body>
@@ -19,16 +17,21 @@ ct:Append(DOCTYPE_HTML4_STRICT..[=[
 onid,tsid,sid,startTime=GetVarPastEventID(mg.request_info.query_string,'id')
 
 edcb.htmlEscape=15
+epgDate=0
 et=edcb.EnumEventInfoArchive({{onid=onid,tsid=tsid,sid=sid}}, {startTime=os.date('!*t',startTime), durationSecond=1})
 if et and #et~=0 then
-  ct:Append('    <dt>番組情報</dt><dd>\n'..ConvertProgramText(et[1]):gsub('\r?\n','<br>\n')..'</dd>\n')
+  ct:Append('    <dt id="pginfo-term">番組情報</dt><dd id="pginfo-desc">'..DecorateProgramText(ConvertProgramText(et[1]))..'</dd>\n')
+  --番組表のdateクエリは今日(深夜4時区切り)を基準(=0)とする
+  epgDate=math.floor((startTime-4*3600)/(24*3600))-math.floor((os.time()+(9-4)*3600)/(24*3600))
 end
 
 ct:Append([=[
   </dl>
 </div>
 <div id="footer">
-  <a href="epg.html">番組表</a> <a href="epglist.html?id=]=]..onid..'-'..tsid..'-'..sid..[=[#now">リスト番組表</a>
+  <a href="epg.html?tab=]=]
+  ..(({['地デジ']=0,['BS']=1,['CS3']=3,['その他']=4})[NetworkType(onid)] or 2)..'&amp;date='..epgDate..[=[">番組表</a> <a href="epglist.html?id=]=]
+  ..onid..'-'..tsid..'-'..sid..[=[#now">リスト番組表</a>
 </div>
 </body>
 </html>

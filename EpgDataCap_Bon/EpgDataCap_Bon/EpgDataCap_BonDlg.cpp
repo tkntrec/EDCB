@@ -486,31 +486,27 @@ void CEpgDataCap_BonDlg::OnTimer(UINT_PTR nIDEvent)
 				}
 				statusLog += L"\r\n";
 
-				wstring udp = L"";
-				if( udpSendList.size() > 0 ){
-					udp = L"UDP送信：";
-					for( size_t i=0; i<udpSendList.size(); i++ ){
+				if( this->udpSendList.empty() == false ){
+					statusLog += L"UDP送信：";
+					for( const NW_SEND_INFO& udp : this->udpSendList ){
 						wstring buff;
-						Format(buff, L":%d%ls ", udpSendList[i].port, udpSendList[i].broadcastFlag ? L"(Broadcast)" : L"");
-						udp += udpSendList[i].ipString.find(L':') == wstring::npos ? udpSendList[i].ipString : L'[' + udpSendList[i].ipString + L']';
-						udp += buff;
+						Format(buff, L":%d%ls ", udp.port, udp.broadcastFlag ? L"(Broadcast)" : L"");
+						statusLog += udp.ipString.find(L':') == wstring::npos ? udp.ipString : L'[' + udp.ipString + L']';
+						statusLog += buff;
 					}
-					udp += L"\r\n";
+					statusLog += L"\r\n";
 				}
-				statusLog += udp;
 
-				wstring tcp = L"";
-				if( tcpSendList.size() > 0 ){
-					tcp = L"TCP送信：";
-					for( size_t i=0; i<tcpSendList.size(); i++ ){
+				if( this->tcpSendList.empty() == false ){
+					statusLog += L"TCP送信：";
+					for( const NW_SEND_INFO& tcp : this->tcpSendList ){
 						wstring buff;
-						Format(buff, L":%d ", tcpSendList[i].port);
-						tcp += tcpSendList[i].ipString.find(L':') == wstring::npos ? tcpSendList[i].ipString : L'[' + tcpSendList[i].ipString + L']';
-						tcp += buff;
+						Format(buff, L":%d ", tcp.port);
+						statusLog += tcp.ipString.find(L':') == wstring::npos ? tcp.ipString : L'[' + tcp.ipString + L']';
+						statusLog += buff;
 					}
-					tcp += L"\r\n";
+					statusLog += L"\r\n";
 				}
-				statusLog += tcp;
 
 				SetDlgItemText(m_hWnd, IDC_EDIT_STATUS, statusLog.c_str());
 				Edit_Scroll(GetDlgItem(IDC_EDIT_STATUS), iLine, 0);

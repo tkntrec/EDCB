@@ -20,7 +20,7 @@ public:
 		lock_recursive_mutex lock(this->m_lock);
 
 		DWORD id = this->getNextID();
-		this->m_list.insert(std::make_pair(id,ptr));
+		this->m_list.emplace(id, ptr);
 
 		return id;
 	}

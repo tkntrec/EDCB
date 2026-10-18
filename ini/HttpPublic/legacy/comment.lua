@@ -36,18 +36,47 @@ if pid then
     -- 投稿先を明記
     comm=mail..(refuge and ' refuge' or ' nico')..comm
     code=405
-    f=edcb.io.open('\\\\.\\pipe\\post_d7b64ac2_'..pid,'w')
-    if f then
+    if JKCNSL_PATH then
+      postName='jkcnsl_edcb_'..pid
+      if WIN32 then
+        fpost=edcb.io.open('\\\\.\\pipe\\'..postName,'w')
+      else
+        for retry=1,9 do
+          fpost=EdcbFindFilePlain(PathAppend(JKCNSL_UNIX_BASE_DIR,postName)) and
+            edcb.io.open(PathAppend(JKCNSL_UNIX_BASE_DIR,postName),'a')
+          -- 同時に書き込まないようプロセス間でロックが必要
+          if not fpost or edcb.io._flock_nb(fpost) then break end
+          fpost:close()
+          fpost=nil
+          edcb.Sleep(10*retry)
+        end
+      end
+    else
+      if WIN32 then
+        fpost=edcb.io.open('\\\\.\\pipe\\post_d7b64ac2_'..pid,'w')
+      else
+        for retry=1,9 do
+          fpost=EdcbFindFilePlain(PathAppend(JKTASK_BASE_DIR,'post_'..pid..'.fifo')) and
+            edcb.io.open(PathAppend(JKTASK_BASE_DIR,'post_'..pid..'.fifo'),'a')
+          -- 同時に書き込まないようプロセス間でロックが必要
+          if not fpost or edcb.io._flock_nb(fpost) then break end
+          fpost:close()
+          fpost=nil
+          edcb.Sleep(10*retry)
+        end
+      end
+    end
+    if fpost then
       code=500
-      if f:write(comm) then
+      if fpost:write((JKCNSL_PATH and '+' or '')..comm..'\n') and fpost:flush() then
         code=200
         for i=0,300 do
           -- 確実に書き込むために切断されるまで改行しつづける
-          if not f:write('\n') or not f:flush() then break end
+          if not WIN32 or not fpost:write('\n') or not fpost:flush() then break end
           edcb.Sleep(10)
         end
       end
-      f:close()
+      fpost:close()
     end
   end
 end
