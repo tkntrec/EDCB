@@ -1463,6 +1463,8 @@ namespace EpgTimer
                     cmdLine[i] = Regex.Replace(cmdLine[i], "\\$" + (isReserve ? "Reserve" : "RecInfo") + "=([^$]*)\\$", m => m.Groups[1].Value.Replace("{}", id.ToString()));
                 }
 
+                //再生アプリ指定でコマンドラインとなる場合に、ファイル名のみのときは""を補う
+                string mark = cmdLine[1].Trim() == "$FilePath$" ? "\"" : "";
                 //'$'->'\t'は再帰的な展開を防ぐため
                 cmdLine[1] = cmdLine[1].Replace("$FileNameExt$", Path.GetFileName(path).Replace('$', '\t'));
                 cmdLine[1] = cmdLine[1].Replace("$FilePath$", path).Replace('\t', '$');
@@ -1471,6 +1473,7 @@ namespace EpgTimer
                 {
                     if (string.IsNullOrWhiteSpace(cmdLine[0]))
                     {
+                        cmdLine[1] = cmdLine[1].Replace("\"", "");//両端に""が付与されている時は削除する
                         if (isCheckPath && !File.Exists(cmdLine[1]))
                         {
                             MessageBox.Show("録画ファイルが見つかりません。\r\n\r\n" + cmdLine[1], "録画ファイルの再生", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -1480,7 +1483,7 @@ namespace EpgTimer
                     }
                     else
                     {
-                        using (Process.Start(new ProcessStartInfo(cmdLine[0], cmdLine[1]) { UseShellExecute = false })) { }
+                        using (Process.Start(new ProcessStartInfo(cmdLine[0], mark + cmdLine[1] + mark) { UseShellExecute = false })) { }
                     }
                 }
                 catch (Exception ex) { MessageBox.Show(ex.ToString()); }
