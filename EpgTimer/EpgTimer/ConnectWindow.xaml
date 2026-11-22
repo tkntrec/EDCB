@@ -28,7 +28,7 @@
             </DockPanel>
             <TextBlock Grid.Column="1" Text="　　ポート " />
             <TextBox Grid.Column="2" Name="textBox_srvPort" Width="80" />
-            <CheckBox Grid.Row="3" Content="クライアント側に待ち受けポートを作る" Name="checkBox_clientPort" />
+            <CheckBox Grid.Row="3" Content="※クライアント側に待ち受けポートを作る" Name="checkBox_clientPort" ToolTip="接続サーバーが待ち受けポート方式を許可しているか確認してください。" />
             <TextBlock Grid.Row="3" Grid.Column="1" Text="　　ポート " />
             <TextBox Grid.Row="3" Grid.Column="2" Name="textBox_clientPort" Width="80" IsEnabled="{Binding Path=IsChecked, ElementName=checkBox_clientPort, UpdateSourceTrigger=PropertyChanged}" />
         </Grid>
