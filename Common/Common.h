@@ -221,17 +221,6 @@ RndIt upper_bound_first(RndIt first, RndIt last, const T& key)
 #endif
 
 #ifdef _MSC_VER
-#if _MSC_VER < 1900
-// 'class': assignment operator was implicitly defined as deleted
-#pragma warning(disable : 4512)
-#endif
-#endif
-
-// 適切でないNULLの検出用
-//#undef NULL
-//#define NULL nullptr
-
-#ifdef _MSC_VER
 #include <sal.h>
 #define PRINTF_FORMAT_SZ _In_z_ _Printf_format_string_
 #else

@@ -3,12 +3,12 @@
 #include "PathUtil.h"
 
 CReNamePlugInUtil::CReNamePlugInUtil()
-	: m_moduleHolder(NULL, UtilFreeLibrary)
+	: m_moduleHolder(nullptr, UtilFreeLibrary)
 {
 }
 
 #ifdef _WIN32
-BOOL CReNamePlugInUtil::ShowSetting(
+bool CReNamePlugInUtil::ShowSetting(
 	const wstring& dllPath,
 	HWND parentWnd
 	)
@@ -17,13 +17,13 @@ BOOL CReNamePlugInUtil::ShowSetting(
 	SettingRNP pfnSetting;
 	if( UtilGetProcAddress(module.get(), "Setting", pfnSetting) ){
 		pfnSetting(parentWnd);
-		return TRUE;
+		return true;
 	}
-	return FALSE;
+	return false;
 }
 #endif
 
-BOOL CReNamePlugInUtil::Convert(
+bool CReNamePlugInUtil::Convert(
 	PLUGIN_RESERVE_INFO* info,
 	const WCHAR* dllPattern,
 	const WCHAR* dllFolder,
@@ -34,9 +34,9 @@ BOOL CReNamePlugInUtil::Convert(
 	wstring pattern = dllPattern;
 	wstring dllPath = dllFolder + pattern.substr(0, pattern.find('?'));
 	void* hModule = UtilLoadLibrary(dllPath);
-	if( hModule == NULL ){
+	if( hModule == nullptr ){
 		AddDebugLogFormat(L"%lsのロードに失敗しました", dllPath.c_str());
-		return FALSE;
+		return false;
 	}
 	m_moduleHolder.reset(hModule);
 	pattern.erase(0, pattern.find('?'));
@@ -44,7 +44,7 @@ BOOL CReNamePlugInUtil::Convert(
 	ConvertRecName3RNP pfnConvertRecName3;
 	BOOL ret;
 	if( UtilGetProcAddress(hModule, "ConvertRecName3", pfnConvertRecName3) ){
-		ret = pfnConvertRecName3(info, pattern.empty() ? NULL : pattern.c_str(), recName, recNamesize);
+		ret = pfnConvertRecName3(info, pattern.empty() ? nullptr : pattern.c_str(), recName, recNamesize);
 	}else{
 		ConvertRecName2RNP pfnConvertRecName2;
 		if( UtilGetProcAddress(hModule, "ConvertRecName2", pfnConvertRecName2) ){
@@ -59,7 +59,7 @@ BOOL CReNamePlugInUtil::Convert(
 			}
 		}
 	}
-	return ret;
+	return ret != FALSE;
 }
 
 void CReNamePlugInUtil::CloseConvert()

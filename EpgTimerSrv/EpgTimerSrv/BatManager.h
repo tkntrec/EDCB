@@ -22,7 +22,7 @@ public:
 	bool IsWorking() const;
 	bool IsWorkingWithoutNotification() const;
 protected:
-	mutable recursive_mutex_ managerLock;
+	mutable std::recursive_mutex managerLock;
 
 	CNotifyManager& notifyManager;
 	wstring managerName;
@@ -33,9 +33,9 @@ protected:
 	DWORD idleMargin;
 	DWORD nextBatMargin;
 	bool batWorkExitingFlag;
-	thread_ batWorkThread;
+	std::thread batWorkThread;
 	CAutoResetEvent batWorkEvent;
-	atomic_bool_ batWorkStopFlag;
+	std::atomic_bool batWorkStopFlag;
 protected:
 	void StartWork();
 	static void BatWorkThread(CBatManager* sys);
@@ -43,6 +43,7 @@ protected:
 	bool CreateBatFile(BAT_WORK_INFO& info, DWORD& exBatMargin, DWORD& exNotifyInterval, WORD& exSW, bool& exDirect, vector<char>& buff) const;
 #ifdef _WIN32
 	static wstring CreateEnvironment(const BAT_WORK_INFO& info);
+#else
+	static string CreateEnvironment(const BAT_WORK_INFO& info);
 #endif
 };
-

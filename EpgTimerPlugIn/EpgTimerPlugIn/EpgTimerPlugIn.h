@@ -5,7 +5,6 @@
 #include "../../Common/TVTestPlugin.h"
 
 #include "../../Common/PipeServer.h"
-#include "../../Common/ErrDef.h"
 #include "../../Common/CtrlCmdDef.h"
 #include "../../Common/CtrlCmdUtil.h"
 #include "../../Common/ThreadUtil.h"
@@ -25,7 +24,7 @@ private:
 	CStreamCtrlDlg ctrlDlg;
 	CCmdStream cmdCapture;
 	CCmdStream resCapture;
-	recursive_mutex_ cmdLock;
+	std::recursive_mutex cmdLock;
 
 private:
 	static LRESULT CALLBACK EventCallback(UINT Event,LPARAM lParam1,LPARAM lParam2,void *pClientData);

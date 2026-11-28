@@ -42,15 +42,17 @@ ifeq ($(OS),Windows_NT)
     SyoboiCalUtil.cpp \
     EpgTimerSrv.rc
   TARGETEXT = .exe
-  CPPFLAGS := -I. -DNDEBUG -D_WINDOWS -DEPGTIMERSRV_APPLICATION -D_UNICODE -DUNICODE -DUSE_LUA -DUSE_IPV6 -DNO_CGI -DNO_POPEN -DOPENSSL_API_3_0 $(CPPFLAGS)
+  CPPFLAGS := -I. -DNDEBUG -D_WINDOWS -DEPGTIMERSRV_APPLICATION -D_UNICODE -DUNICODE -DUSE_LUA -DNO_LUA_SERVER_PAGE -DUSE_IPV6 -DNO_CGI -DNO_SSI -DNO_BUILTIN_PUT_DELETE_METHODS -DNO_POPEN -DOPENSSL_API_3_0 $(CPPFLAGS)
   #CPPFLAGS += -DEPGDB_STD_WREGEX
   CFLAGS := -Os $(CFLAGS)
   CXXFLAGS := -std=c++17 -pedantic-errors -Os $(CXXFLAGS)
   LDFLAGS2 = -municode -mwindows -Wl,-s,--dynamicbase,--nxcompat -static-libgcc -static-libstdc++ $(LDFLAGS)
   LDLIBS := -lws2_32 -lole32 -lcomctl32 -lwinhttp -loleaut32 -lcrypt32 -liphlpapi -luuid -lnetapi32 -ldbghelp $(LDLIBS)
 
+  CCMAJOR := $(firstword $(subst ., ,$(shell $(CC) -dumpversion)))
   # Lazy loading fails with segfault if LUA_BUILD_AS_DLL defined.
-  LDLIBS := -L. -llua52-mingw-lazy-$(or $(MSYSTEM_CARCH),$(findstring x86_64,$(MAKE_HOST)),i686) $(LDLIBS)
+  # Import libraries before and after GCC15 are incompatible.
+  LDLIBS := -L. -llua52-mingw-lazy-$(or $(MSYSTEM_CARCH),$(findstring x86_64,$(MAKE_HOST)),i686)$(if $(findstring _$(CCMAJOR)_,_8_9_10_11_12_13_14_),,-gcc15) $(LDLIBS)
 
   ifndef MSYSTEM
     # Assume non-pthread threading model
@@ -58,7 +60,7 @@ ifeq ($(OS),Windows_NT)
   endif
 else
   TARGETEXT =
-  CPPFLAGS := -I. -DNDEBUG -DEPGTIMERSRV_APPLICATION -DUSE_LUA -DUSE_IPV6 -DNO_CGI -DNO_POPEN -DOPENSSL_API_3_0 $(CPPFLAGS)
+  CPPFLAGS := -I. -DNDEBUG -DEPGTIMERSRV_APPLICATION -DUSE_LUA -DNO_LUA_SERVER_PAGE -DUSE_IPV6 -DNO_CGI -DNO_SSI -DNO_BUILTIN_PUT_DELETE_METHODS -DNO_POPEN -DOPENSSL_API_3_0 $(CPPFLAGS)
   CFLAGS := -Os -pthread $(CFLAGS)
   CXXFLAGS := -std=c++17 -pedantic-errors -Os -pthread $(CXXFLAGS)
   LDFLAGS2 = -Wl,-s -pthread $(LDFLAGS)
@@ -82,14 +84,8 @@ stdafx.h.gch: stdafx.h ../../Common/Common.h targetver.h
 	$(COMPILE.cpp) $(OUTPUT_OPTION) $<
 %.c.obj: %.c $(CUR_ALL_H)
 	$(COMPILE.c) $(OUTPUT_OPTION) $<
-%.rc.obj: %.rc.u.obj resource.h targetver.h
+%.rc.obj: %.rc resource.h targetver.h
 	$(WINDRES) $(CPPFLAGS) -c 65001 -J rc -O coff $(OUTPUT_OPTION) $<
-%.rc.u.obj: %.rc
-ifdef MSYSTEM
-	iconv -f UTF-16LE -t UTF-8 $< >$@
-else
-	powershell -NoProfile -Command "&{cat $<|Out-File -Encoding UTF8 $@}"
-endif
 clean:
 	$(RM) stdafx.h.gch *.obj $(TARGET)$(TARGETEXT) $(TARGET).map
 install: $(TARGET)$(TARGETEXT)

@@ -8,10 +8,24 @@
 #include "../../Common/IniUtil.h"
 #include <tlhelp32.h>
 #else
+#include <errno.h>
 #include <signal.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #endif
+
+namespace
+{
+#ifndef _WIN32
+//自分の子とは限らないプロセスがまだ存在するかどうか
+bool IsOtherProcessAlive(DWORD pid)
+{
+	//子プロセスなら回収する。子でなければwaitpid()は失敗するのでkill()で調べる
+	pid_t ret = waitpid((pid_t)pid, nullptr, WNOHANG);
+	return ret == 0 || (ret < 0 && errno == ECHILD && kill((pid_t)pid, 0) == 0);
+}
+#endif
+}
 
 CTunerBankCtrl::CTunerBankCtrl(DWORD tunerID_, LPCWSTR bonFileName_, WORD epgCapMax, const map<DWORD, CH_DATA4>& chMap_, CNotifyManager& notifyManager_, CEpgDBManager& epgDBManager_)
 	: tunerID(tunerID_)
@@ -24,8 +38,8 @@ CTunerBankCtrl::CTunerBankCtrl(DWORD tunerID_, LPCWSTR bonFileName_, WORD epgCap
 	, delayTime(0)
 	, epgCapDelayTime(0)
 {
-	for( auto itr = chMap_.begin(); itr != chMap_.end(); itr++ ){
-		this->chMap.insert(std::make_pair(Create64Key(itr->second.originalNetworkID, itr->second.transportStreamID, itr->second.serviceID), itr->second));
+	for( const auto& ch4 : chMap_ ){
+		this->chMap.emplace(Create64Key(ch4.second.originalNetworkID, ch4.second.transportStreamID, ch4.second.serviceID), ch4.second);
 	}
 	this->watchContext.count = 0;
 }
@@ -64,7 +78,7 @@ void CTunerBankCtrl::ReloadSetting(const CEpgTimerSrvSetting::SETTING& s)
 const CH_DATA4* CTunerBankCtrl::GetCh(WORD onid, WORD tsid, WORD sid) const
 {
 	auto itr = this->chMap.find(Create64Key(onid, tsid, sid));
-	return itr == this->chMap.end() ? NULL : &itr->second;
+	return itr == this->chMap.end() ? nullptr : &itr->second;
 }
 
 bool CTunerBankCtrl::AddReserve(const TUNER_RESERVE& reserve)
@@ -74,7 +88,7 @@ bool CTunerBankCtrl::AddReserve(const TUNER_RESERVE& reserve)
 	    reserve.recMode > RECMODE_VIEW ){
 		return false;
 	}
-	TUNER_RESERVE_WORK& r = this->reserveMap.insert(std::make_pair(reserve.reserveID, TUNER_RESERVE_WORK())).first->second;
+	TUNER_RESERVE_WORK& r = this->reserveMap.emplace(reserve.reserveID, TUNER_RESERVE_WORK()).first->second;
 	static_cast<TUNER_RESERVE&>(r) = reserve;
 	r.startOrder = (r.startTime - r.startMargin) / I64_1SEC << 16 | (r.reserveID & 0xFFFF);
 	r.effectivePriority = (this->backPriority ? -1 : 1) * ((LONGLONG)((this->backPriority ? r.priority : ~r.priority) & 7) << 60 | r.startOrder);
@@ -199,8 +213,8 @@ vector<DWORD> CTunerBankCtrl::GetReserveIDList() const
 {
 	vector<DWORD> list;
 	list.reserve(this->reserveMap.size());
-	for( auto itr = this->reserveMap.cbegin(); itr != this->reserveMap.end(); itr++ ){
-		list.push_back(itr->first);
+	for( const auto& item : this->reserveMap ){
+		list.push_back(item.first);
 	}
 	return list;
 }
@@ -213,7 +227,7 @@ vector<CTunerBankCtrl::CHECK_RESULT> CTunerBankCtrl::Check(vector<DWORD>* starte
 #ifdef _WIN32
 	    WaitForSingleObject(this->hTunerProcess, 0) != WAIT_TIMEOUT
 #else
-	    waitpid(this->tunerPid, NULL, WNOHANG) != 0
+	    waitpid(this->tunerPid, nullptr, WNOHANG) != 0
 #endif
 	    ){
 		//チューナが予期せず閉じられた
@@ -344,7 +358,7 @@ vector<CTunerBankCtrl::CHECK_RESULT> CTunerBankCtrl::Check(vector<DWORD>* starte
 			//開始順が秒精度なので、前後関係を確実にするため開始時間は必ず秒精度で扱う
 			else if( (r.startTime - r.startMargin - this->recWakeTime) / I64_1SEC < now / I64_1SEC ){
 				//録画開始recWakeTime前～
-				idleList.push_back(std::make_pair(r.startOrder, r.reserveID));
+				idleList.emplace_back(r.startOrder, r.reserveID);
 			}
 			break;
 		case TR_READY:
@@ -725,8 +739,8 @@ bool CTunerBankCtrl::IsNeedOpenTuner() const
 	}
 	//戻り値の振動を防ぐためdelayTimeを考慮してはいけない
 	LONGLONG now = GetNowI64Time();
-	for( auto itr = this->reserveMap.cbegin(); itr != this->reserveMap.end(); itr++ ){
-		if( itr->second.state != TR_IDLE || (itr->second.startTime - itr->second.startMargin - this->recWakeTime) / I64_1SEC < now / I64_1SEC ){
+	for( const auto& item : this->reserveMap ){
+		if( item.second.state != TR_IDLE || (item.second.startTime - item.second.startMargin - this->recWakeTime) / I64_1SEC < now / I64_1SEC ){
 			return true;
 		}
 	}
@@ -739,10 +753,10 @@ bool CTunerBankCtrl::FindPartialService(WORD onid, WORD tsid, WORD sid, WORD* pa
 	for( auto itr = this->chMap.lower_bound(Create64Key(onid, tsid, 0)); itr != itrEnd; itr++ ){
 		if( itr->second.partialFlag ){
 			if( itr->second.serviceID != sid ){
-				if( partialSID != NULL ){
+				if( partialSID != nullptr ){
 					*partialSID = itr->second.serviceID;
 				}
-				if( serviceName != NULL ){
+				if( serviceName != nullptr ){
 					*serviceName = itr->second.serviceName;
 				}
 				return true;
@@ -760,7 +774,7 @@ bool CTunerBankCtrl::CreateCtrl(DWORD* ctrlID, DWORD* partialCtrlID, const TUNER
 	BYTE partialRecMode = reserve.recMode == RECMODE_VIEW ? 0 : min<BYTE>(reserve.partialRecMode, 2);
 	WORD partialSID = 0;
 	if( partialRecMode == 1 || partialRecMode == 2 ){
-		if( FindPartialService(reserve.onid, reserve.tsid, reserve.sid, &partialSID, NULL) == false ){
+		if( FindPartialService(reserve.onid, reserve.tsid, reserve.sid, &partialSID, nullptr) == false ){
 			partialSID = 0;
 			if( reserve.partialRecMode == 2 ){
 				return false;
@@ -823,13 +837,11 @@ void CTunerBankCtrl::SaveProgramInfo(LPCWSTR recPath, const EPGDB_EVENT_INFO& in
 		savePath.append(fs_path(recPath).filename().concat(L".program.txt").native());
 	}
 
-	wstring serviceName;
-	auto itr = this->chMap.find(Create64Key(info.original_network_id, info.transport_stream_id, info.service_id));
-	if( itr != this->chMap.end() ){
-		serviceName = itr->second.serviceName;
-	}
 	wstring outTextW = (append ? L"\r\n-----------------------\r\n" : this->saveProgramInfoAsUtf8 ? L"\xFEFF" : L"") +
-	                   ConvertProgramText(info, serviceName);
+		ConvertProgramText(info, [this](WORD onid, WORD tsid, WORD sid) -> LPCWSTR {
+			auto itr = this->chMap.find(Create64Key(onid, tsid, sid));
+			return itr != this->chMap.end() ? itr->second.serviceName.c_str() : nullptr;
+		});
 	if( UTIL_NEWLINE[0] != L'\r' ){
 		Replace(outTextW, L"\r\n", L"\n");
 	}
@@ -932,11 +944,11 @@ CTunerBankCtrl::TR_STATE CTunerBankCtrl::GetState() const
 		if( this->specialState != TR_IDLE ){
 			state = this->specialState;
 		}else{
-			for( auto itr = this->reserveMap.cbegin(); itr != this->reserveMap.end(); itr++ ){
-				if( itr->second.state == TR_REC ){
+			for( const auto& item : this->reserveMap ){
+				if( item.second.state == TR_REC ){
 					state = TR_REC;
 					break;
-				}else if( itr->second.state == TR_READY ){
+				}else if( item.second.state == TR_READY ){
 					state = TR_READY;
 				}
 			}
@@ -967,8 +979,8 @@ TUNER_PROCESS_STATUS_INFO CTunerBankCtrl::GetProcessStatusInfo() const
 LONGLONG CTunerBankCtrl::GetNearestReserveTime() const
 {
 	LONGLONG minTime = LLONG_MAX;
-	for( auto itr = this->reserveMap.cbegin(); itr != this->reserveMap.end(); itr++ ){
-		minTime = min(itr->second.startTime - itr->second.startMargin, minTime);
+	for( const auto& item : this->reserveMap ){
+		minTime = min(item.second.startTime - item.second.startMargin, minTime);
 	}
 	return minTime;
 }
@@ -977,7 +989,7 @@ bool CTunerBankCtrl::StartEpgCap(const vector<SET_CH_INFO>& setChList)
 {
 	if( setChList.empty() == false && this->tunerPid == 0 ){
 		//EPG取得についてはチューナの再利用はしない
-		if( OpenTuner(this->recMinWake, true, false, false, true, NULL) ){
+		if( OpenTuner(this->recMinWake, true, false, false, true, nullptr) ){
 			CWatchBlock watchBlock(&this->watchContext);
 			CSendCtrlCmd ctrlCmd;
 			ctrlCmd.SetPipeSetting(CMD2_VIEW_CTRL_PIPE, this->tunerPid);
@@ -1189,9 +1201,8 @@ bool CTunerBankCtrl::OpenTuner(bool minWake, bool noView, bool nwUdp, bool nwTcp
 	if( this->notifyManager.IsGUI() == false ){
 		//表示できないのでGUI経由で起動してみる
 		CSendCtrlCmd ctrlCmd;
-		vector<DWORD> registGUI = this->notifyManager.GetRegistGUI();
-		for( size_t i = 0; i < registGUI.size(); i++ ){
-			ctrlCmd.SetPipeSetting(CMD2_GUI_CTRL_PIPE, registGUI[i]);
+		for( DWORD guiProcessID : this->notifyManager.GetRegistGUI() ){
+			ctrlCmd.SetPipeSetting(CMD2_GUI_CTRL_PIPE, guiProcessID);
 			DWORD pid;
 			if( ctrlCmd.SendGUIExecute(L'"' + strExecute + L'"' + strParam, &pid) == CMD_SUCCESS && pid ){
 				//ハンドル開く前に終了するかもしれない
@@ -1208,8 +1219,9 @@ bool CTunerBankCtrl::OpenTuner(bool minWake, bool noView, bool nwUdp, bool nwTcp
 		PROCESS_INFORMATION pi;
 		STARTUPINFO si = {};
 		si.cb = sizeof(si);
-		vector<WCHAR> strBuff(strParam.c_str(), strParam.c_str() + strParam.size() + 1);
-		if( CreateProcess(strExecute.c_str(), strBuff.data(), NULL, NULL, FALSE, dwPriority, NULL, NULL, &si, &pi) ){
+		//CreateProcess()のlpCommandLineはconstでないため
+		strParam += L'\0';
+		if( CreateProcess(strExecute.c_str(), &strParam.front(), nullptr, nullptr, FALSE, dwPriority, nullptr, nullptr, &si, &pi) ){
 			CloseHandle(pi.hThread);
 			this->hTunerProcess = pi.hProcess;
 			this->tunerPid = pi.dwProcessId;
@@ -1225,16 +1237,17 @@ bool CTunerBankCtrl::OpenTuner(bool minWake, bool noView, bool nwUdp, bool nwTcp
 	for( size_t i = 0; i < strParam.size(); i += strlen(strParam.c_str() + i) + 1 ){
 		argv.push_back((char*)(strParam.c_str() + i));
 	}
-	argv.push_back(NULL);
+	argv.push_back(nullptr);
 	pid_t pid = fork();
 	if( pid == 0 ){
 		//シグナルマスクを初期化
 		sigset_t sset;
 		sigemptyset(&sset);
-		if( sigprocmask(SIG_SETMASK, &sset, NULL) == 0 ){
+		if( pthread_sigmask(SIG_SETMASK, &sset, nullptr) == 0 ){
 			execv(execU.c_str(), argv.data());
 		}
-		exit(EXIT_FAILURE);
+		//親の終了処理を実行しないよう_exit()で抜ける
+		_exit(EXIT_FAILURE);
 	}else if( pid != -1 ){
 		this->tunerPid = (DWORD)pid;
 	}
@@ -1251,7 +1264,7 @@ bool CTunerBankCtrl::OpenTuner(bool minWake, bool noView, bool nwUdp, bool nwTcp
 			if( WaitForSingleObject(this->hTunerProcess, 10) != WAIT_TIMEOUT ){
 #else
 			SleepForMsec(10);
-			if( waitpid(this->tunerPid, NULL, WNOHANG) != 0 ){
+			if( waitpid(this->tunerPid, nullptr, WNOHANG) != 0 ){
 #endif
 				CloseTuner();
 				return false;
@@ -1290,7 +1303,7 @@ bool CTunerBankCtrl::OpenTuner(bool minWake, bool noView, bool nwUdp, bool nwTcp
 #else
 		kill(this->tunerPid, 9);
 		//ゾンビの回収に1秒だけ使う
-		for( int timeout = 1000; timeout > 0 && waitpid(this->tunerPid, NULL, WNOHANG) == 0; timeout -= 10 ){
+		for( int timeout = 1000; timeout > 0 && waitpid(this->tunerPid, nullptr, WNOHANG) == 0; timeout -= 10 ){
 			SleepForMsec(10);
 		}
 #endif
@@ -1306,7 +1319,7 @@ void CTunerBankCtrl::CloseTuner()
 #ifdef _WIN32
 		if( WaitForSingleObject(this->hTunerProcess, 0) == WAIT_TIMEOUT ){
 #else
-		if( waitpid(this->tunerPid, NULL, WNOHANG) == 0 ){
+		if( waitpid(this->tunerPid, nullptr, WNOHANG) == 0 ){
 #endif
 			CWatchBlock watchBlock(&this->watchContext);
 			CSendCtrlCmd ctrlCmd;
@@ -1318,7 +1331,7 @@ void CTunerBankCtrl::CloseTuner()
 				TerminateProcess(this->hTunerProcess, 0xFFFFFFFF);
 #else
 			bool killed = false;
-			for( int timeout = 30000; timeout > 0 && waitpid(this->tunerPid, NULL, WNOHANG) == 0; timeout -= 10 ){
+			for( int timeout = 30000; timeout > 0 && waitpid(this->tunerPid, nullptr, WNOHANG) == 0; timeout -= 10 ){
 				if( killed == false && timeout < 1000 ){
 					//ぶち殺す。ゾンビの回収に1秒だけ使う
 					kill(this->tunerPid, 9);
@@ -1361,7 +1374,7 @@ bool CTunerBankCtrl::CloseOtherTuner()
 #else
 	EnumFindFile(fs_path(EDCB_INI_ROOT).append(CMD2_VIEW_CTRL_PIPE).concat(L"*"), [&pidList](UTIL_FIND_DATA& findData) -> bool {
 		if( findData.fileName.size() > wcslen(CMD2_VIEW_CTRL_PIPE) ){
-			int pid = (int)wcstol(findData.fileName.c_str() + wcslen(CMD2_VIEW_CTRL_PIPE), NULL, 10);
+			int pid = (int)wcstol(findData.fileName.c_str() + wcslen(CMD2_VIEW_CTRL_PIPE), nullptr, 10);
 			if( pid > 0 && kill(pid, 0) == 0 ){
 				pidList.push_back(pid);
 			}
@@ -1398,7 +1411,7 @@ bool CTunerBankCtrl::CloseOtherTuner()
 #ifdef _WIN32
 					WaitForSingleObject(this->hTunerProcess, 10000);
 #else
-					for( int timeout = 10000; timeout > 0 && waitpid(this->tunerPid, NULL, WNOHANG) == 0; timeout -= 10 ){
+					for( int timeout = 10000; timeout > 0 && IsOtherProcessAlive(this->tunerPid); timeout -= 10 ){
 						SleepForMsec(10);
 					}
 #endif
@@ -1469,7 +1482,7 @@ wstring CTunerBankCtrl::ConvertRecName(
 		EPG_EVENT_INFO epgInfo;
 		EPGDB_EVENT_INFO epgDBInfo;
 		CEpgEventInfoAdapter epgInfoAdapter;
-		info.epgInfo = NULL;
+		info.epgInfo = nullptr;
 		if( eid != 0xFFFF ){
 			if( epgDBManager_.SearchEpg(onid, tsid, sid, eid, &epgDBInfo) ){
 				epgInfo = epgInfoAdapter.Create(&epgDBInfo);

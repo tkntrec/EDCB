@@ -5,9 +5,7 @@ ct=CreateContentBuilder(GZIP_THRESHOLD_BYTE)
 ct:Append(DOCTYPE_HTML4_STRICT..[=[
 <html lang="ja">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<meta name="viewport" content="initial-scale=1">
-<link rel="stylesheet" type="text/css" href="default.css">
+]=]..DefaultHeadContents()..[=[
 <title>プログラム予約条件一覧 - EDCB</title>
 </head>
 <body>
@@ -53,7 +51,7 @@ ct:Append([=[
 ]=])
 
 for i=page*pageCount+1,math.min(#a,(page+1)*pageCount) do
-  ct:Append('    <tr><td><a href="autoaddmanualinfo.html?id='..a[i].dataID..'">'..a[i].title..'&ensp;</a><td>')
+  ct:Append('    <tr><td><a href="autoaddmanualinfo.html?id='..a[i].dataID..'">'..a[i].title:gsub('^$','&emsp;')..'</a><td>')
   for j=1,7 do
     if a[i].dayOfWeekFlag%2==1 then
       ct:Append(({'日','月','火','水','木','金','土'})[j])

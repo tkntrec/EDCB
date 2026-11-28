@@ -3,7 +3,6 @@
 #include "StringUtil.h"
 #include "TimeUtil.h"
 #include "CtrlCmdDef.h"
-#include "ErrDef.h"
 #ifndef _WIN32
 #include <errno.h>
 #include <netdb.h>
@@ -65,7 +64,7 @@ bool CTCPServer::StartServer(unsigned short port, bool ipv6, DWORD dwResponseTim
 	hints.ai_protocol = IPPROTO_TCP;
 
 	struct addrinfo* result;
-	if( getaddrinfo(NULL, szPort, &hints, &result) != 0 ){
+	if( getaddrinfo(nullptr, szPort, &hints, &result) != 0 ){
 		return false;
 	}
 
@@ -90,7 +89,7 @@ bool CTCPServer::StartServer(unsigned short port, bool ipv6, DWORD dwResponseTim
 			if( bind(m_sock, result->ai_addr, (int)result->ai_addrlen) == 0 && listen(m_sock, SOMAXCONN) == 0 ){
 				m_stopFlag = false;
 				m_notifyEvent.Reset();
-				m_thread = thread_(ServerThread, this);
+				m_thread = std::thread(ServerThread, this);
 				freeaddrinfo(result);
 				return true;
 			}
@@ -111,7 +110,7 @@ void CTCPServer::StopServer()
 	}
 	if( m_sock != INVALID_SOCKET ){
 #ifdef _WIN32
-		WSAEventSelect(m_sock, NULL, 0);
+		WSAEventSelect(m_sock, nullptr, 0);
 		unsigned long x = 0;
 		ioctlsocket(m_sock, FIONBIO, &x);
 #else
@@ -151,7 +150,7 @@ bool TestAcl(struct sockaddr* addr, wstring acl)
 			return false;
 		}
 		wstring m;
-		int mm = Separate(val, L"/", val, m) ? (int)wcstol(m.c_str(), NULL, 10) : addr->sa_family == AF_INET6 ? 128 : 32;
+		int mm = Separate(val, L"/", val, m) ? (int)wcstol(m.c_str(), nullptr, 10) : addr->sa_family == AF_INET6 ? 128 : 32;
 		if( val.empty() || mm < 0 || mm > (addr->sa_family == AF_INET6 ? 128 : 32) ){
 			//書式エラー
 			return false;
@@ -162,7 +161,7 @@ bool TestAcl(struct sockaddr* addr, wstring acl)
 		hints.ai_flags = AI_NUMERICHOST;
 		hints.ai_family = addr->sa_family;
 		struct addrinfo* result;
-		if( getaddrinfo(valU.c_str() + 1, NULL, &hints, &result) != 0 ){
+		if( getaddrinfo(valU.c_str() + 1, nullptr, &hints, &result) != 0 ){
 			//書式エラー
 			return false;
 		}
@@ -210,7 +209,7 @@ int RecvAll(SOCKET sock, char* buf, int len, int flags)
 void SetBlockingMode(SOCKET sock)
 {
 #ifdef _WIN32
-	WSAEventSelect(sock, NULL, 0);
+	WSAEventSelect(sock, nullptr, 0);
 	unsigned long x = 0;
 	ioctlsocket(sock, FIONBIO, &x);
 	DWORD to = CTCPServer::SND_RCV_TIMEOUT;
@@ -315,7 +314,7 @@ void CTCPServer::ServerThread(CTCPServer* pSys)
 					continue;
 				}
 				CCmdStream res;
-				pSys->m_cmdProc(waitList[i].cmd, res, NULL);
+				pSys->m_cmdProc(waitList[i].cmd, res, nullptr);
 				if( res.GetParam() == CMD_NO_RES ){
 					//応答は保留された
 					if( GetU32Tick() - waitList[i].tick <= pSys->m_dwResponseTimeout ){
@@ -357,7 +356,7 @@ void CTCPServer::ServerThread(CTCPServer* pSys)
 				}else if( TestAcl((struct sockaddr*)&client, pSys->m_acl) == false ){
 					wstring ipW;
 					char ip[NI_MAXHOST];
-					if( getnameinfo((struct sockaddr*)&client, clientLen, ip, NI_MAXHOST, NULL, 0, NI_NUMERICHOST) == 0 ){
+					if( getnameinfo((struct sockaddr*)&client, clientLen, ip, NI_MAXHOST, nullptr, 0, NI_NUMERICHOST) == 0 ){
 						UTF8toW(ip, ipW);
 					}
 					AddDebugLogFormat(L"Deny from IP: %ls", ipW.c_str());
@@ -391,13 +390,13 @@ void CTCPServer::ServerThread(CTCPServer* pSys)
 					    cmd.GetParam() == CMD2_EPG_SRV_NWPLAY_SET_IP ){
 						//接続元IPを引数に添付
 						char ip[NI_MAXHOST];
-						if( getnameinfo((struct sockaddr*)&client, clientLen, ip, NI_MAXHOST, NULL, 0, NI_NUMERICHOST) == 0 ){
+						if( getnameinfo((struct sockaddr*)&client, clientLen, ip, NI_MAXHOST, nullptr, 0, NI_NUMERICHOST) == 0 ){
 							UTF8toW(ip, clientIP);
 						}
 					}
 
 					CCmdStream res;
-					pSys->m_cmdProc(cmd, res, clientIP.empty() ? NULL : clientIP.c_str());
+					pSys->m_cmdProc(cmd, res, clientIP.empty() ? nullptr : clientIP.c_str());
 					if( res.GetParam() == CMD_NO_RES ){
 						if( cmd.GetParam() == CMD2_EPG_SRV_GET_STATUS_NOTIFY2 ){
 							//保留可能なコマンドは応答待ちリストに移動
@@ -406,7 +405,7 @@ void CTCPServer::ServerThread(CTCPServer* pSys)
 							if( hEventList.size() < WSA_MAXIMUM_WAIT_EVENTS && (hEvent = WSACreateEvent()) != WSA_INVALID_EVENT )
 #endif
 							{
-								waitList.resize(waitList.size() + 1);
+								waitList.emplace_back();
 								waitList.back().sock = sock;
 								std::swap(waitList.back().cmd, cmd);
 								waitList.back().tick = GetU32Tick();
@@ -434,20 +433,23 @@ void CTCPServer::ServerThread(CTCPServer* pSys)
 							break;
 						}
 						//応答用スレッドを追加
-						resThreadList.push_back(std::unique_ptr<RESPONSE_THREAD_INFO>(new RESPONSE_THREAD_INFO));
+						resThreadList.emplace_back(new RESPONSE_THREAD_INFO);
 						RESPONSE_THREAD_INFO& info = *resThreadList.back();
 						info.sock = sock;
 						std::swap(info.cmd, cmd);
 						info.sys = pSys;
 						info.completed = false;
-						info.th = thread_(ResponseThread, &info);
+						info.th = std::thread(ResponseThread, &info);
 						sock = INVALID_SOCKET;
 						break;
 					}
 					if( send(sock, (const char*)res.GetStream(), res.GetStreamSize(), 0) != (int)res.GetStreamSize() ){
 						break;
 					}
-					if( res.GetParam() != OLD_CMD_NEXT ){
+#ifdef EDCB_REPLY_TO_OLD_CTRL_CMD
+					if( res.GetParam() != OLD_CMD_NEXT )
+#endif
+					{
 						//Enum用の繰り返しではない
 						shutdown(sock, 2); //SD_BOTH
 						break;
@@ -482,7 +484,7 @@ void CTCPServer::ServerThread(CTCPServer* pSys)
 void CTCPServer::ResponseThread(RESPONSE_THREAD_INFO* info)
 {
 	CCmdStream res(CMD_ERR);
-	void* param = NULL;
+	void* param = nullptr;
 	if( info->sys->m_responseThreadProc ){
 		info->sys->m_responseThreadProc(info->cmd, res, RESPONSE_THREAD_INIT, param);
 	}

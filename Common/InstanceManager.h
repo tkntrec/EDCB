@@ -20,7 +20,7 @@ public:
 		lock_recursive_mutex lock(this->m_lock);
 
 		DWORD id = this->getNextID();
-		this->m_list.insert(std::make_pair(id,ptr));
+		this->m_list.emplace(id, ptr);
 
 		return id;
 	}
@@ -30,7 +30,7 @@ public:
 		lock_recursive_mutex lock(this->m_lock);
 
 		std::shared_ptr<T> ptr = this->find(id);
-		if (ptr != NULL) {
+		if (ptr != nullptr) {
 			this->m_list.erase(id);
 		}
 
@@ -56,7 +56,7 @@ public:
 		lock_recursive_mutex lock(this->m_lock);
 
 		if (this->m_list.count(id) == 0) {
-			return NULL;
+			return nullptr;
 		}
 
 		return this->m_list.at(id);
@@ -65,7 +65,7 @@ public:
 protected:
 	std::map<DWORD, std::shared_ptr<T> > m_list;
 	DWORD m_nextID;
-	mutable recursive_mutex_ m_lock;
+	mutable std::recursive_mutex m_lock;
 
 	DWORD getNextID()
 	{

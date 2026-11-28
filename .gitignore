@@ -34,8 +34,12 @@
 !*.vbs
 !*.vcxproj
 !*.vcxproj.filters
+!*.wasm
+!*.wasm.map
+!*.woff2
 !*.xaml
 !*.xml
+!.github/workflows/*.yml
 !.gitignore
 !/Document/Patch/*.diff
 !/Document/Patch/*.patch

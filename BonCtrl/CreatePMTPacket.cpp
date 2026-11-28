@@ -4,19 +4,19 @@
 
 CCreatePMTPacket::CCreatePMTPacket(void)
 {
-	this->needCaption = TRUE;
-	this->needData = TRUE;
+	this->needCaption = true;
+	this->needData = true;
 	this->createVer = 0;
 	this->createCounter = 0;
 }
 
 //PMT作成時のモード
 //引数：
-// needCaption			[IN]字幕データを含めるかどうか（TRUE:含める、FALSE：含めない）
-// needData				[IN]データカルーセルを含めるかどうか（TRUE:含める、FALSE：含めない）
+// needCaption			[IN]字幕データを含めるかどうか（true:含める、false:含めない）
+// needData				[IN]データカルーセルを含めるかどうか（true:含める、false:含めない）
 void CCreatePMTPacket::SetCreateMode(
-	BOOL needCaption_,
-	BOOL needData_
+	bool needCaption_,
+	bool needData_
 )
 {
 	if( this->needCaption != needCaption_ || this->needData != needData_ ){
@@ -96,6 +96,9 @@ void CCreatePMTPacket::CreatePMT()
 		infoRead+= 2+descriptor_length;
 	}
 
+	bool findVHighQ = false;
+	bool findAHighQ = false;
+
 	//descriptor2
 	vector<SECOND_DESC_BUFF> secondDescBuff;
 	while( readSize+4 < (DWORD)section_length+3-4 ){
@@ -132,92 +135,64 @@ void CCreatePMTPacket::CreatePMT()
 			}
 			infoRead += 2+descriptor_length;
 		}
+		if( item.quality == 1 ){
+			//高階層あり
+			if( item.stream_type == 0x02 ){
+				//MPEG2 VIDEO
+				findVHighQ = true;
+			}else if( item.stream_type == 0x0F ){
+				//MPEG2 AAC
+				findAHighQ = true;
+			}
+		}
 		secondDescBuff.push_back(item);
 	}
-
-	BOOL findVHighQ = FALSE;
-	BOOL findAHighQ = FALSE;
-	BOOL findMPEG2V = FALSE;
-	BOOL findAAC = FALSE;
 
 	this->createVer++;
 	if( this->createVer > 31 ){
 		this->createVer = 0;
 	}
 
-	//データ一覧チェック
 	for( size_t i=0; i<secondDescBuff.size(); i++ ){
-		if( secondDescBuff[i].quality == 1 ){
-			//高階層あり
-			if( secondDescBuff[i].stream_type == 0x02 ){
-				findVHighQ = TRUE;
-			}else if( secondDescBuff[i].stream_type == 0x0F ){
-				findAHighQ = TRUE;
-			}
-		}
-		if( secondDescBuff[i].stream_type == 0x02 ){
-			findMPEG2V = TRUE;
-		}
-		else if( secondDescBuff[i].stream_type == 0x0F ){
-			findAAC = TRUE;
-		}
-	}
-
-	for( size_t i=0; i<secondDescBuff.size(); i++ ){
-		BOOL matched = FALSE;
+		bool matched = false;
 		switch(secondDescBuff[i].stream_type){
 			case 0x02:
 				//MPEG2 VIDEO
-				if( findVHighQ == TRUE ){
+				if( findVHighQ ){
 					if( secondDescBuff[i].quality == 1 ){
-						matched = TRUE;
+						matched = true;
 					}
 				}else{
-					matched = TRUE;
+					matched = true;
 				}
 				break;
 			case 0x0F:
 				//MPEG2 AAC
-				if( findAHighQ == TRUE ){
+				if( findAHighQ ){
 					if( secondDescBuff[i].quality == 1 ){
-						matched = TRUE;
+						matched = true;
 					}
 				}else{
-					matched = TRUE;
+					matched = true;
 				}
-				break;
-			case 0x1B:
-				//MPEG4 VIDEO
-				if( findMPEG2V == FALSE ){
-					matched = TRUE;
-				}
-				break;
-			case 0x04:
-				//MPEG2 AUDIO
-				if( findAAC == FALSE ){
-					matched = TRUE;
-				}
-				break;
-			case 0x24:
-				//HEVC VIDEO
-				matched = TRUE;
 				break;
 			case 0x06:
 				//字幕
-				if( this->needCaption == TRUE ){
-					matched = TRUE;
+				if( this->needCaption ){
+					matched = true;
 				}
 				break;
 			case 0x0D:
 				//データカルーセル
-				if( this->needData == TRUE ){
-					matched = TRUE;
+				if( this->needData ){
+					matched = true;
 				}
 				break;
 			default:
+				matched = true;
 				break;
 		}
-		if( matched != FALSE ){
+		if( matched ){
 			this->createPSI.insert(this->createPSI.end(),
 			                       data.begin() + secondDescBuff[i].descBuffPos,
 			                       data.begin() + secondDescBuff[i].descBuffPos + secondDescBuff[i].descBuffSize);
@@ -240,21 +215,21 @@ void CCreatePMTPacket::CreatePMT()
 	this->createPSI.push_back(ulCrc&0xFF);
 }
 
-BOOL CCreatePMTPacket::IsEcmPID(
+bool CCreatePMTPacket::IsEcmPID(
 	WORD pid
 )
 {
 	return std::find(this->ecmPIDList.begin(), this->ecmPIDList.end(), pid) != this->ecmPIDList.end();
 }
 
-BOOL CCreatePMTPacket::IsElementaryPID(
+bool CCreatePMTPacket::IsElementaryPID(
 	WORD pid
 )
 {
 	return std::find(this->elementaryPIDList.begin(), this->elementaryPIDList.end(), pid) != this->elementaryPIDList.end();
 }
 
-BOOL CCreatePMTPacket::GetPacket(
+bool CCreatePMTPacket::GetPacket(
 	BYTE** buff,
 	DWORD* size,
 	WORD pid
@@ -275,9 +250,9 @@ BOOL CCreatePMTPacket::GetPacket(
 		*buff = &this->createPacket[0];
 		*size = (DWORD)this->createPacket.size();
 	}else{
-		return FALSE;
+		return false;
 	}
-	return TRUE;
+	return true;
 }
 
 //内部情報をクリア

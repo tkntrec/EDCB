@@ -116,7 +116,7 @@ private:
 	class CRefLock
 	{
 	public:
-		CRefLock(pair<int, recursive_mutex_*>* ref_) : ref(ref_) {
+		CRefLock(pair<int, std::recursive_mutex*>* ref_) : ref(ref_) {
 			lock_recursive_mutex lock(*ref->second);
 			++ref->first;
 		}
@@ -125,16 +125,16 @@ private:
 			--ref->first;
 		}
 	private:
-		pair<int, recursive_mutex_*>* ref;
+		pair<int, std::recursive_mutex*>* ref;
 	};
 
-	mutable recursive_mutex_ epgMapLock;
-	mutable pair<int, recursive_mutex_*> epgMapRefLock;
+	mutable std::recursive_mutex epgMapLock;
+	mutable pair<int, std::recursive_mutex*> epgMapRefLock;
 
-	thread_ loadThread;
-	atomic_bool_ loadStop;
+	std::thread loadThread;
+	std::atomic_bool loadStop;
 	bool loadForeground;
-	atomic_bool_ initialLoadDone;
+	std::atomic_bool initialLoadDone;
 	int archivePeriodSec;
 
 	//これらデータベースの読み取りにかぎりepgMapRefLockでアクセスできる。LoadThread以外では変更できない
@@ -142,7 +142,7 @@ private:
 	map<LONGLONG, EPGDB_SERVICE_EVENT_INFO> epgArchive;
 	vector<vector<LONGLONG>> epgOldIndexCache;
 
-	static BOOL CALLBACK EnumEpgInfoListProc(DWORD epgInfoListSize, EPG_EVENT_INFO* epgInfoList, void* param);
+	static bool EnumEpgInfoListProc(DWORD epgInfoListSize, EPG_EVENT_INFO* epgInfoList, EPGDB_SERVICE_EVENT_INFO& item);
 	static void LoadThread(CEpgDBManager* sys);
 
 	static bool InitializeSearchContext(SEARCH_CONTEXT& ctx, vector<LONGLONG>& enumServiceKey, const EPGDB_SEARCH_KEY_INFO* key);
@@ -150,7 +150,7 @@ private:
 	static bool IsEqualContent(const vector<EPGDB_CONTENT_DATA>& searchKey, const vector<EPGDB_CONTENT_DATA>& eventData);
 	static bool IsInDateTime(const vector<EPGDB_SEARCH_DATE_INFO>& dateList, const SYSTEMTIME& time);
 	static bool FindKeyword(const vector<pair<wstring, RegExpPtr>>& keyList, const EPGDB_EVENT_INFO& info, wstring& word,
-	                        vector<int>& dist, bool caseFlag, bool aimai, bool andFlag, wstring* findKey = NULL);
+	                        vector<int>& dist, bool caseFlag, bool aimai, bool andFlag, wstring* findKey = nullptr);
 	static bool FindLikeKeyword(const wstring& key, size_t keyPos, const wstring& word, vector<int>& dist, bool caseFlag);
 	static void AddKeyword(vector<pair<wstring, RegExpPtr>>& keyList, wstring key, bool caseFlag, bool regExp, bool titleOnly);
 	pair<LONGLONG, LONGLONG> GetEventMinMaxTimeProc(LONGLONG keyMask, LONGLONG key, bool archive) const;

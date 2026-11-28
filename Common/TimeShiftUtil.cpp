@@ -15,7 +15,7 @@ CTimeShiftUtil::CTimeShiftUtil(void)
 	, tcpMutex(UtilCreateGlobalMutex())
 {
 	this->PCR_PID = 0xFFFF;
-	this->fileMode = FALSE;
+	this->fileMode = false;
 	this->seekJitter = 1;
 	this->currentFilePos = 0;
 }
@@ -25,7 +25,7 @@ CTimeShiftUtil::~CTimeShiftUtil(void)
 {
 	StopTimeShift();
 
-	Send(L"", NULL, NULL);
+	Send(L"", nullptr, nullptr);
 }
 
 void CTimeShiftUtil::Send(
@@ -42,14 +42,14 @@ void CTimeShiftUtil::Send(
 		CSendTSTCPDllUtil* sendNW = (tcp ? &this->sendTcp : &this->sendUdp);
 		SEND_INFO* info = this->sendInfo + tcp;
 		DWORD* port = tcp ? tcpPort : udpPort;
-		if( info->ip.empty() == false && (port == NULL || info->ip != ip) ){
+		if( info->ip.empty() == false && (port == nullptr || info->ip != ip) ){
 			//終了
 			info->ip.clear();
 			sendNW->StopSend();
 			sendNW->UnInitialize();
 			mutex.reset();
 		}
-		if( port == NULL ){
+		if( port == nullptr ){
 			continue;
 		}
 		if( info->ip.empty() == false ){
@@ -96,9 +96,9 @@ void CTimeShiftUtil::Send(
 	}
 }
 
-BOOL CTimeShiftUtil::OpenTimeShift(
+bool CTimeShiftUtil::OpenTimeShift(
 	LPCWSTR filePath_,
-	BOOL fileMode_
+	bool fileMode_
 	)
 {
 	lock_recursive_mutex lock(this->utilLock);
@@ -107,7 +107,7 @@ BOOL CTimeShiftUtil::OpenTimeShift(
 
 	this->PCR_PID = 0xFFFF;
 	if( UtilFileExists(filePath_).first == false ){
-		return FALSE;
+		return false;
 	}
 
 	this->filePath = filePath_;
@@ -115,24 +115,24 @@ BOOL CTimeShiftUtil::OpenTimeShift(
 	this->seekJitter = GetU32Tick() / 100 % 8 + 1;
 	this->currentFilePos = 0;
 
-	return TRUE;
+	return true;
 }
 
-BOOL CTimeShiftUtil::StartTimeShift()
+bool CTimeShiftUtil::StartTimeShift()
 {
 	lock_recursive_mutex lock(this->utilLock);
 
 	if( this->filePath.size() == 0 ){
-		return FALSE;
+		return false;
 	}else{
 		if( this->readThread.joinable() == false ){
 			//受信スレッド起動
 			this->readStopFlag = false;
-			this->readThread = thread_(ReadThread, this);
+			this->readThread = std::thread(ReadThread, this);
 		}
 	}
 
-	return TRUE;
+	return true;
 }
 
 void CTimeShiftUtil::StopTimeShift()
@@ -223,8 +223,8 @@ void CTimeShiftUtil::ReadThread(CTimeShiftUtil* sys)
 		}
 		BYTE* data;
 		DWORD dataSize;
-		if( packetInit.GetTSData(buff, readSize, &data, &dataSize) == FALSE || dataSize <= 0 ){
-			if( sys->fileMode == FALSE && sys->currentFilePos + (LONGLONG)sizeof(buff) > sys->GetAvailableFileSize() ){
+		if( packetInit.GetTSData(buff, readSize, &data, &dataSize) == false || dataSize <= 0 ){
+			if( sys->fileMode == false && sys->currentFilePos + (LONGLONG)sizeof(buff) > sys->GetAvailableFileSize() ){
 				//無効なデータ領域を読んでいる可能性がある
 				if( ++errCount > 50 ){
 					break;
@@ -297,7 +297,7 @@ void CTimeShiftUtil::ReadThread(CTimeShiftUtil* sys)
 	sys->sendTcp.AddSendData(buff, sizeof(buff));
 }
 
-static BOOL IsDataAvailable(FILE* fp, LONGLONG pos, CPacketInit* packetInit)
+static bool IsDataAvailable(FILE* fp, LONGLONG pos, CPacketInit* packetInit)
 {
 	if( my_fseek(fp, pos, SEEK_SET) == 0 ){
 		BYTE buff[188 * 16];
@@ -307,11 +307,11 @@ static BOOL IsDataAvailable(FILE* fp, LONGLONG pos, CPacketInit* packetInit)
 			BYTE* data;
 			DWORD dataSize;
 			if( packetInit->GetTSData(buff, readSize, &data, &dataSize) && dataSize > 0 ){
-				return TRUE;
+				return true;
 			}
 		}
 	}
-	return FALSE;
+	return false;
 }
 
 LONGLONG CTimeShiftUtil::GetAvailableFileSize() const
@@ -319,7 +319,7 @@ LONGLONG CTimeShiftUtil::GetAvailableFileSize() const
 	if( this->filePath.empty() == false ){
 		std::unique_ptr<FILE, fclose_deleter> tmpFile;
 		FILE* fp = this->seekFile.get();
-		if( fp == NULL ){
+		if( fp == nullptr ){
 			tmpFile.reset(UtilOpenFile(this->filePath, UTIL_SHARED_READ | UTIL_SH_DELETE));
 			fp = tmpFile.get();
 		}
@@ -336,7 +336,7 @@ LONGLONG CTimeShiftUtil::GetAvailableFileSize() const
 			//有効なデータのある範囲を調べる
 			if( fileSize >= 188 * 16 * 8 ){
 				CPacketInit packetInit;
-				if( IsDataAvailable(fp, fileSize - 188 * 16 * this->seekJitter, &packetInit) == FALSE ){
+				if( IsDataAvailable(fp, fileSize - 188 * 16 * this->seekJitter, &packetInit) == false ){
 					//終端部分が無効なので有効なデータの境目を探す
 					//seekJitterは調査箇所がたまたま壊れている場合への対処
 					LONGLONG range = fileSize - 188 * 16 * this->seekJitter;
@@ -364,10 +364,10 @@ void CTimeShiftUtil::GetFilePos(LONGLONG* filePos, LONGLONG* fileSize)
 	lock_recursive_mutex lock(this->utilLock);
 	lock_recursive_mutex lock2(this->ioLock);
 
-	if( filePos != NULL ){
+	if( filePos != nullptr ){
 		*filePos = this->currentFilePos;
 	}
-	if( fileSize != NULL ){
+	if( fileSize != nullptr ){
 		*fileSize = GetAvailableFileSize();
 	}
 }

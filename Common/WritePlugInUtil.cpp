@@ -1,11 +1,9 @@
 ﻿#include "stdafx.h"
 #include "WritePlugInUtil.h"
-
-#include "ErrDef.h"
 #include "PathUtil.h"
 
 CWritePlugInUtil::CWritePlugInUtil(void)
-	: module(NULL, UtilFreeLibrary)
+	: module(nullptr, UtilFreeLibrary)
 {
 	this->id = 0;
 }
@@ -15,18 +13,18 @@ CWritePlugInUtil::~CWritePlugInUtil(void)
 	UnInitialize();
 }
 
-BOOL CWritePlugInUtil::Initialize(
+bool CWritePlugInUtil::Initialize(
 	const wstring& loadDllFilePath
 	)
 {
-	if( module != NULL ){
-		return FALSE;
+	if( module != nullptr ){
+		return false;
 	}
 
 	module.reset(UtilLoadLibrary(loadDllFilePath));
 
-	if( module == NULL ){
-		return FALSE;
+	if( module == nullptr ){
+		return false;
 	}
 
 	CreateCtrlWP pfnCreateCtrlWP;
@@ -37,68 +35,51 @@ BOOL CWritePlugInUtil::Initialize(
 	    UtilGetProcAddress(module.get(), "GetSaveFilePath", pfnGetSaveFilePathWP) &&
 	    UtilGetProcAddress(module.get(), "AddTSBuff", pfnAddTSBuffWP) ){
 		if( pfnCreateCtrlWP(&this->id) ){
-			return TRUE;
+			return true;
 		}
 		this->id = 0;
 	}
 	module.reset();
-	return FALSE;
+	return false;
 }
 
 void CWritePlugInUtil::UnInitialize()
 {
-	if( module != NULL ){
+	if( module != nullptr ){
 		pfnDeleteCtrlWP(this->id);
 		this->id = 0;
 		module.reset();
 	}
 }
 
-BOOL CWritePlugInUtil::Start(
+bool CWritePlugInUtil::Start(
 	LPCWSTR fileName,
-	BOOL overWriteFlag,
+	bool overWriteFlag,
 	ULONGLONG createSize
 	)
 {
-	if( module == NULL ){
-		return ERR_NOT_INIT;
-	}
-
-	return pfnStartSaveWP(this->id, fileName, overWriteFlag, createSize);
+	return module && pfnStartSaveWP(this->id, fileName, overWriteFlag, createSize);
 }
 
-BOOL CWritePlugInUtil::Stop(
+bool CWritePlugInUtil::Stop(
 	)
 {
-	if( module == NULL ){
-		return ERR_NOT_INIT;
-	}
-
-	return pfnStopSaveWP(this->id);
+	return module && pfnStopSaveWP(this->id);
 }
 
-BOOL CWritePlugInUtil::GetSavePath(
+bool CWritePlugInUtil::GetSavePath(
 	WCHAR* filePath,
 	DWORD* filePathSize
 	)
 {
-	if( module == NULL ){
-		return ERR_NOT_INIT;
-	}
-
-	return pfnGetSaveFilePathWP(this->id, filePath, filePathSize);
+	return module && pfnGetSaveFilePathWP(this->id, filePath, filePathSize);
 }
 
-BOOL CWritePlugInUtil::Write(
+bool CWritePlugInUtil::Write(
 	BYTE* data,
 	DWORD size,
 	DWORD* writeSize
 	)
 {
-	if( module == NULL ){
-		return ERR_NOT_INIT;
-	}
-
-	return pfnAddTSBuffWP(this->id, data, size, writeSize);
+	return module && pfnAddTSBuffWP(this->id, data, size, writeSize);
 }
-

@@ -5,26 +5,26 @@ namespace
 {
 IB25Decoder* CastB(IB25Decoder2** if2, IB25Decoder* (*funcCreate)(), void* const* (WINAPI* funcCast)(LPCSTR, void*))
 {
-	void* hModule = NULL;
+	void* hModule = nullptr;
 #if defined(_WIN32) && !defined(_MSC_VER)
-	if( funcCast == NULL ){
-		if( (hModule = UtilLoadLibrary(wstring(L"IBonCast.dll"))) == NULL ){
+	if( funcCast == nullptr ){
+		if( (hModule = UtilLoadLibrary(wstring(L"IBonCast.dll"))) == nullptr ){
 			AddDebugLog(L"★IBonCast.dllがロードできません");
-			return NULL;
+			return nullptr;
 		}
 		UtilGetProcAddress(hModule, "Cast", funcCast);
 	}
 #endif
 	void* pBase;
 	void* const* table;
-	if( funcCast == NULL || (pBase = funcCreate()) == NULL || (table = funcCast("IB25Decoder@5", pBase)) == NULL ){
+	if( funcCast == nullptr || (pBase = funcCreate()) == nullptr || (table = funcCast("IB25Decoder@5", pBase)) == nullptr ){
 		AddDebugLog(L"★Castに失敗しました");
 #if defined(_WIN32) && !defined(_MSC_VER)
 		if( hModule ){
 			UtilFreeLibrary(hModule);
 		}
 #endif
-		return NULL;
+		return nullptr;
 	}
 
 	class CCastB : public IB25Decoder2
@@ -58,7 +58,7 @@ IB25Decoder* CastB(IB25Decoder2** if2, IB25Decoder* (*funcCreate)(), void* const
 	};
 
 	CCastB* b = new CCastB(hModule, pBase, table);
-	*if2 = NULL;
+	*if2 = nullptr;
 	if( funcCast("IB25Decoder2@20", pBase) == table ){
 		*if2 = b;
 	}
@@ -67,12 +67,12 @@ IB25Decoder* CastB(IB25Decoder2** if2, IB25Decoder* (*funcCreate)(), void* const
 }
 
 CScrambleDecoderUtil::CScrambleDecoderUtil(void)
-	: module(NULL, UtilFreeLibrary)
+	: module(nullptr, UtilFreeLibrary)
 {
 	this->currentDll = L"";
 
-	this->decodeIF = NULL;
-	this->decodeIF2 = NULL;
+	this->decodeIF = nullptr;
+	this->decodeIF2 = nullptr;
 
 	this->emmEnable = false;
 }
@@ -82,19 +82,18 @@ CScrambleDecoderUtil::~CScrambleDecoderUtil(void)
 	UnLoadDll();
 }
 
-BOOL CScrambleDecoderUtil::LoadDll(const wstring& dllPath)
+bool CScrambleDecoderUtil::LoadDll(const wstring& dllPath)
 {
 	UnLoadDll();
-	BOOL ret = TRUE;
 
 	this->module.reset(UtilLoadLibrary(dllPath));
-	if( this->module == NULL ){
-		return FALSE;
+	if( this->module == nullptr ){
+		return false;
 	}
 	IB25Decoder* (*func)();
 	if( UtilGetProcAddress(this->module.get(), "CreateB25Decoder", func) == false ){
-		ret = FALSE;
-		goto ERR_END;
+		UnLoadDll();
+		return false;
 	}
 	void* const* (WINAPI* funcCast)(LPCSTR, void*);
 	UtilGetProcAddress(this->module.get(), "Cast", funcCast);
@@ -103,13 +102,16 @@ BOOL CScrambleDecoderUtil::LoadDll(const wstring& dllPath)
 		this->decodeIF = func();
 	}else
 #endif
-	if( (this->decodeIF = CastB(&this->decodeIF2, func, funcCast)) == NULL ){
-		ret = FALSE;
-		goto ERR_END;
+	if( (this->decodeIF = CastB(&this->decodeIF2, func, funcCast)) == nullptr ){
+		UnLoadDll();
+		return false;
 	}
-	if( this->decodeIF->Initialize() == FALSE ){
-		ret = FALSE;
-	}else{
+	if( this->decodeIF->Initialize() == false ){
+		UnLoadDll();
+		return false;
+	}
+
+	{
 #ifndef _MSC_VER
 		{
 #else
@@ -118,7 +120,7 @@ BOOL CScrambleDecoderUtil::LoadDll(const wstring& dllPath)
 				this->decodeIF2 = dynamic_cast<IB25Decoder2 *>(this->decodeIF);
 			}
 #endif
-			if( this->decodeIF2 != NULL ){
+			if( this->decodeIF2 != nullptr ){
 				//this->decodeIF2->EnableEmmProcess(false);
 				this->decodeIF2->DiscardNullPacket(true);
 				this->decodeIF2->DiscardScramblePacket(false);
@@ -127,32 +129,27 @@ BOOL CScrambleDecoderUtil::LoadDll(const wstring& dllPath)
 		}
 #ifdef _MSC_VER
 		catch(std::__non_rtti_object){
-			this->decodeIF2 = NULL;
+			this->decodeIF2 = nullptr;
 		}
 #endif
 	}
-ERR_END:
-	if( ret == FALSE ){
-		UnLoadDll();
-	}
 
-	return ret;
+	return true;
 }
 
 void CScrambleDecoderUtil::UnLoadDll()
 {
-	if( this->decodeIF != NULL ){
+	if( this->decodeIF != nullptr ){
 		this->decodeIF->Release();
-		this->decodeIF = NULL;
-		this->decodeIF2 = NULL;
+		this->decodeIF = nullptr;
+		this->decodeIF2 = nullptr;
 	}
 	this->module.reset();
 	this->currentDll = L"";
 }
 
-BOOL CScrambleDecoderUtil::SetNetwork(WORD ONID, WORD TSID)
+bool CScrambleDecoderUtil::SetNetwork(WORD ONID, WORD TSID)
 {
-	BOOL ret = FALSE;
 	fs_path iniPath = GetCommonIniPath().replace_filename(L"BonCtrl.ini");
 
 	this->loadDll = L"";
@@ -172,65 +169,57 @@ BOOL CScrambleDecoderUtil::SetNetwork(WORD ONID, WORD TSID)
 #endif
 
 	if( UtilComparePath(dllPath.c_str(), this->currentDll.c_str()) != 0 ){
-		if( LoadDll(dllPath) == FALSE ){
+		if( LoadDll(dllPath) == false ){
 			AddDebugLogFormat(L"★%ls のロードに失敗しました。", dllPath.c_str());
 			this->currentDll = L"";
 		}else{
 			this->currentDll = dllPath;
-			ret = TRUE;
+			return true;
 		}
 	}
 
-	return ret;
+	return false;
 }
 
-BOOL CScrambleDecoderUtil::Decode(BYTE* src, DWORD srcSize, BYTE** dest, DWORD* destSize)
+bool CScrambleDecoderUtil::Decode(BYTE* src, DWORD srcSize, BYTE** dest, DWORD* destSize)
 {
-	if( this->decodeIF == NULL ){
-		return FALSE;
-	}
-	return this->decodeIF->Decode(src, srcSize, dest, destSize);
+	return this->decodeIF && this->decodeIF->Decode(src, srcSize, dest, destSize);
 }
 
 void CScrambleDecoderUtil::Reset()
 {
-	if( this->decodeIF == NULL ){
+	if( this->decodeIF == nullptr ){
 		return ;
 	}
 	this->decodeIF->Reset();
 }
 
 
-BOOL CScrambleDecoderUtil::SetEmm(BOOL enable)
+bool CScrambleDecoderUtil::SetEmm(bool enable)
 {
-	if( this->decodeIF2 == NULL ){
-		return FALSE;
+	if( this->decodeIF2 == nullptr ){
+		return false;
 	}
-	if( enable == TRUE ){
-		this->decodeIF2->EnableEmmProcess(true);
-		this->emmEnable = true;
-	}else{
-		this->decodeIF2->EnableEmmProcess(false);
-		this->emmEnable = false;
-	}
-	return TRUE;
+	this->decodeIF2->EnableEmmProcess(enable);
+	this->emmEnable = enable;
+	return true;
 }
 
 DWORD CScrambleDecoderUtil::GetEmmCount()
 {
-	if( this->decodeIF2 == NULL ){
+	if( this->decodeIF2 == nullptr ){
 		return 0;
 	}
 	return this->decodeIF2->GetEmmProcessNum();
 }
 
-BOOL CScrambleDecoderUtil::GetLoadStatus(wstring& loadErrDll)
+bool CScrambleDecoderUtil::GetLoadStatus(wstring& loadErrDll)
 {
 	if( this->currentDll.size() == 0 ){
 		loadErrDll = this->loadDll;
-		return FALSE;
+		return false;
 	}else{
-		return TRUE;
+		return true;
 	}
 }
 

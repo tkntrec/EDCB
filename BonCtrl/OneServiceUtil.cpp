@@ -2,7 +2,7 @@
 #include "OneServiceUtil.h"
 
 
-COneServiceUtil::COneServiceUtil(BOOL sendUdpTcp_)
+COneServiceUtil::COneServiceUtil(bool sendUdpTcp_)
 	: serviceFilter(true)
 {
 	this->sendUdpTcp = sendUdpTcp_;
@@ -18,13 +18,13 @@ COneServiceUtil::~COneServiceUtil(void)
 	if( IsRec() ){
 		EndSave();
 	}
-	SendUdp(NULL);
-	SendTcp(NULL);
+	SendUdp(nullptr);
+	SendTcp(nullptr);
 }
 
 //処理対象ServiceIDを設定
 //引数：
-// SID			[IN]ServiceID
+// SID			[IN]ServiceID。0xFFFFで全サービス対象。
 void COneServiceUtil::SetSID(
 	WORD SID_
 )
@@ -52,7 +52,7 @@ WORD COneServiceUtil::GetSID()
 
 void COneServiceUtil::SendUdpTcp(
 	vector<NW_SEND_INFO>* sendList,
-	BOOL tcpFlag,
+	bool tcpFlag,
 	CSendTSTCPDllUtil& sendNW,
 	vector<util_unique_handle>& portMutexList,
 	LPCWSTR mutexName
@@ -62,7 +62,7 @@ void COneServiceUtil::SendUdpTcp(
 	sendNW.UnInitialize();
 	portMutexList.clear();
 
-	if( sendList != NULL ){
+	if( sendList != nullptr ){
 		sendNW.Initialize();
 		for( vector<NW_SEND_INFO>::iterator itr = sendList->begin(); itr != sendList->end(); itr++ ){
 			//IPアドレスであること
@@ -123,30 +123,31 @@ void COneServiceUtil::AddTSBuff(
 			this->serviceFilter.FilterPacket(this->buff, data + i, packet);
 			if( this->serviceFilter.CatOrPmtUpdated() ){
 				//各PIDに名前をつける
-				for( auto itr = this->serviceFilter.CatUtil().GetPIDList().cbegin(); itr != this->serviceFilter.CatUtil().GetPIDList().end(); itr++ ){
-					this->dropCount.SetPIDName(*itr, L"EMM");
+				for( WORD pid : this->serviceFilter.CatUtil().GetPIDList() ){
+					this->dropCount.SetPIDName(pid, L"EMM");
 				}
-				for( auto itr = this->serviceFilter.PmtUtilMap().cbegin(); itr != this->serviceFilter.PmtUtilMap().end(); itr++ ){
-					WORD programNumber = itr->second.GetProgramNumber();
+				for( const auto& pmtUtil : this->serviceFilter.PmtUtilMap() ){
+					WORD programNumber = pmtUtil.second.GetProgramNumber();
 					if( programNumber != 0 ){
-						this->dropCount.SetPIDName(itr->second.GetPcrPID(), L"PCR");
+						this->dropCount.SetPIDName(pmtUtil.second.GetPcrPID(), L"PCR");
 						wstring name;
-						for( auto itrPID = itr->second.GetPIDTypeList().cbegin(); itrPID != itr->second.GetPIDTypeList().end(); itrPID++ ){
-							name = itrPID->second == 0x00 ? L"ECM" :
-							       itrPID->second == 0x02 ? L"MPEG2 VIDEO" :
-							       itrPID->second == 0x0F ? L"MPEG2 AAC" :
-							       itrPID->second == 0x1B ? L"MPEG4 VIDEO" :
-							       itrPID->second == 0x04 ? L"MPEG2 AUDIO" :
-							       itrPID->second == 0x24 ? L"HEVC VIDEO" :
-							       itrPID->second == 0x06 ? L"字幕" :
-							       itrPID->second == 0x0D ? L"データカルーセル" : L"";
+						for( pair<WORD, BYTE> pidType : pmtUtil.second.GetPIDTypeList() ){
+							name = pidType.second == 0x00 ? L"ECM" :
+							       pidType.second == 0x02 ? L"MPEG2 VIDEO" :
+							       pidType.second == 0x0F ? L"MPEG2 AAC" :
+							       pidType.second == 0x1B ? L"MPEG4 VIDEO" :
+							       pidType.second == 0x04 ? L"MPEG2 AUDIO" :
+							       pidType.second == 0x24 ? L"HEVC VIDEO" :
+							       pidType.second == 0x11 ? L"LATM AUDIO" :
+							       pidType.second == 0x06 ? L"字幕" :
+							       pidType.second == 0x0D ? L"データカルーセル" : L"";
 							if( name.empty() ){
-								Format(name, L"stream_type 0x%0X", itrPID->second);
+								Format(name, L"stream_type 0x%0X", pidType.second);
 							}
-							this->dropCount.SetPIDName(itrPID->first, name);
+							this->dropCount.SetPIDName(pidType.first, name);
 						}
 						Format(name, L"PMT(ServiceID 0x%04X)", programNumber);
-						this->dropCount.SetPIDName(itr->first, name);
+						this->dropCount.SetPIDName(pmtUtil.first, name);
 					}
 				}
 			}
@@ -164,10 +165,10 @@ void COneServiceUtil::AddTSBuff(
 
 	if( this->pittariState == PITTARI_START ){
 		WORD pmtVersion = 0xFFFF;
-		for( auto itr = this->serviceFilter.PmtUtilMap().cbegin(); itr != this->serviceFilter.PmtUtilMap().end(); itr++ ){
-			WORD programNumber = itr->second.GetProgramNumber();
+		for( const auto& pmtUtil : this->serviceFilter.PmtUtilMap() ){
+			WORD programNumber = pmtUtil.second.GetProgramNumber();
 			if( programNumber != 0 && programNumber == this->pittariRecParam.pittariSID ){
-				pmtVersion = itr->second.GetVersion();
+				pmtVersion = pmtUtil.second.GetVersion();
 				break;
 			}
 		}
@@ -204,6 +205,9 @@ void COneServiceUtil::AddTSBuff(
 	}
 }
 
+//出力状態をクリアする（チャンネル変更など）
+//引数：
+// tsid		[IN]TransportStreamID
 void COneServiceUtil::Clear(
 	WORD tsid
 	)
@@ -212,16 +216,23 @@ void COneServiceUtil::Clear(
 	this->dropCount.Clear();
 }
 
-BOOL COneServiceUtil::StartSave(
+//ファイル保存を開始する
+//戻り値：
+// true（成功）、false（失敗）
+//引数：
+// recParam				[IN]保存パラメータ（ctrlIDフィールドは無視）
+// saveFolderSub		[IN]HDDの空きがなくなった場合に一時的に使用するフォルダ
+// maxBuffCount			[IN]出力バッファ上限
+bool COneServiceUtil::StartSave(
 	const SET_CTRL_REC_PARAM& recParam,
 	const vector<wstring>& saveFolderSub,
 	int maxBuffCount
 )
 {
-	if( this->writeFile.IsRec() == FALSE && this->pittariState == PITTARI_NONE ){
-		if( recParam.pittariFlag == FALSE ){
+	if( this->writeFile.IsRec() == false && this->pittariState == PITTARI_NONE ){
+		if( recParam.pittariFlag == 0 ){
 			AddDebugLog(L"*:StartSave");
-			return this->writeFile.StartSave(recParam.fileName, recParam.overWriteFlag, recParam.createSize,
+			return this->writeFile.StartSave(recParam.fileName, recParam.overWriteFlag != 0, recParam.createSize,
 			                                 recParam.saveFolder, saveFolderSub, maxBuffCount);
 		}else{
 			AddDebugLog(L"*:StartSave pittariFlag");
@@ -232,22 +243,22 @@ BOOL COneServiceUtil::StartSave(
 			this->lastPMTVer = 0xFFFF;
 			this->pittariState = PITTARI_START;
 
-			return TRUE;
+			return true;
 		}
 	}
 
-	return FALSE;
+	return false;
 }
 
 void COneServiceUtil::StratPittariRec()
 {
-	if( this->writeFile.IsRec() == FALSE && this->pittariState == PITTARI_START ){
+	if( this->writeFile.IsRec() == false && this->pittariState == PITTARI_START ){
 		AddDebugLog(L"*:StratPittariRec");
-		if( this->writeFile.StartSave(this->pittariRecParam.fileName, this->pittariRecParam.overWriteFlag, this->pittariRecParam.createSize,
-		                              this->pittariRecParam.saveFolder, this->pittariSaveFolderSub, this->pittariMaxBuffCount) == FALSE ){
+		if( this->writeFile.StartSave(this->pittariRecParam.fileName, this->pittariRecParam.overWriteFlag != 0, this->pittariRecParam.createSize,
+		                              this->pittariRecParam.saveFolder, this->pittariSaveFolderSub, this->pittariMaxBuffCount) == false ){
 			this->pittariState = PITTARI_END;
 			this->pittariRecParam.fileName.clear();
-			this->pittariSubRec = FALSE;
+			this->pittariSubRec = false;
 		}
 	}
 }
@@ -261,9 +272,14 @@ void COneServiceUtil::StopPittariRec()
 	this->writeFile.EndSave(&this->pittariSubRec);
 }
 
-BOOL COneServiceUtil::EndSave(BOOL* subRecFlag)
+//ファイル保存を終了する
+//戻り値：
+// true（成功）、false（失敗）
+//引数：
+// subRecFlag	[OUT]成功のとき、サブ録画が発生したかどうか
+bool COneServiceUtil::EndSave(bool* subRecFlag)
 {
-	BOOL ret = FALSE;
+	bool ret = false;
 	if( this->writeFile.IsRec() ){
 		ret = this->writeFile.EndSave(subRecFlag);
 	}else if( this->pittariState != PITTARI_NONE ){
@@ -271,7 +287,7 @@ BOOL COneServiceUtil::EndSave(BOOL* subRecFlag)
 		if( subRecFlag ){
 			*subRecFlag = this->pittariState == PITTARI_END && this->pittariSubRec;
 		}
-		ret = TRUE;
+		ret = true;
 	}
 	this->pittariState = PITTARI_NONE;
 	AddDebugLog(L"*:EndSave");
@@ -280,19 +296,19 @@ BOOL COneServiceUtil::EndSave(BOOL* subRecFlag)
 
 //録画中かどうか
 //戻り値：
-// TRUE（録画中）、FALSE（していない）
-BOOL COneServiceUtil::IsRec()
+// true（録画中）、false（していない）
+bool COneServiceUtil::IsRec()
 {
 	return this->writeFile.IsRec() || this->pittariState != PITTARI_NONE;
 }
 
 //字幕とデータ放送含めるかどうか
 //引数：
-// enableCaption		[IN]字幕を TRUE（含める）、FALSE（含めない）
-// enableData			[IN]データ放送を TRUE（含める）、FALSE（含めない）
+// enableCaption		[IN]字幕を true（含める）、false（含めない）
+// enableData			[IN]データ放送を true（含める）、false（含めない）
 void COneServiceUtil::SetServiceMode(
-	BOOL enableCaption,
-	BOOL enableData
+	bool enableCaption,
+	bool enableData
 	)
 {
 	this->serviceFilter.SetPmtCreateMode(!!enableCaption, !!enableData);
@@ -318,6 +334,9 @@ void COneServiceUtil::GetErrCount(ULONGLONG* drop, ULONGLONG* scramble)
 	}
 }
 
+//録画中のファイルのファイルパスを取得する
+//戻り値：
+// ファイルパス
 wstring COneServiceUtil::GetSaveFilePath()
 {
 	if( this->writeFile.IsRec() ){
@@ -328,9 +347,15 @@ wstring COneServiceUtil::GetSaveFilePath()
 	return wstring();
 }
 
+//ドロップとスクランブルのカウントを保存する
+//引数：
+// filePath			[IN]保存ファイル名
+// asUtf8			[IN]UTF-8で保存するか
+// dropSaveThresh	[IN]ドロップ数がこれ以上なら保存する
+// drop				[OUT]ドロップ数
 void COneServiceUtil::SaveErrCount(
 	const wstring& filePath,
-	BOOL asUtf8,
+	bool asUtf8,
 	int dropSaveThresh,
 	int scrambleSaveThresh,
 	ULONGLONG& drop,
@@ -359,7 +384,9 @@ void COneServiceUtil::GetRecWriteSize(
 	)
 {
 	if( this->writeFile.IsRec() || this->pittariState == PITTARI_END ){
-		this->writeFile.GetRecWriteSize(writeSize);
+		if( writeSize ){
+			*writeSize = this->writeFile.GetRecWriteSize();
+		}
 	}else if( this->pittariState != PITTARI_NONE ){
 		if( writeSize ){
 			*writeSize = 0;
@@ -375,8 +402,8 @@ void COneServiceUtil::SetBonDriver(
 }
 
 void COneServiceUtil::SetNoLogScramble(
-	BOOL noLog
+	bool noLog
 	)
 {
-	this->dropCount.SetNoLog(FALSE, noLog);
+	this->dropCount.SetNoLog(false, noLog);
 }

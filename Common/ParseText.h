@@ -4,32 +4,32 @@
 #include "StringUtil.h"
 #include "ThreadUtil.h"
 
-template <class K, class V>
+template <class M>
 class CParseText
 {
 public:
 	CParseText() : isUtf8(true) {}
-	bool ParseText(LPCWSTR path = NULL);
-	const map<K, V>& GetMap() const { return this->itemMap; }
+	bool ParseText(LPCWSTR path = nullptr);
+	const M& GetMap() const { return this->itemMap; }
 	const wstring& GetFilePath() const { return this->filePath; }
 protected:
-	typedef CParseText<K, V> Base;
-	bool SaveText(string* saveToStr = NULL) const;
-	virtual bool ParseLine(LPCWSTR parseLine, pair<K, V>& item) = 0;
-	virtual bool SaveLine(const pair<K, V>& item, wstring& saveLine) const { (void)item; (void)saveLine; return false; }
+	typedef CParseText<M> Base;
+	bool SaveText(string* saveToStr = nullptr) const;
+	virtual void ParseLine(LPCWSTR parseLine) = 0;
+	virtual bool SaveLine(typename M::const_reference item, wstring& saveLine) const { (void)item; (void)saveLine; return false; }
 	virtual bool SaveFooterLine(wstring& saveLine) const { (void)saveLine; return false; }
-	virtual bool SelectItemToSave(vector<typename map<K, V>::const_iterator>& itemList) const { (void)itemList; return false; }
-	map<K, V> itemMap;
+	virtual bool SelectItemToSave(vector<typename M::const_iterator>& itemList) const { (void)itemList; return false; }
+	M itemMap;
 	wstring filePath;
 	bool isUtf8;
 };
 
-template <class K, class V>
-bool CParseText<K, V>::ParseText(LPCWSTR path)
+template <class M>
+bool CParseText<M>::ParseText(LPCWSTR path)
 {
 	this->itemMap.clear();
 	this->isUtf8 = true;
-	if( path != NULL ){
+	if( path != nullptr ){
 		this->filePath = path;
 	}
 	if( this->filePath.empty() ){
@@ -83,10 +83,7 @@ bool CParseText<K, V>::ParseText(LPCWSTR path)
 				}else{
 					AtoW(&buf[offset], i - offset, parseBuf);
 				}
-				pair<K, V> item;
-				if( ParseLine(&parseBuf.front(), item) ){
-					this->itemMap.insert(std::move(item));
-				}
+				ParseLine(&parseBuf.front());
 				if( c == '\0' ){
 					offset = i;
 					break;
@@ -105,8 +102,8 @@ bool CParseText<K, V>::ParseText(LPCWSTR path)
 	return true;
 }
 
-template <class K, class V>
-bool CParseText<K, V>::SaveText(string* saveToStr) const
+template <class M>
+bool CParseText<M>::SaveText(string* saveToStr) const
 {
 	if( this->filePath.empty() ){
 		return false;
@@ -138,11 +135,11 @@ bool CParseText<K, V>::SaveText(string* saveToStr) const
 	}
 	wstring saveLine;
 	vector<char> saveBuf;
-	vector<typename map<K, V>::const_iterator> itemList;
+	vector<typename M::const_iterator> itemList;
 	if( SelectItemToSave(itemList) ){
-		for( size_t i = 0; i < itemList.size(); i++ ){
+		for( auto itr : itemList ){
 			saveLine.clear();
-			if( SaveLine(*itemList[i], saveLine) ){
+			if( SaveLine(*itr, saveLine) ){
 				saveLine += UTIL_NEWLINE;
 				size_t len;
 				if( this->isUtf8 ){
@@ -158,9 +155,9 @@ bool CParseText<K, V>::SaveText(string* saveToStr) const
 			}
 		}
 	}else{
-		for( auto itr = this->itemMap.cbegin(); itr != this->itemMap.end(); itr++ ){
+		for( const auto& item : this->itemMap ){
 			saveLine.clear();
-			if( SaveLine(*itr, saveLine) ){
+			if( SaveLine(item, saveLine) ){
 				saveLine += UTIL_NEWLINE;
 				size_t len;
 				if( this->isUtf8 ){
@@ -190,6 +187,9 @@ bool CParseText<K, V>::SaveText(string* saveToStr) const
 		}else{
 			ret = ret && fwrite(saveBuf.data(), 1, len, fp.get()) == len;
 		}
+	}
+	if( saveToStr == nullptr ){
+		ret = ret && fflush(fp.get()) == 0;
 	}
 	fp.reset();
 

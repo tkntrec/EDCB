@@ -17,12 +17,13 @@
 #else
 #include "../../Common/CommonResource.h"
 #include <signal.h>
+#include <unistd.h>
 #endif
 
 namespace
 {
 FILE* g_debugLog;
-recursive_mutex_ g_debugLogLock;
+std::recursive_mutex g_debugLogLock;
 }
 
 #ifdef _WIN32
@@ -68,14 +69,14 @@ int APIENTRY wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 			return 0;
 		}else if( CompareNoCase(L"setting", option + 1) == 0 ){
 			//設定ダイアログを表示する
-			CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+			CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
 			CEpgTimerSrvSetting setting;
 			setting.ShowDialog();
 			CoUninitialize();
 			return 0;
 		}else if( CompareNoCase(L"task", option + 1) == 0 ){
 			//Taskモード
-			CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+			CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
 			CEpgTimerTask().Main();
 			CoUninitialize();
 			return 0;
@@ -85,8 +86,8 @@ int APIENTRY wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 				cds.dwData = COPYDATA_TYPE_LUAPOST;
 				cds.cbData = (DWORD)(param.size() * sizeof(WCHAR));
 				cds.lpData = param.data();
-				HWND hwnd = NULL;
-				while( (hwnd = FindWindowEx(NULL, hwnd, SERVICE_NAME, NULL)) != NULL ){
+				HWND hwnd = nullptr;
+				while( (hwnd = FindWindowEx(nullptr, hwnd, SERVICE_NAME, nullptr)) != nullptr ){
 					//ウィンドウスレッドはさほどビジーにならないので想定する最悪値として10秒タイムアウトとする
 					DWORD_PTR dwResult;
 					if( SendMessageTimeout(hwnd, WM_COPYDATA, 0, (LPARAM)&cds, SMTO_NORMAL, 10000, &dwResult) && dwResult ){
@@ -109,7 +110,7 @@ int APIENTRY wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 		if( mutex ){
 			SetSaveDebugLog(GetPrivateProfileInt(L"SET", L"SaveDebugLog", 0, GetModuleIniPath().c_str()) != 0);
 			//メインスレッドに対するCOMの初期化
-			CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+			CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
 			CEpgTimerSrvMain* pMain = new CEpgTimerSrvMain;
 			if( pMain->Main(false) == false ){
 				AddDebugLog(L"_tWinMain(): Failed to start");
@@ -126,7 +127,7 @@ int APIENTRY wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 			WCHAR serviceName[] = SERVICE_NAME;
 			SERVICE_TABLE_ENTRY dispatchTable[] = {
 				{ serviceName, service_main },
-				{ NULL, NULL }
+				{ nullptr, nullptr }
 			};
 			if( StartServiceCtrlDispatcher(dispatchTable) == FALSE ){
 				AddDebugLog(L"_tWinMain(): StartServiceCtrlDispatcher failed");
@@ -150,12 +151,12 @@ void WINAPI service_main(DWORD dwArgc, LPWSTR* lpszArgv)
 {
 	(void)dwArgc;
 	(void)lpszArgv;
-	g_hStatusHandle = RegisterServiceCtrlHandlerEx(SERVICE_NAME, service_ctrl, NULL);
-	if( g_hStatusHandle != NULL ){
+	g_hStatusHandle = RegisterServiceCtrlHandlerEx(SERVICE_NAME, service_ctrl, nullptr);
+	if( g_hStatusHandle != nullptr ){
 		ReportServiceStatus(SERVICE_START_PENDING, 0, 1, 10000);
 
 		//メインスレッドに対するCOMの初期化
-		CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+		CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
 		{
 			//ここでは単純な(時間のかからない)初期化のみ行う
 			CEpgTimerSrvMain appMain;
@@ -166,7 +167,7 @@ void WINAPI service_main(DWORD dwArgc, LPWSTR* lpszArgv)
 			if( appMain.Main(true) == false ){
 				AddDebugLog(L"service_main(): Failed to start");
 			}
-			g_pMain = NULL;
+			g_pMain = nullptr;
 		}
 		CoUninitialize();
 
@@ -234,7 +235,7 @@ int main(int argc, char** argv)
 	}
 	struct sigaction sigact = {};
 	sigact.sa_handler = SIG_IGN;
-	sigaction(SIGPIPE, &sigact, NULL);
+	sigaction(SIGPIPE, &sigact, nullptr);
 
 	util_unique_handle mutex = UtilCreateGlobalMutex(EPG_TIMER_BON_SRV_MUTEX);
 	if( mutex ){
@@ -294,8 +295,8 @@ void AddDebugLogNoNewline(const wchar_t* lpOutputString, bool suppressDebugOutpu
 void SetSaveDebugLog(bool saveDebugLog)
 {
 	lock_recursive_mutex lock(g_debugLogLock);
-	if( g_debugLog == NULL && saveDebugLog ){
-		fs_path logPath = GetCommonIniPath().replace_filename(L"EpgTimerSrvDebugLog.txt");
+	if( g_debugLog == nullptr && saveDebugLog ){
+		fs_path logPath = GetCommonIniPath().replace_filename(L"EpgTimerSrvDebug.log");
 #if WCHAR_MAX <= 0xFFFF
 		g_debugLog = UtilOpenFile(logPath, UTIL_O_EXCL_CREAT_APPEND | UTIL_SH_READ);
 		if( g_debugLog ){
@@ -306,11 +307,19 @@ void SetSaveDebugLog(bool saveDebugLog)
 			g_debugLog = UtilOpenFile(logPath, UTIL_O_CREAT_APPEND | UTIL_SH_READ);
 		}
 		if( g_debugLog ){
-			AddDebugLog(L"****** LOG START ******");
+#ifdef _WIN32
+			AddDebugLogFormat(L"****** LOG START [%u] ******", GetCurrentProcessId());
+#else
+			AddDebugLogFormat(L"****** LOG START [%d] ******", (int)getpid());
+#endif
 		}
 	}else if( g_debugLog && saveDebugLog == false ){
-		AddDebugLog(L"****** LOG STOP ******");
+#ifdef _WIN32
+		AddDebugLogFormat(L"****** LOG STOP [%u] ******", GetCurrentProcessId());
+#else
+		AddDebugLogFormat(L"****** LOG STOP [%d] ******", (int)getpid());
+#endif
 		fclose(g_debugLog);
-		g_debugLog = NULL;
+		g_debugLog = nullptr;
 	}
 }

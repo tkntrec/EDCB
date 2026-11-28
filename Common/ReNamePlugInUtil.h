@@ -10,30 +10,30 @@ public:
 #ifdef _WIN32
 	//PlugInで設定が必要な場合、設定用のダイアログなどを表示する
 	//戻り値
-	// TRUE（成功）、FALSE（失敗）
+	// true（成功）、false（失敗）
 	//引数：
 	// dllPath					[IN]プラグインDLLパス
 	// parentWnd				[IN]親ウインドウ
-	static BOOL ShowSetting(
+	static bool ShowSetting(
 		const wstring& dllPath,
 		HWND parentWnd
 		);
 #endif
 
 	//入力された予約情報と変換パターンを元に、録画時のファイル名を作成する（拡張子含む）
-	//recNameがNULL時は必要なサイズをrecNamesizeで返す
+	//recNameがnullptr時は必要なサイズをrecNamesizeで返す
 	//通常recNamesize=256で呼び出し
 	//プラグインのバージョンに応じてConvertRecName3→2→1の順に互換呼び出しを行う
 	//スレッドセーフではない
 	//戻り値
-	// TRUE（成功）、FALSE（失敗）
+	// true（成功）、false（失敗）
 	//引数：
 	// info						[IN]予約情報
 	// dllPattern				[IN]プラグインDLL名、および最初の'?'に続けて変換パターン
 	// dllFolder				[IN]プラグインDLLフォルダパス(dllPatternがそのまま連結される)
 	// recName					[OUT]名称
 	// recNamesize				[IN/OUT]nameのサイズ(WCHAR単位)
-	BOOL Convert(
+	bool Convert(
 		PLUGIN_RESERVE_INFO* info,
 		const WCHAR* dllPattern,
 		const WCHAR* dllFolder,

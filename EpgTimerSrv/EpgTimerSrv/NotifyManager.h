@@ -1,6 +1,5 @@
 ﻿#pragma once
 
-#include "../../Common/ErrDef.h"
 #include "../../Common/CommonDef.h"
 #include "../../Common/ThreadUtil.h"
 #include <functional>
@@ -13,8 +12,8 @@ public:
 
 	void RegistGUI(DWORD processID);
 	void RegistTCP(LPCWSTR ip, DWORD port);
-	void UnRegistGUI(DWORD processID);
-	void UnRegistTCP(LPCWSTR ip, DWORD port);
+	bool UnRegistGUI(DWORD processID);
+	bool UnRegistTCP(LPCWSTR ip, DWORD port);
 	void SetNotifyCallback(const std::function<void()>& proc);
 	void SetLogFilePath(LPCWSTR path);
 	bool GetNotify(NOTIFY_SRV_INFO* info, DWORD targetCount) const;
@@ -33,11 +32,11 @@ public:
 	void SetGUI(bool f) { guiFlag = f; }
 
 protected:
-	mutable recursive_mutex_ managerLock;
+	mutable std::recursive_mutex managerLock;
 
 	CAutoResetEvent notifyEvent;
-	thread_ notifyThread;
-	atomic_bool_ notifyStopFlag;
+	std::thread notifyThread;
+	std::atomic_bool notifyStopFlag;
 	DWORD srvStatus;
 	DWORD notifyCount;
 	DWORD activeOrIdleCount;

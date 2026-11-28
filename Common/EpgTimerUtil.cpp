@@ -81,6 +81,10 @@ void ReduceCrLfAndAppend(wstring& text, const wstring& appendText, LPCWSTR crlf)
 {
 	size_t i = text.size();
 	text += appendText;
+	//先頭にCR+LFがあれば消す
+	while( text.compare(i, 2, L"\r\n") == 0 ){
+		text.erase(i, 2);
+	}
 	text += crlf;
 	for( size_t j; (j = text.find(crlf, i)) != wstring::npos; ){
 		text.erase(j, 2);
@@ -90,7 +94,7 @@ void ReduceCrLfAndAppend(wstring& text, const wstring& appendText, LPCWSTR crlf)
 }
 
 //EPG情報をTextに変換
-wstring ConvertEpgInfoText(const EPGDB_EVENT_INFO& info, const wstring* serviceName, const wstring* extraText)
+wstring ConvertEpgInfoText(const EPGDB_EVENT_INFO& info, LPCWSTR serviceName, LPCWSTR extraText)
 {
 	wstring text;
 
@@ -99,16 +103,28 @@ wstring ConvertEpgInfoText(const EPGDB_EVENT_INFO& info, const wstring* serviceN
 		SYSTEMTIME st = info.start_time;
 		Format(text, L"%04d/%02d/%02d(%ls) %02d:%02d",
 		       st.wYear, st.wMonth, st.wDay, GetDayOfWeekName(st.wDayOfWeek), st.wHour, st.wMinute);
+		if( st.wSecond != 0 ){
+			//秒を付加
+			WCHAR buff[16];
+			swprintf_s(buff, L":%02d", st.wSecond);
+			text += buff;
+		}
 		wstring time = L" ～ 未定";
 		if( info.DurationFlag ){
 			ConvertSystemTime(ConvertI64Time(st) + info.durationSec * I64_1SEC, &st);
 			Format(time, L"～%02d:%02d", st.wHour, st.wMinute);
+			if( st.wSecond != 0 ){
+				//秒を付加
+				WCHAR buff[16];
+				swprintf_s(buff, L":%02d", st.wSecond);
+				time += buff;
+			}
 		}
 		text += time;
 	}
 	text += L"\r\n";
-	if( serviceName != NULL ){
-		text += *serviceName;
+	if( serviceName != nullptr ){
+		text += serviceName;
 		text += L"\r\n";
 	}
 
@@ -120,8 +136,8 @@ wstring ConvertEpgInfoText(const EPGDB_EVENT_INFO& info, const wstring* serviceN
 		ReduceCrLfAndAppend(text, info.extInfo.text_char, L"\r\n\r\n\r\n");
 	}
 
-	if( extraText != NULL ){
-		text += *extraText;
+	if( extraText != nullptr ){
+		text += extraText;
 	}
 	wstring buff;
 	Format(buff, L"OriginalNetworkID:%d(0x%04X)\r\nTransportStreamID:%d(0x%04X)\r\nServiceID:%d(0x%04X)\r\nEventID:%d(0x%04X)\r\n",
@@ -423,7 +439,7 @@ LPCWSTR GetComponentTypeName(BYTE content, BYTE type)
 }
 
 //EPG情報をTextに変換
-wstring ConvertProgramText(const EPGDB_EVENT_INFO& info, const wstring& serviceName)
+wstring ConvertProgramText(const EPGDB_EVENT_INFO& info, const std::function<LPCWSTR(WORD, WORD, WORD)>& resolveServiceID)
 {
 	wstring text;
 
@@ -439,7 +455,7 @@ wstring ConvertProgramText(const EPGDB_EVENT_INFO& info, const wstring& serviceN
 		text+=L"\r\n";
 	}
 
-	if( info.hasAudioInfo ){
+	if( info.hasAudioInfo && info.audioInfo.componentList.empty() == false ){
 		text+=L"音声 : ";
 		AppendEpgAudioComponentInfoText(text, info);
 	}
@@ -450,7 +466,28 @@ wstring ConvertProgramText(const EPGDB_EVENT_INFO& info, const wstring& serviceN
 		text += L"\r\n\r\n";
 	}
 
-	return ConvertEpgInfoText(info, &serviceName, &text);
+	if( info.eventRelayInfoGroupType && info.eventRelayInfo.eventDataList.empty() == false ){
+		text += L"イベントリレーあり : ";
+		for( const EPGDB_EVENT_DATA& item : info.eventRelayInfo.eventDataList ){
+			wstring buff;
+			Format(buff, L"ID:%d(0x%04X)-%d(0x%04X)-%d(0x%04X)-%d(0x%04X)",
+			       item.original_network_id, item.original_network_id,
+			       item.transport_stream_id, item.transport_stream_id,
+			       item.service_id, item.service_id,
+			       item.event_id, item.event_id);
+			text += buff;
+			LPCWSTR serviceName = resolveServiceID(item.original_network_id, item.transport_stream_id, item.service_id);
+			if( serviceName ){
+				text += L" ";
+				text += serviceName;
+			}
+			text += L"\r\n";
+		}
+		text += L"\r\n";
+	}
+
+	LPCWSTR serviceName = resolveServiceID(info.original_network_id, info.transport_stream_id, info.service_id);
+	return ConvertEpgInfoText(info, serviceName ? serviceName : L"", text.c_str());
 }
 
 void ConvertEpgInfo(WORD onid, WORD tsid, WORD sid, const EPG_EVENT_INFO* src, EPGDB_EVENT_INFO* dest)
@@ -465,16 +502,16 @@ void ConvertEpgInfo(WORD onid, WORD tsid, WORD sid, const EPG_EVENT_INFO* src, E
 	dest->durationSec = src->durationSec;
 	dest->freeCAFlag = src->freeCAFlag;
 
-	dest->hasShortInfo = src->shortInfo != NULL;
+	dest->hasShortInfo = src->shortInfo != nullptr;
 	if( dest->hasShortInfo ){
 		dest->shortInfo.event_name = src->shortInfo->event_name;
 		dest->shortInfo.text_char = src->shortInfo->text_char;
 	}
-	dest->hasExtInfo = src->extInfo != NULL;
+	dest->hasExtInfo = src->extInfo != nullptr;
 	if( dest->hasExtInfo ){
 		dest->extInfo.text_char = src->extInfo->text_char;
 	}
-	dest->hasContentInfo = src->contentInfo != NULL;
+	dest->hasContentInfo = src->contentInfo != nullptr;
 	if( dest->hasContentInfo ){
 		dest->contentInfo.nibbleList.clear();
 		if( src->contentInfo->listSize > 0 ){
@@ -482,14 +519,14 @@ void ConvertEpgInfo(WORD onid, WORD tsid, WORD sid, const EPG_EVENT_INFO* src, E
 				src->contentInfo->nibbleList, src->contentInfo->nibbleList + src->contentInfo->listSize);
 		}
 	}
-	dest->hasComponentInfo = src->componentInfo != NULL;
+	dest->hasComponentInfo = src->componentInfo != nullptr;
 	if( dest->hasComponentInfo ){
 		dest->componentInfo.stream_content = src->componentInfo->stream_content;
 		dest->componentInfo.component_type = src->componentInfo->component_type;
 		dest->componentInfo.component_tag = src->componentInfo->component_tag;
 		dest->componentInfo.text_char = src->componentInfo->text_char;
 	}
-	dest->hasAudioInfo = src->audioInfo != NULL;
+	dest->hasAudioInfo = src->audioInfo != nullptr;
 	if( dest->hasAudioInfo ){
 		dest->audioInfo.componentList.resize(src->audioInfo->listSize);
 		for( WORD i=0; i<src->audioInfo->listSize; i++ ){
@@ -507,7 +544,7 @@ void ConvertEpgInfo(WORD onid, WORD tsid, WORD sid, const EPG_EVENT_INFO* src, E
 		}
 	}
 	dest->eventGroupInfoGroupType = 0;
-	if( src->eventGroupInfo != NULL ){
+	if( src->eventGroupInfo != nullptr ){
 		dest->eventGroupInfoGroupType = src->eventGroupInfo->group_type;
 		dest->eventGroupInfo.eventDataList.clear();
 		if( src->eventGroupInfo->event_count > 0 ){
@@ -516,7 +553,7 @@ void ConvertEpgInfo(WORD onid, WORD tsid, WORD sid, const EPG_EVENT_INFO* src, E
 		}
 	}
 	dest->eventRelayInfoGroupType = 0;
-	if( src->eventRelayInfo != NULL ){
+	if( src->eventRelayInfo != nullptr ){
 		dest->eventRelayInfoGroupType = src->eventRelayInfo->group_type;
 		dest->eventRelayInfo.eventDataList.clear();
 		if( src->eventRelayInfo->event_count > 0 ){
@@ -529,13 +566,13 @@ void ConvertEpgInfo(WORD onid, WORD tsid, WORD sid, const EPG_EVENT_INFO* src, E
 void AppendEpgContentInfoText(wstring& text, const EPGDB_EVENT_INFO& info)
 {
 	if( info.hasContentInfo ){
-		for( size_t i = 0; i < info.contentInfo.nibbleList.size(); i++ ){
-			BYTE nibble1 = info.contentInfo.nibbleList[i].content_nibble_level_1;
-			BYTE nibble2 = info.contentInfo.nibbleList[i].content_nibble_level_2;
+		for( EPGDB_CONTENT_DATA item : info.contentInfo.nibbleList ){
+			BYTE nibble1 = item.content_nibble_level_1;
+			BYTE nibble2 = item.content_nibble_level_2;
 			if( nibble1 == 0x0E && nibble2 <= 0x01 ){
 				//番組付属情報またはCS拡張用情報
-				nibble1 = info.contentInfo.nibbleList[i].user_nibble_1 | (0x60 + nibble2 * 16);
-				nibble2 = info.contentInfo.nibbleList[i].user_nibble_2;
+				nibble1 = item.user_nibble_1 | (0x60 + nibble2 * 16);
+				nibble2 = item.user_nibble_2;
 			}
 			WCHAR buff[32];
 			LPCWSTR ret = GetGenreName(nibble1, 0xFF);
@@ -564,29 +601,40 @@ void AppendEpgComponentInfoText(wstring& text, const EPGDB_EVENT_INFO& info)
 		LPCWSTR ret = GetComponentTypeName(info.componentInfo.stream_content, info.componentInfo.component_type);
 		if( ret[0] ){
 			text += ret;
-			if( info.componentInfo.text_char.empty() == false ){
-				text += L"\r\n";
-				text += info.componentInfo.text_char;
-			}
+		}else{
+			WCHAR buff[32];
+			swprintf_s(buff, L"(0x%02X,0x%02X)", info.componentInfo.stream_content, info.componentInfo.component_type);
+			text += buff;
 		}
+		//空行を防ぐ
+		size_t lastSize = text.size();
+		text += L"\r\n";
+		ReduceCrLfAndAppend(text, info.componentInfo.text_char, L"\r\n\r\n");
+		text.resize(text.size() > lastSize + 6 ? text.size() - 4 : lastSize);
 	}
 }
 
 void AppendEpgAudioComponentInfoText(wstring& text, const EPGDB_EVENT_INFO& info)
 {
 	if( info.hasAudioInfo ){
-		for( size_t i = 0; i < info.audioInfo.componentList.size(); i++ ){
-			LPCWSTR ret = GetComponentTypeName(info.audioInfo.componentList[i].stream_content, info.audioInfo.componentList[i].component_type);
+		for( const EPGDB_AUDIO_COMPONENT_INFO_DATA& item : info.audioInfo.componentList ){
+			LPCWSTR ret = GetComponentTypeName(item.stream_content, item.component_type);
 			if( ret[0] ){
 				text += ret;
-				if( info.audioInfo.componentList[i].text_char.empty() == false ){
-					text += L"\r\n";
-					text += info.audioInfo.componentList[i].text_char;
-				}
+			}else{
+				WCHAR buff[32];
+				swprintf_s(buff, L"(0x%02X,0x%02X)", item.stream_content, item.component_type);
+				text += buff;
 			}
+			//空行を防ぐ
+			size_t lastSize = text.size();
+			text += L"\r\n";
+			ReduceCrLfAndAppend(text, item.text_char, L"\r\n\r\n");
+			text.resize(text.size() > lastSize + 6 ? text.size() - 4 : lastSize);
+
 			text += L"\r\n";
 			text += L"サンプリングレート : ";
-			switch( info.audioInfo.componentList[i].sampling_rate ){
+			switch( item.sampling_rate ){
 				case 0x01:
 					text += L"16kHz";
 					break;
@@ -605,6 +653,13 @@ void AppendEpgAudioComponentInfoText(wstring& text, const EPGDB_EVENT_INFO& info
 				case 0x07:
 					text += L"48kHz";
 					break;
+				default:
+					{
+						WCHAR buff[16];
+						swprintf_s(buff, L"(0x%02X)", item.sampling_rate);
+						text += buff;
+					}
+					break;
 			}
 			text += L"\r\n";
 		}
@@ -621,7 +676,7 @@ EPG_EVENT_INFO CEpgEventInfoAdapter::Create(EPGDB_EVENT_INFO* ref)
 	dest.DurationFlag = r.DurationFlag;
 	dest.durationSec = r.durationSec;
 	dest.freeCAFlag = r.freeCAFlag;
-	dest.shortInfo = NULL;
+	dest.shortInfo = nullptr;
 	if( r.hasShortInfo ){
 		shortInfo.event_nameLength = (WORD)r.shortInfo.event_name.size();
 		shortInfo.event_name = r.shortInfo.event_name.c_str();
@@ -629,19 +684,19 @@ EPG_EVENT_INFO CEpgEventInfoAdapter::Create(EPGDB_EVENT_INFO* ref)
 		shortInfo.text_char = r.shortInfo.text_char.c_str();
 		dest.shortInfo = &shortInfo;
 	}
-	dest.extInfo = NULL;
+	dest.extInfo = nullptr;
 	if( r.hasExtInfo ){
 		extInfo.text_charLength = (WORD)r.extInfo.text_char.size();
 		extInfo.text_char = r.extInfo.text_char.c_str();
 		dest.extInfo = &extInfo;
 	}
-	dest.contentInfo = NULL;
+	dest.contentInfo = nullptr;
 	if( r.hasContentInfo ){
 		contentInfo.listSize = (WORD)r.contentInfo.nibbleList.size();
 		contentInfo.nibbleList = r.contentInfo.nibbleList.data();
 		dest.contentInfo = &contentInfo;
 	}
-	dest.componentInfo = NULL;
+	dest.componentInfo = nullptr;
 	if( r.hasComponentInfo ){
 		componentInfo.stream_content = r.componentInfo.stream_content;
 		componentInfo.component_type = r.componentInfo.component_type;
@@ -650,7 +705,7 @@ EPG_EVENT_INFO CEpgEventInfoAdapter::Create(EPGDB_EVENT_INFO* ref)
 		componentInfo.text_char = r.componentInfo.text_char.c_str();
 		dest.componentInfo = &componentInfo;
 	}
-	dest.audioInfo = NULL;
+	dest.audioInfo = nullptr;
 	if( r.hasAudioInfo ){
 		audioInfo.listSize = (WORD)r.audioInfo.componentList.size();
 		audioList.resize(audioInfo.listSize);
@@ -670,14 +725,14 @@ EPG_EVENT_INFO CEpgEventInfoAdapter::Create(EPGDB_EVENT_INFO* ref)
 		audioInfo.audioList = audioList.data();
 		dest.audioInfo = &audioInfo;
 	}
-	dest.eventGroupInfo = NULL;
+	dest.eventGroupInfo = nullptr;
 	if( r.eventGroupInfoGroupType ){
 		eventGroupInfo.group_type = r.eventGroupInfoGroupType;
 		eventGroupInfo.event_count = (BYTE)r.eventGroupInfo.eventDataList.size();
 		eventGroupInfo.eventDataList = r.eventGroupInfo.eventDataList.data();
 		dest.eventGroupInfo = &eventGroupInfo;
 	}
-	dest.eventRelayInfo = NULL;
+	dest.eventRelayInfo = nullptr;
 	if( r.eventRelayInfoGroupType ){
 		eventRelayInfo.group_type = r.eventRelayInfoGroupType;
 		eventRelayInfo.event_count = (BYTE)r.eventRelayInfo.eventDataList.size();
@@ -699,9 +754,9 @@ SERVICE_INFO CServiceInfoAdapter::Create(const EPGDB_SERVICE_INFO* ref)
 	extInfo.service_provider_name = r.service_provider_name.c_str();
 	extInfo.service_name = r.service_name.c_str();
 	extInfo.network_name = r.network_name.c_str();
-	//互換のためts_nameは未取得や空文字列のときNULLとすべき
-	//(service_nameはNULLにしてはいけない。BonCtrl/ChSetUtil.cppを参照)
-	extInfo.ts_name = r.ts_name.empty() ? NULL : r.ts_name.c_str();
+	//互換のためts_nameは未取得や空文字列のときnullptrとすべき
+	//(service_nameはnullptrにしてはいけない。BonCtrl/ChSetUtil.cppを参照)
+	extInfo.ts_name = r.ts_name.empty() ? nullptr : r.ts_name.c_str();
 	extInfo.remote_control_key_id = r.remote_control_key_id;
 	dest.extInfo = &extInfo;
 	return dest;

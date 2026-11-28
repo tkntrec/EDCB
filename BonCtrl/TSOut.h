@@ -3,7 +3,6 @@
 #include "../Common/StructDef.h"
 #include "../Common/PathUtil.h"
 #include "../Common/StringUtil.h"
-#include "../Common/ErrDef.h"
 #include "../Common/EpgDataCap3Util.h"
 #include "../Common/TSPacketUtil.h"
 #include "../Common/ThreadUtil.h"
@@ -31,18 +30,18 @@ public:
 	~CTSOut(void);
 
 	//チャンネル変更状態に遷移する
-	void SetChChangeEvent(WORD presumedONID = 0xFFFF, BOOL resetEpgUtil = FALSE);
+	void SetChChangeEvent(WORD presumedONID = 0xFFFF, bool resetEpgUtil = false);
 
 	//GetStreamID()が失敗する状態かどうか
-	BOOL IsChUnknown(DWORD* elapsedTime = NULL);
+	bool IsChUnknown(DWORD* elapsedTime = nullptr);
 
 	//現在のストリームのIDを取得する
 	//戻り値：
-	// TRUE（成功）、FALSE（失敗）
+	// true（成功）、false（失敗）
 	//引数：
 	// ONID		[OUT]originalNetworkID
 	// TSID		[OUT]transportStreamID
-	BOOL GetStreamID(
+	bool GetStreamID(
 		WORD* ONID,
 		WORD* TSID
 		);
@@ -60,11 +59,11 @@ public:
 
 	//EMM処理の動作設定
 	//戻り値：
-	// TRUE（成功）、FALSE（失敗）
+	// true（成功）、false（失敗）
 	//引数：
-	// enable		[IN] TRUE（処理する）、FALSE（処理しない）
-	BOOL SetEmm(
-		BOOL enable
+	// enable		[IN] true（処理する）、false（処理しない）
+	bool SetEmm(
+		bool enable
 		);
 
 	//EMM処理を行った数
@@ -74,17 +73,17 @@ public:
 
 	//DLLのロード状態を取得
 	//戻り値：
-	// TRUE（ロードに成功している）、FALSE（ロードに失敗している）
+	// true（ロードに成功している）、false（ロードに失敗している）
 	//引数：
 	// loadErrDll		[OUT]ロードに失敗したDLLファイル名
-	BOOL GetLoadStatus(
+	bool GetLoadStatus(
 		wstring& loadErrDll
 		);
 
 	//EPGデータの保存を開始する
 	//戻り値：
-	// TRUE（成功）、FALSE（失敗）
-	BOOL StartSaveEPG(
+	// true（成功）、false（失敗）
+	bool StartSaveEPG(
 		const wstring& epgFilePath_
 		);
 
@@ -92,7 +91,7 @@ public:
 	//引数：
 	// copy			[IN]tmpからコピー処理行うかどうか
 	void StopSaveEPG(
-		BOOL copy
+		bool copy
 		);
 
 	//EPGデータの蓄積状態を取得する
@@ -101,7 +100,7 @@ public:
 	//引数：
 	// l_eitFlag		[IN]L-EITのステータスを取得
 	EPG_SECTION_STATUS GetSectionStatus(
-		BOOL l_eitFlag
+		bool l_eitFlag
 		);
 
 	//指定サービスのEPGデータの蓄積状態を取得する
@@ -112,19 +111,19 @@ public:
 	// transportStreamID		[IN]取得対象のTransportStreamID
 	// serviceID				[IN]取得対象のServiceID
 	// l_eitFlag				[IN]L-EITのステータスを取得
-	pair<EPG_SECTION_STATUS, BOOL> GetSectionStatusService(
+	pair<EPG_SECTION_STATUS, bool> GetSectionStatusService(
 		WORD originalNetworkID,
 		WORD transportStreamID,
 		WORD serviceID,
-		BOOL l_eitFlag
+		bool l_eitFlag
 		);
 
 	//自ストリームのサービス一覧を取得する
 	//戻り値：
-	// エラーコード
+	// true（成功）、false（失敗）
 	//引数：
-	// funcGetList		[IN]戻り値がNO_ERRのときサービス情報の個数とそのリストを引数として呼び出される関数
-	DWORD GetServiceListActual(
+	// funcGetList		[IN]戻り値がtrueのときサービス情報の個数とそのリストを引数として呼び出される関数
+	bool GetServiceListActual(
 		const std::function<void(DWORD, SERVICE_INFO*)>& funcGetList
 		);
 
@@ -134,64 +133,64 @@ public:
 	//引数：
 	// sendUdpTcp	[IN]UDP/TCP送信用にする
 	DWORD CreateServiceCtrl(
-		BOOL sendUdpTcp
+		bool sendUdpTcp
 		);
 
 	//TSストリーム制御用コントロールを削除する
 	//戻り値：
-	// TRUE（成功）、FALSE（失敗
+	// true（成功）、false（失敗）
 	//引数：
 	// id			[IN]制御識別ID
-	BOOL DeleteServiceCtrl(
+	bool DeleteServiceCtrl(
 		DWORD id
 		);
 
 	//制御対象のサービスを設定する
 	//戻り値：
-	// TRUE（成功）、FALSE（失敗
+	// true（成功）、false（失敗）
 	//引数：
 	// id			[IN]制御識別ID
 	// serviceID	[IN]対象サービスID、0xFFFFで全サービス対象
-	BOOL SetServiceID(
+	bool SetServiceID(
 		DWORD id,
 		WORD serviceID
 		);
 
-	BOOL GetServiceID(
+	bool GetServiceID(
 		DWORD id,
 		WORD* serviceID
 		);
 
 	//UDPで送信を行う
 	//戻り値：
-	// TRUE（成功）、FALSE（失敗）
+	// true（成功）、false（失敗）
 	//引数：
 	// id			[IN]制御識別ID
-	// sendList		[IN/OUT]送信先リスト。NULLで停止。送信に使用したポート(失敗のものは0x10000)がportにセットされる。
-	BOOL SendUdp(
+	// sendList		[IN/OUT]送信先リスト。nullptrで停止。送信に使用したポート(失敗のものは0x10000)がportにセットされる。
+	bool SendUdp(
 		DWORD id,
 		vector<NW_SEND_INFO>* sendList
 		);
 
 	//TCPで送信を行う
 	//戻り値：
-	// TRUE（成功）、FALSE（失敗）
+	// true（成功）、false（失敗）
 	//引数：
 	// id			[IN]制御識別ID
-	// sendList		[IN/OUT]送信先リスト。NULLで停止。送信に使用したポート(失敗のものは0x10000)がportにセットされる。
-	BOOL SendTcp(
+	// sendList		[IN/OUT]送信先リスト。nullptrで停止。送信に使用したポート(失敗のものは0x10000)がportにセットされる。
+	bool SendTcp(
 		DWORD id,
 		vector<NW_SEND_INFO>* sendList
 		);
 
 	//ファイル保存を開始する
 	//戻り値：
-	// TRUE（成功）、FALSE（失敗）
+	// true（成功）、false（失敗）
 	//引数：
 	// recParam				[IN]保存パラメータ
 	// saveFolderSub		[IN]HDDの空きがなくなった場合に一時的に使用するフォルダ
 	// maxBuffCount			[IN]出力バッファ上限
-	BOOL StartSave(
+	bool StartSave(
 		const SET_CTRL_REC_PARAM& recParam,
 		const vector<wstring>& saveFolderSub,
 		int maxBuffCount
@@ -199,43 +198,46 @@ public:
 
 	//ファイル保存を終了する
 	//戻り値：
-	// TRUE（成功）、FALSE（失敗）
+	// true（成功）、false（失敗）
 	//引数：
 	// id			[IN]制御識別ID
 	// subRecFlag	[OUT]成功のとき、サブ録画が発生したかどうか
-	BOOL EndSave(
+	bool EndSave(
 		DWORD id,
-		BOOL* subRecFlag = NULL
+		bool* subRecFlag = nullptr
 		);
 
 	//スクランブル解除処理の動作設定
 	//戻り値：
-	// TRUE（成功）、FALSE（失敗）
+	// true（成功）、false（失敗）
 	//引数：
-	// enable		[IN] TRUE（処理する）、FALSE（処理しない）
-	BOOL SetScramble(
+	// enable		[IN] true（処理する）、false（処理しない）
+	bool SetScramble(
 		DWORD id,
-		BOOL enable
+		bool enable
 		);
 
 	//字幕とデータ放送含めるかどうか
 	//引数：
 	// id					[IN]制御識別ID
-	// enableCaption		[IN]字幕を TRUE（含める）、FALSE（含めない）
-	// enableData			[IN]データ放送を TRUE（含める）、FALSE（含めない）
+	// enableCaption		[IN]字幕を true（含める）、false（含めない）
+	// enableData			[IN]データ放送を true（含める）、false（含めない）
 	void SetServiceMode(
 		DWORD id,
-		BOOL enableCaption,
-		BOOL enableData
+		bool enableCaption,
+		bool enableData
 		);
 
 	//エラーカウントをクリアする
+	//引数：
+	// id				[IN]制御識別ID
 	void ClearErrCount(
 		DWORD id
 		);
 
 	//ドロップとスクランブルのカウントを取得する
 	//引数：
+	// id				[IN]制御識別ID
 	// drop				[OUT]ドロップ数
 	// scramble			[OUT]スクランブル数
 	void GetErrCount(
@@ -255,24 +257,24 @@ public:
 
 	//指定サービスの現在or次のEPG情報を取得する
 	//戻り値：
-	// エラーコード
+	// true（成功）、false（失敗）
 	//引数：
 	// originalNetworkID		[IN]取得対象のoriginalNetworkID
 	// transportStreamID		[IN]取得対象のtransportStreamID
 	// serviceID				[IN]取得対象のServiceID
-	// nextFlag					[IN]TRUE（次の番組）、FALSE（現在の番組）
+	// nextFlag					[IN]true（次の番組）、false（現在の番組）
 	// epgInfo					[OUT]EPG情報
-	DWORD GetEpgInfo(
+	bool GetEpgInfo(
 		WORD originalNetworkID,
 		WORD transportStreamID,
 		WORD serviceID,
-		BOOL nextFlag,
+		bool nextFlag,
 		EPGDB_EVENT_INFO* epgInfo
 		);
 	
 	//指定イベントのEPG情報を取得する
 	//戻り値：
-	// エラーコード
+	// true（成功）、false（失敗）
 	//引数：
 	// originalNetworkID		[IN]取得対象のoriginalNetworkID
 	// transportStreamID		[IN]取得対象のtransportStreamID
@@ -280,12 +282,12 @@ public:
 	// eventID					[IN]取得対象のEventID
 	// pfOnlyFlag				[IN]p/fからのみ検索するかどうか
 	// epgInfo					[OUT]EPG情報
-	DWORD SearchEpgInfo(
+	bool SearchEpgInfo(
 		WORD originalNetworkID,
 		WORD transportStreamID,
 		WORD serviceID,
 		WORD eventID,
-		BYTE pfOnlyFlag,
+		bool pfOnlyFlag,
 		EPGDB_EVENT_INFO* epgInfo
 		);
 
@@ -297,8 +299,8 @@ public:
 	
 	//録画中かどうか
 	//戻り値：
-	// TRUE（録画中）、FALSE（していない）
-	BOOL IsRec();
+	// true（録画中）、false（していない）
+	bool IsRec();
 
 	//録画中のファイルのファイルパスを取得する
 	//戻り値：
@@ -319,7 +321,7 @@ public:
 	void SaveErrCount(
 		DWORD id,
 		const wstring& filePath,
-		BOOL asUtf8,
+		bool asUtf8,
 		int dropSaveThresh,
 		int scrambleSaveThresh,
 		ULONGLONG& drop,
@@ -335,16 +337,16 @@ public:
 		);
 
 	void SetNoLogScramble(
-		BOOL noLog
+		bool noLog
 		);
 
 	void SetParseEpgPostProcess(
-		BOOL parsePost
+		bool parsePost
 		);
 protected:
 	//objLock->epgUtilLockの順にロックする
-	recursive_mutex_ objLock;
-	recursive_mutex_ epgUtilLock;
+	std::recursive_mutex objLock;
+	std::recursive_mutex epgUtilLock;
 
 	CEpgDataCap3Util epgUtil;
 	CScrambleDecoderUtil decodeUtil;
@@ -357,8 +359,8 @@ protected:
 
 	vector<BYTE> decodeBuff;
 
-	BOOL enableDecodeFlag;
-	BOOL emmEnableFlag;
+	bool enableDecodeFlag;
+	bool emmEnableFlag;
 
 	map<DWORD, std::unique_ptr<COneServiceUtil>> serviceUtilMap; //キー識別ID
 	CServiceFilter serviceFilter;
@@ -374,18 +376,18 @@ protected:
 	const WORD* logoAdditionalNeededPids;
 
 	wstring bonFile;
-	BOOL noLogScramble;
-	BOOL parseEpgPostProcess;
+	bool noLogScramble;
+	bool parseEpgPostProcess;
 protected:
 	void ParseEpgPacket(BYTE* data, const CTSPacketUtil& packet);
 
 	void UpdateFilterServiceID();
 
-	static BOOL CALLBACK EnumLogoListProc(DWORD logoListSize, const LOGO_INFO* logoList, void* param);
+	static bool EnumLogoListProc(DWORD logoListSize, const LOGO_INFO* logoList, vector<pair<LONGLONG, DWORD>>& serviceListSizeMap, CHECK_LOGO_RESULT& result);
 
 	DWORD GetNextID();
 
-	BOOL UpdateEnableDecodeFlag();
+	bool UpdateEnableDecodeFlag();
 
 	void OnChChanged(WORD onid, WORD tsid);
 };

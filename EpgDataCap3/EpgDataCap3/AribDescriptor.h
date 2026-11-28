@@ -1,13 +1,5 @@
 ﻿#pragma once
 
-#ifndef NOEXCEPT
-#if !defined(_MSC_VER) || _MSC_VER >= 1900
-#define NOEXCEPT noexcept
-#else
-#define NOEXCEPT
-#endif
-#endif
-
 namespace AribDescriptor
 {
 	enum {
@@ -28,10 +20,7 @@ namespace AribDescriptor
 		D_IMMEDIATE_MAX = 0x1FFF,
 	};
 
-	enum property_id
-#if !defined(_MSC_VER) || _MSC_VER >= 1900
-		: short
-#endif
+	enum property_id : short
 	{
 		d_invalid = 0,
 		reserved = D_IMMEDIATE_MAX + 1,
@@ -366,24 +355,24 @@ namespace AribDescriptor
 	public:
 		class CLoopPointer {
 		public:
-			CLoopPointer() : pl(NULL) {}
+			CLoopPointer() : pl(nullptr) {}
 		private:
 			friend CDescriptor;
 			vector<vector<DESCRIPTOR_PROPERTY>>* pl;
 			DWORD index;
 		};
 		void Clear();
-		bool DecodeSI(const BYTE* data, DWORD dataSize, DWORD* decodeReadSize, si_type type, const PARSER_PAIR* customParserList = NULL);
+		bool DecodeSI(const BYTE* data, DWORD dataSize, DWORD* decodeReadSize, si_type type, const PARSER_PAIR* customParserList = nullptr);
 		static DWORD GetDecodeReadSize(const BYTE* data, DWORD dataSize);
-		bool Decode(const BYTE* data, DWORD dataSize, DWORD* decodeReadSize, const PARSER_PAIR* customParserList = NULL);
+		bool Decode(const BYTE* data, DWORD dataSize, DWORD* decodeReadSize, const PARSER_PAIR* customParserList = nullptr);
 		bool EnterLoop(CLoopPointer& lp, DWORD offset = 0) const;
 		bool SetLoopIndex(CLoopPointer& lp, DWORD index) const;
 		bool NextLoopIndex(CLoopPointer& lp) const { return SetLoopIndex(lp, lp.index + 1); }
-		DWORD GetLoopSize(CLoopPointer lp = CLoopPointer()) const { return lp.pl != NULL ? (DWORD)lp.pl->size() : 1; }
-		bool Has(property_id id, CLoopPointer lp = CLoopPointer()) const { return FindProperty(id, lp) != NULL; }
+		DWORD GetLoopSize(CLoopPointer lp = CLoopPointer()) const { return lp.pl != nullptr ? (DWORD)lp.pl->size() : 1; }
+		bool Has(property_id id, CLoopPointer lp = CLoopPointer()) const { return FindProperty(id, lp) != nullptr; }
 		DWORD GetNumber(property_id id, CLoopPointer lp = CLoopPointer()) const;
 		bool SetNumber(property_id id, DWORD n, CLoopPointer lp = CLoopPointer());
-		const BYTE* GetBinary(property_id id, DWORD* size = NULL, CLoopPointer lp = CLoopPointer()) const;
+		const BYTE* GetBinary(property_id id, DWORD* size = nullptr, CLoopPointer lp = CLoopPointer()) const;
 	private:
 		struct DESCRIPTOR_PROPERTY {
 			property_id id;
@@ -401,8 +390,8 @@ namespace AribDescriptor
 			DESCRIPTOR_PROPERTY() : id(d_invalid), type(TYPE_N) {}
 			~DESCRIPTOR_PROPERTY();
 			DESCRIPTOR_PROPERTY(const DESCRIPTOR_PROPERTY& o);
-			DESCRIPTOR_PROPERTY& operator=(DESCRIPTOR_PROPERTY&& o) NOEXCEPT;
-			DESCRIPTOR_PROPERTY(DESCRIPTOR_PROPERTY&& o) NOEXCEPT : type(TYPE_N) { *this = std::move(o); }
+			DESCRIPTOR_PROPERTY& operator=(DESCRIPTOR_PROPERTY&& o) noexcept;
+			DESCRIPTOR_PROPERTY(DESCRIPTOR_PROPERTY&& o) noexcept : type(TYPE_N) { *this = std::move(o); }
 			DESCRIPTOR_PROPERTY& operator=(const DESCRIPTOR_PROPERTY& o) { return *this = DESCRIPTOR_PROPERTY(o); }
 		};
 		struct LOCAL_PROPERTY {

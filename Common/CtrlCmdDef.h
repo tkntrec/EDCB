@@ -159,7 +159,18 @@
 //TVTest連携のストリーミング配信専用
 #define CMD2_VIEW_APP_TT_SET_CTRL			1261 //ストリーミング配信制御IDの設定
 
+#define CMD_SUCCESS			1 //成功
+#define CMD_ERR				0 //汎用エラー
+#define CMD_NON_SUPPORT		203 //未サポートのコマンド
+#define CMD_ERR_INVALID_ARG	204 //引数エラー
+#define CMD_ERR_CONNECT		205 //サーバーにコネクトできなかった
+#define CMD_ERR_DISCONNECT	206 //サーバーから切断された
+#define CMD_ERR_TIMEOUT		207 //タイムアウト発生
+#define CMD_ERR_BUSY		208 //ビジー状態で現在処理できない（EPGデータ読み込み中、録画中など）
+#define CMD_NO_RES			250 //コマンドの応答を保留したい（サーバー内部で使用）
+#define CMD_NO_RES_THREAD	251 //コマンドの応答にスレッドを使いたい（サーバー内部で使用）
 
+#ifdef EDCB_REPLY_TO_OLD_CTRL_CMD
 //旧バージョン互換コマンド
 #define CMD_EPG_SRV_GET_RESERVE_INFO	12 //予約情報取得
 #define CMD_EPG_SRV_ADD_RESERVE			13 //予約追加
@@ -174,5 +185,6 @@
 #define OLD_CMD_SUCCESS			0 //成功
 #define OLD_CMD_ERR				1 //汎用エラー
 #define OLD_CMD_NEXT			2 //Enumコマンド用、続きあり
+#endif
 
 #endif

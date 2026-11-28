@@ -14,8 +14,8 @@ public:
 	// 成功：udpPortとtcpPortに開始ポート番号（終了or失敗：値は不変）
 	//引数：
 	// ip		[IN]送信先アドレス
-	// udpPort	[OUT]開始UDPポート番号（NULLで送信停止）
-	// tcpPort	[OUT]開始TCPポート番号（NULLで送信停止）
+	// udpPort	[OUT]開始UDPポート番号（nullptrで送信停止）
+	// tcpPort	[OUT]開始TCPポート番号（nullptrで送信停止）
 	void Send(
 		LPCWSTR ip,
 		DWORD* udpPort,
@@ -24,19 +24,19 @@ public:
 
 	//タイムシフト用ファイルを開く
 	//戻り値：
-	// TRUE（成功）、FALSE（失敗）
+	// true（成功）、false（失敗）
 	//引数：
 	// filePath		[IN]タイムシフト用バッファファイルのパス
 	// fileMode		[IN]録画済みファイル再生モード
-	BOOL OpenTimeShift(
+	bool OpenTimeShift(
 		LPCWSTR filePath_,
-		BOOL fileMode_
+		bool fileMode_
 		);
 
 	//タイムシフト送信を開始する
 	//戻り値：
-	// TRUE（成功）、FALSE（失敗）
-	BOOL StartTimeShift();
+	// true（成功）、false（失敗）
+	bool StartTimeShift();
 
 	//タイムシフト送信を停止する
 	void StopTimeShift();
@@ -53,8 +53,8 @@ public:
 	void SetFilePos(LONGLONG filePos);
 
 protected:
-	recursive_mutex_ utilLock;
-	recursive_mutex_ ioLock;
+	std::recursive_mutex utilLock;
+	std::recursive_mutex ioLock;
 	util_unique_handle udpMutex;
 	util_unique_handle tcpMutex;
 	CSendTSTCPDllUtil sendUdp;
@@ -68,12 +68,12 @@ protected:
 	wstring filePath;
 	WORD PCR_PID;
 
-	BOOL fileMode;
+	bool fileMode;
 	int seekJitter;
 	LONGLONG currentFilePos;
 
-	thread_ readThread;
-	atomic_bool_ readStopFlag;
+	std::thread readThread;
+	std::atomic_bool readStopFlag;
 	std::unique_ptr<FILE, fclose_deleter> readFile;
 	std::unique_ptr<FILE, fclose_deleter> seekFile;
 protected:
