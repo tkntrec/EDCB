@@ -2,6 +2,7 @@
 using System.Threading;
 using System.IO.Pipes;
 using System.Security.AccessControl;
+using System.Security.Principal;
 
 namespace EpgTimer
 {
@@ -32,18 +33,21 @@ namespace EpgTimer
                 new NamedPipeServerStream(
 #endif
                     pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous, 1024, 1024,
-                    null, System.IO.HandleInheritability.None, trustee == null ? 0 : PipeAccessRights.ChangePermissions);
-            if (trustee != null)
+                    null, System.IO.HandleInheritability.None, PipeAccessRights.ChangePermissions);
+            try
             {
-                try
+                PipeSecurity sec = pipe.GetAccessControl();
+                if (trustee != null)
                 {
-                    PipeSecurity sec = pipe.GetAccessControl();
                     sec.AddAccessRule(new PipeAccessRule(trustee, PipeAccessRights.ReadWrite, AccessControlType.Allow));
-                    pipe.SetAccessControl(sec);
                 }
-                catch
-                {
-                }
+                // ネットワーク(SMB)経由の接続を拒否する(PIPE_REJECT_REMOTE_CLIENTSに相当)
+                sec.AddAccessRule(new PipeAccessRule(new SecurityIdentifier(WellKnownSidType.NetworkSid, null),
+                                                     PipeAccessRights.FullControl, AccessControlType.Deny));
+                pipe.SetAccessControl(sec);
+            }
+            catch
+            {
             }
 
             m_ServerThread = new Thread(new ThreadStart(() =>
